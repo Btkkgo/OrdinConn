@@ -7,6 +7,7 @@ edition.workspace = true
 agent-runtime = { path = "../agent-runtime" }
 approval-engine = { path = "../approval-engine" }
 chrono.workspace = true
+collector-runtime = { path = "../collector-runtime" }
 connector-runtime = { path = "../connector-runtime" }
 evidence-core = { path = "../evidence-core" }
 execution-core = { path = "../execution-core" }
@@ -16,6 +17,7 @@ rust_decimal.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 signal-core = { path = "../signal-core" }
+strategy-core = { path = "../strategy-core" }
 sqlx.workspace = true
 thiserror.workspace = true
 tokio.workspace = true

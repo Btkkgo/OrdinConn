@@ -1,13 +1,14 @@
 [package]
-name = "signal-core"
+name = "strategy-core"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 chrono.workspace = true
-evidence-core = { path = "../evidence-core" }
+collector-runtime = { path = "../collector-runtime" }
 market-core = { path = "../market-core" }
 serde.workspace = true
 serde_json.workspace = true
+signal-core = { path = "../signal-core" }
 thiserror.workspace = true
-uuid.workspace = true
+

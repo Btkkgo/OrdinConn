@@ -14,7 +14,7 @@ The two markets are Traditional Finance and Crypto. The shared workflow is:
 
 ## V0.1 scope
 
-V0.1 contains the desktop shell, Agent Runtime, Model Gateway, Tool Runtime, Approval Engine, Evidence and Signal domains, Traditional Finance and Crypto experiences, contextual Agent Dock, SQLite persistence, mock connectors, at least 18 demo signals, Agent Reports, Trade Proposals, Approval Capability, and Paper Execution.
+V0.1 contains the desktop shell, Agent Runtime, Model Gateway, Tool Runtime, Approval Engine, Evidence and Signal domains, Traditional Finance and Crypto experiences, contextual Agent Dock, SQLite persistence, mock connectors, public-data Collector Runtime, Source Registry, deterministic Strategy Engine, at least 18 demo signals, Agent Reports, Trade Proposals, Approval Capability, and Paper Execution.
 
 It does not contain real brokerage or exchange execution, real-money trading, deposits, withdrawals, transfers, wallet signing, private-key or seed-phrase access, subscriptions, mobile applications, a cloud platform, high-frequency background automation, or advanced computer vision.
 
@@ -53,6 +53,8 @@ English remains the default locale. English and Simplified Chinese (`zh-CN`) are
 V0.1 uses a Tauri single-process embedded Rust runtime. React communicates only through typed commands and events and never directly accesses SQLite, providers, files, or core runtime state. Core crates are transport-agnostic.
 
 SQLite relational tables store current state. `runtime_events` stores append-only audit history. Live deltas use an in-memory event bus. Startup marks unsafe unfinished work interrupted and never replays side-effecting tools automatically.
+
+Public data follows `Source -> RawRecord -> NormalizedObservation -> Dedup -> Evidence -> Strategy -> SignalCandidate -> Evidence Gate -> Published Signal -> Agent Analysis`. REST, WebSocket, RSS/Atom, and HTML collectors use explicit public-data policies, health, schema-drift detection, rate budgets, retention, and deterministic source reliability. Login, paywall, CAPTCHA, cookie-gated, and private access are prohibited.
 
 ## Approval and execution policy
 

@@ -16,6 +16,10 @@ pub fn run() {
             ))?;
             tauri::async_runtime::block_on(runtime.seed_demo_data())?;
             events::forward_runtime_events(Arc::clone(&runtime), app.handle().clone());
+            let collection_runtime = Arc::clone(&runtime);
+            tauri::async_runtime::spawn(async move {
+                let _ = collection_runtime.run_core_intelligence_once().await;
+            });
             app.manage(state::AppState::new(
                 runtime,
                 Arc::new(credential_store::SystemCredentialStore),

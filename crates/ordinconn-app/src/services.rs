@@ -291,6 +291,7 @@ impl AppRuntime {
             accepting_tasks: AtomicBool::new(true),
         });
         runtime.recover_interrupted_tasks().await?;
+        runtime.initialize_core_intelligence_catalogs().await?;
         Ok(runtime)
     }
 
@@ -1008,7 +1009,7 @@ impl AppRuntime {
     }
 }
 
-async fn insert_evidence(
+pub(crate) async fn insert_evidence(
     transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     item: &Evidence,
 ) -> Result<(), AppError> {

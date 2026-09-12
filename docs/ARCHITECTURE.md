@@ -23,6 +23,8 @@ The future `StandaloneRuntimeHost`, `DaemonRuntimeHost`, and `RemoteRuntimeHost`
 - `market-core`, `evidence-core`, `signal-core`, `traditional-finance`, and `crypto-core` own financial domain definitions.
 - `model-gateway`, `agent-runtime`, `tool-runtime`, `approval-engine`, `execution-core`, and `computer-use` own replaceable runtime capabilities.
 - `connector-runtime` is the only path from connector output to Evidence and Signal Candidates. Mock connectors use the same evidence gate as future live connectors.
+- `collector-runtime` owns real public-source definitions, REST/WebSocket/feed/HTML adapters, Raw Records, normalization, deduplication, health, schema drift, and retention policies.
+- `strategy-core` owns versioned deterministic strategies, rolling-window contracts, canonical instrument/entity aliases, parameter snapshots, reason codes, and rejected-run semantics.
 - `ordinconn-app` coordinates repositories, transactions, recovery, and public application services.
 - `apps/desktop/src-tauri` converts stable commands and events to Tauri IPC. React never receives a database handle, provider secret, or approval token.
 
@@ -33,6 +35,12 @@ Startup follows database initialization, migrations, runtime initialization, con
 ## Evidence quality
 
 The Signal Engine computes evidence quality from evidence freshness, source reliability, factual level, and evidence confidence. Model inference cannot satisfy the publication gate. Contradicting evidence stays attached, reduces quality and confidence, and moves the signal to watch when appropriate. The formula is intentionally simple and replaceable in V0.1.
+
+Evidence clusters distinguish original, syndicated, and independent records. Only distinct original/independent sources add confirmation weight. The application persists every collection boundary in relational tables; completed Signals retain strategy ID, version, parameters, reason codes, and observation IDs through stable domain serialization.
+
+## Core intelligence lifecycle
+
+Catalog initialization registers validated sources and immutable strategy versions during application startup. The Tauri host starts public collection as a background task after event forwarding is ready, so UI initialization is not blocked. Each collector run records success/failure and source health. Schema drift and missing rolling history produce rejected strategy runs and insufficient Candidates; no mock fallback is used on a real path.
 
 ## UI and localization
 

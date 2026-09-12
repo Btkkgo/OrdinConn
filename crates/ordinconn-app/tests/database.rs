@@ -30,6 +30,18 @@ async fn migrations_create_required_tables_and_sqlite_safety_pragmas() {
         "automations",
         "settings",
         "runtime_events",
+        "sources",
+        "raw_records",
+        "collector_runs",
+        "market_observations",
+        "market_snapshots",
+        "strategy_definitions",
+        "strategy_runs",
+        "research_tasks",
+        "evidence_clusters",
+        "supply_chain_relations",
+        "wallet_watchlist",
+        "website_watches",
     ] {
         assert!(tables.contains(&required.to_owned()), "missing {required}");
     }
@@ -52,6 +64,16 @@ async fn migrations_create_required_tables_and_sqlite_safety_pragmas() {
         .collect();
     assert!(provider_columns.contains(&"temperature".to_owned()));
     assert!(provider_columns.contains(&"context_window".to_owned()));
+    let source_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sources")
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    let strategy_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM strategy_definitions")
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    assert_eq!(source_count, 5);
+    assert_eq!(strategy_count, 15);
 }
 
 #[tokio::test]

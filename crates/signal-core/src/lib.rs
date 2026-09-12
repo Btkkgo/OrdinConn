@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use evidence_core::{Evidence, EvidenceRelation};
 use market_core::{AssetRef, new_id};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use thiserror::Error;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -66,6 +67,18 @@ pub struct SignalCandidate {
     pub direction: SignalDirection,
     pub evidence: Vec<EvidenceLink>,
     pub status: CandidateStatus,
+    #[serde(default)]
+    pub strategy: Option<StrategyProvenance>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StrategyProvenance {
+    pub strategy_id: String,
+    pub strategy_version: String,
+    pub parameter_snapshot: Value,
+    pub reason_codes: Vec<String>,
+    pub observation_ids: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -94,7 +107,13 @@ impl SignalCandidate {
             direction,
             evidence,
             status: CandidateStatus::PendingValidation,
+            strategy: None,
         }
+    }
+
+    pub fn with_strategy(mut self, strategy: StrategyProvenance) -> Self {
+        self.strategy = Some(strategy);
+        self
     }
 }
 
@@ -121,6 +140,8 @@ pub struct Signal {
     pub agent_id: String,
     pub model_id: String,
     pub status: SignalStatus,
+    #[serde(default)]
+    pub strategy: Option<StrategyProvenance>,
 }
 
 impl Signal {
@@ -198,6 +219,7 @@ impl SignalPublisher {
             } else {
                 SignalStatus::New
             },
+            strategy: candidate.strategy,
         })
     }
 }
@@ -270,5 +292,25 @@ mod tests {
         assert!(conflicted.evidence_quality < clean.evidence_quality);
         assert_eq!(conflicted.contradiction_count(), 1);
         assert_eq!(conflicted.status, SignalStatus::Watching);
+    }
+
+    #[test]
+    fn strategy_provenance_survives_publication() {
+        let candidate = candidate(vec![evidence(
+            SourceType::ExchangeApi,
+            EvidenceRelation::Primary,
+        )])
+        .with_strategy(StrategyProvenance {
+            strategy_id: "crypto.c.volume_expansion".into(),
+            strategy_version: "1.0.0".into(),
+            parameter_snapshot: serde_json::json!({"zScore": 2.0}),
+            reason_codes: vec!["volume_zscore_high".into()],
+            observation_ids: vec!["obs-1".into()],
+        });
+        let signal = SignalPublisher.publish(candidate).unwrap();
+        assert_eq!(
+            signal.strategy.unwrap().strategy_id,
+            "crypto.c.volume_expansion"
+        );
     }
 }

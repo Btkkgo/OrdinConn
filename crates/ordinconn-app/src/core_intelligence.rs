@@ -93,12 +93,40 @@ impl AppRuntime {
                                 .execute(self.pool()).await?;
                         }
                         Err(error) => {
-                            summary.schema_drift +=
-                                usize::from(error.to_string().contains("schema"));
+                            let is_schema_drift = error.to_string().contains("schema");
+                            summary.schema_drift += usize::from(is_schema_drift);
                             summary.errors.push(format!("{}: {error}", source.id));
-                            sqlx::query("UPDATE collector_runs SET status='failed',error_code='normalization_failed',completed_at=? WHERE id=?")
+                            let mut tx = self.pool().begin().await?;
+                            sqlx::query("UPDATE collector_runs SET status='failed',error_code=?,completed_at=? WHERE id=?")
+                                .bind(if is_schema_drift { "schema_drift" } else { "normalization_failed" })
                                 .bind(Utc::now().to_rfc3339()).bind(&run_id)
-                                .execute(self.pool()).await?;
+                                .execute(&mut *tx).await?;
+                            sqlx::query(
+                                "UPDATE sources SET health_status=?,updated_at=? WHERE id=?",
+                            )
+                            .bind(if is_schema_drift {
+                                "schema_drift"
+                            } else {
+                                "degraded"
+                            })
+                            .bind(Utc::now().to_rfc3339())
+                            .bind(&source.id)
+                            .execute(&mut *tx)
+                            .await?;
+                            if is_schema_drift {
+                                append_event(
+                                    &mut tx,
+                                    "collector.schema_drift",
+                                    "source",
+                                    &source.id,
+                                    None,
+                                    None,
+                                    Some(&source.id),
+                                    &json!({"collectorRunId":run_id}),
+                                )
+                                .await?;
+                            }
+                            tx.commit().await?;
                         }
                     }
                 }
@@ -128,21 +156,19 @@ impl AppRuntime {
     ) -> Result<(), AppError> {
         let expanded: Vec<RawRecord> =
             if matches!(source_id, "federal-reserve-press" | "nvidia-newsroom") {
-                records
-                    .iter()
-                    .flat_map(|record| parse_feed(record).unwrap_or_default())
-                    .take(12)
-                    .collect()
+                let mut entries = Vec::new();
+                for record in &records {
+                    entries.extend(parse_feed(record)?);
+                }
+                entries.into_iter().take(12).collect()
             } else {
                 records
             };
         for record in expanded {
             let observations = match source_id {
-                "binance-spot-24h" => {
-                    normalize_binance_24h(&record).map_err(|_| AppError::InvalidData)?
-                }
+                "binance-spot-24h" => normalize_binance_24h(&record)?,
                 "mempool-space-summary" => {
-                    vec![normalize_mempool(&record).map_err(|_| AppError::InvalidData)?]
+                    vec![normalize_mempool(&record)?]
                 }
                 "federal-reserve-press" => vec![observation_from_feed_entry(
                     &record,

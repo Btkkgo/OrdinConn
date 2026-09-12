@@ -737,25 +737,56 @@ impl<P: SearchProvider> DiscoveryAgent<P> {
 }
 
 pub fn parse_feed(record: &RawRecord) -> Result<Vec<RawRecord>, CollectorError> {
-    let feed = parser::parse(record.payload.as_bytes())
-        .map_err(|e| CollectorError::Parse(e.to_string()))?;
-    feed.entries
-        .into_iter()
+    if let Ok(feed) = parser::parse(record.payload.as_bytes()) {
+        return feed
+            .entries
+            .into_iter()
+            .map(|entry| {
+                let payload = entry
+                    .content
+                    .and_then(|c| c.body)
+                    .or_else(|| entry.summary.map(|s| s.content))
+                    .unwrap_or_default();
+                let mut item = RawRecord::new(
+                    &record.source_id,
+                    payload,
+                    "text/html",
+                    entry.links.first().map(|l| l.href.as_str()),
+                )?;
+                item.external_id = Some(entry.id);
+                item.title = entry.title.map(|t| t.content);
+                item.published_at = entry.published.or(entry.updated);
+                Ok(item)
+            })
+            .collect();
+    }
+    let value: Value = serde_json::from_str(&record.payload)
+        .map_err(|error| CollectorError::Parse(format!("unsupported feed: {error}")))?;
+    let items = value
+        .get("items")
+        .and_then(Value::as_array)
+        .ok_or_else(|| CollectorError::SchemaDrift("JSON Feed is missing items".into()))?;
+    items
+        .iter()
         .map(|entry| {
+            let id = required_str(entry, "id")?;
             let payload = entry
-                .content
-                .and_then(|c| c.body)
-                .or_else(|| entry.summary.map(|s| s.content))
+                .get("content_html")
+                .or_else(|| entry.get("content_text"))
+                .and_then(Value::as_str)
                 .unwrap_or_default();
-            let mut item = RawRecord::new(
-                &record.source_id,
-                payload,
-                "text/html",
-                entry.links.first().map(|l| l.href.as_str()),
-            )?;
-            item.external_id = Some(entry.id);
-            item.title = entry.title.map(|t| t.content);
-            item.published_at = entry.published.or(entry.updated);
+            let url = entry.get("url").and_then(Value::as_str);
+            let mut item = RawRecord::new(&record.source_id, payload, "text/html", url)?;
+            item.external_id = Some(id.into());
+            item.title = entry
+                .get("title")
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            item.published_at = entry
+                .get("date_published")
+                .and_then(Value::as_str)
+                .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
+                .map(|value| value.with_timezone(&Utc));
             Ok(item)
         })
         .collect()
@@ -1080,6 +1111,21 @@ mod tests {
         let items = parse_feed(&raw).unwrap();
         assert_eq!(items[0].external_id.as_deref(), Some("x1"));
         assert_eq!(items[0].title.as_deref(), Some("Policy update"));
+    }
+
+    #[test]
+    fn parses_json_feed_fixture() {
+        let json = r#"{"version":"https://jsonfeed.org/version/1.1","title":"Official","items":[{"id":"json-1","url":"https://example.com/json-1","title":"Company update","content_text":"Observed facts.","date_published":"2026-09-12T10:00:00Z"}]}"#;
+        let raw = RawRecord::new(
+            "company",
+            json,
+            "application/feed+json",
+            Some("https://example.com/feed.json"),
+        )
+        .unwrap();
+        let items = parse_feed(&raw).unwrap();
+        assert_eq!(items[0].external_id.as_deref(), Some("json-1"));
+        assert_eq!(items[0].payload, "Observed facts.");
     }
     #[test]
     fn extracts_main_article_and_detects_drift() {

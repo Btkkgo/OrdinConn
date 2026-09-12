@@ -37,6 +37,8 @@ pub enum AppError {
     Migration(#[from] sqlx::migrate::MigrateError),
     #[error("serialization error")]
     Serialization(#[from] serde_json::Error),
+    #[error("collector error: {0}")]
+    Collector(#[from] collector_runtime::CollectorError),
     #[error("approval rejected: {0}")]
     Approval(#[from] ApprovalError),
     #[error("execution rejected")]

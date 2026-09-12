@@ -1,6 +1,6 @@
 # Collector Runtime
 
-`collector-runtime` is transport-agnostic and implements REST, WebSocket, RSS/Atom, JSON-compatible payload, and HTML article collection. Browser and Computer collectors are interface boundaries only in V0.1.
+`collector-runtime` is transport-agnostic and implements REST, WebSocket, RSS/Atom, JSON Feed, and HTML article collection. Browser and Computer collectors are interface boundaries only in V0.1.
 
 Every collector exposes `start`, `stop`, `fetch_once`, optional `subscribe`, and `health`. HTTP collection uses explicit timeouts, a bounded retry budget, exponential backoff, `Retry-After` for HTTP 429, a descriptive user agent, and a source-specific rate budget. Redirects are bounded and authentication redirects fail closed.
 
@@ -11,4 +11,3 @@ Automated tests use local loopback HTTP and WebSocket fixtures. Run actual netwo
 ```sh
 ORDINCONN_LIVE_SMOKE=1 cargo run -p ordinconn-app --example manual_live_smoke
 ```
-

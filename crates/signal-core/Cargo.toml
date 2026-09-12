@@ -1,0 +1,12 @@
+[package]
+name = "signal-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+chrono.workspace = true
+evidence-core = { path = "../evidence-core" }
+market-core = { path = "../market-core" }
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true

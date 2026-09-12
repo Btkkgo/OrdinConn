@@ -1,0 +1,25 @@
+[package]
+name = "ordinconn-app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+agent-runtime = { path = "../agent-runtime" }
+approval-engine = { path = "../approval-engine" }
+chrono.workspace = true
+connector-runtime = { path = "../connector-runtime" }
+evidence-core = { path = "../evidence-core" }
+execution-core = { path = "../execution-core" }
+market-core = { path = "../market-core" }
+model-gateway = { path = "../model-gateway" }
+rust_decimal.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+signal-core = { path = "../signal-core" }
+sqlx.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,21 @@
+{
+  "name": "ordinconn",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @ordinconn/desktop",
+    "dev": "npm run dev --workspace @ordinconn/desktop",
+    "desktop:dev": "npm run tauri:dev --workspace @ordinconn/desktop",
+    "desktop:build": "npm run tauri:build --workspace @ordinconn/desktop",
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.0"
+  }
+}

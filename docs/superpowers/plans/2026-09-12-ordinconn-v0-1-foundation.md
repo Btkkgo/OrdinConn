@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- English is the default and only fully enabled V0.1 locale; formal React copy uses locale keys.
+- English is the default locale; English and Simplified Chinese are fully enabled, and formal React copy uses locale keys.
 - Core crates remain independent of Tauri, React, IPC, HTTP servers, and desktop windows.
 - No real broker/exchange execution, funds, transfers, signing, private keys, seed phrases, or password capture.
 - Signals require non-inference Evidence and expose contradictions.

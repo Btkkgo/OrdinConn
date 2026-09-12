@@ -46,7 +46,7 @@ The Rust Agent Runtime uses OrdinConn's Thread, Turn, Item, Tool, Approval, and 
 
 All models pass through Model Gateway. V0.1 implements configurable OpenAI-compatible `/v1/chat/completions`, including non-streaming, streaming, and tool calls when explicitly supported. The Agent Runtime never sees vendor response shapes. Provider capabilities are explicit. Mock Model keeps the demo usable without credentials.
 
-English is the default and only fully enabled locale. Formal UI copy always uses locale keys. `zh-CN` exists from the first release and falls back to English. Domain models, APIs, files, code, Agent protocol, Signal, Evidence, and Report fields use English.
+English remains the default locale. English and Simplified Chinese (`zh-CN`) are fully enabled interface languages, selectable in Settings without restarting the runtime. Formal UI copy always uses locale keys, and locale preferences fall back to English when absent or invalid. Domain models, APIs, files, code, Agent protocol, Signal, Evidence, and Report fields use English.
 
 ## Runtime and persistence
 
@@ -70,4 +70,4 @@ The final visual direction is derived from the user-provided `Conor右1.0.jpg`: 
 
 ## Acceptance
 
-The app must launch and show the approved purple, black, and yellow interface with the user-provided mark. The user can navigate both markets and six ABC lanes, open a Signal, inspect Evidence, chat in a context-aware Agent Dock, create a Report, create a Paper Trade Proposal, request approval, approve it, and receive a Paper Execution Record. Model Settings can configure an OpenAI-compatible provider. Tests and builds must pass before the final local commit.
+The app must launch and show the approved purple, black, and yellow interface with the user-provided mark. The user can switch between English and Simplified Chinese, navigate both markets and six ABC lanes, open a Signal, inspect Evidence, chat in a context-aware Agent Dock, create a Report, create a Paper Trade Proposal, request approval, approve it, and receive a Paper Execution Record. Model Settings can configure an OpenAI-compatible provider. Tests and builds must pass before the final local commit.

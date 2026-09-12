@@ -107,7 +107,7 @@ The computer-use priority is API, structured connector, browser DOM, accessibili
 
 ## Desktop experience
 
-The shell uses left navigation, a center workspace, a top context bar, and a collapsible right Agent Dock. English is the only fully enabled locale. Every formal UI string is referenced through locale keys. `zh-CN` exists structurally with a small common vocabulary and falls back to English.
+The shell uses left navigation, a center workspace, a top context bar, and a collapsible right Agent Dock. English remains the default locale, and English plus Simplified Chinese are fully selectable in Settings. Every formal UI string is referenced through locale keys, and both dictionaries maintain identical key coverage.
 
 The final approved brand direction uses the black-and-yellow geometric mark from `Conor右1.0.jpg` and derives the application surfaces from its purple background. Deep purple remains the readable workspace base, black anchors navigation and Agent chrome, and yellow is reserved for selected states, approvals, primary actions, and high-value signal accents.
 

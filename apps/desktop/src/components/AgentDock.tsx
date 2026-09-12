@@ -1,7 +1,8 @@
 import { Bot, ChevronLeft, ChevronRight, FileText, Send, ShieldCheck, Sparkles, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { AgentMessageDto, AgentReportDto, ApprovalRequestDto, ExecutionRecordDto, SignalDto, TradeProposalDto } from "@ordinconn/contracts";
 import type { Translator } from "../i18n";
+import { shouldSendOnKeyDown } from "./agentInput";
 
 interface AgentDockProps {
   collapsed: boolean;
@@ -24,12 +25,28 @@ interface AgentDockProps {
 export function AgentDock(props: AgentDockProps) {
   const { collapsed, signal, messages, busy, report, proposal, approval, execution, onToggle, t } = props;
   const [question, setQuestion] = useState("");
+  const composingRef = useRef(false);
+  const submittingRef = useRef(false);
+  const submitQuestion = async () => {
+    const value = question.trim();
+    if (!value || busy || submittingRef.current) return;
+    submittingRef.current = true;
+    setQuestion("");
+    try {
+      await props.onSend(value);
+    } finally {
+      submittingRef.current = false;
+    }
+  };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const value = question.trim();
-    if (!value || busy) return;
-    setQuestion("");
-    await props.onSend(value);
+    await submitQuestion();
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    const isComposing = composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229;
+    if (!shouldSendOnKeyDown({ key: event.key, shiftKey: event.shiftKey, isComposing, busy: busy || submittingRef.current, value: question })) return;
+    event.preventDefault();
+    void submitQuestion();
   };
   if (collapsed) {
     return <button className="dock-expand" onClick={onToggle} aria-label={t("agent.expand")} type="button"><ChevronLeft size={18} /><Bot size={18} /></button>;
@@ -73,7 +90,16 @@ export function AgentDock(props: AgentDockProps) {
         {approval && !execution ? <button className="gold-button" onClick={props.onApprove} type="button">{t("common.approve")}</button> : null}
       </div>
       <form className="agent-input" onSubmit={submit}>
-        <textarea value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={t("agent.placeholder")} disabled={!signal || busy} rows={2} />
+        <textarea
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          onCompositionStart={() => { composingRef.current = true; }}
+          onCompositionEnd={() => { composingRef.current = false; }}
+          onKeyDown={handleKeyDown}
+          placeholder={t("agent.placeholder")}
+          disabled={!signal || busy}
+          rows={2}
+        />
         <button type="submit" disabled={!signal || busy || !question.trim()} aria-label={t("agent.send")}><Send size={16} /></button>
       </form>
     </div>

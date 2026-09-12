@@ -3,6 +3,11 @@ import { zhCN } from "./zh-CN";
 
 export type Locale = "en" | "zh-CN";
 export const availableLocales: Locale[] = ["en", "zh-CN"];
+export const localeStorageKey = "ordinconn.locale.v1";
+
+export function resolveLocale(value: string | null | undefined): Locale {
+  return value === "zh-CN" ? "zh-CN" : "en";
+}
 
 const dictionaries: Record<Locale, Record<string, string>> = { en, "zh-CN": zhCN };
 

@@ -36,4 +36,4 @@ The Signal Engine computes evidence quality from evidence freshness, source reli
 
 ## UI and localization
 
-React uses English locale keys for every formal UI label, with an `en` dictionary as the complete source and a partial `zh-CN` dictionary that falls back to English without component changes. The visual system derives its purple background, black structure, and yellow action accent from the user-provided OrdinConn mark. The exact source image is retained at `apps/desktop/src/assets/ordinconn-logo-source.jpg`, and the desktop icon is a PNG conversion of the same asset.
+React uses locale keys for every formal UI label. The `en` and `zh-CN` dictionaries have identical key coverage; English is the default, invalid stored preferences fail back to English, and Settings can switch languages immediately without component or runtime changes. The visual system derives its purple background, black structure, and yellow action accent from the user-provided OrdinConn mark. The exact source image is retained at `apps/desktop/src/assets/ordinconn-logo-source.jpg`, and the desktop icon is a PNG conversion of the same asset.

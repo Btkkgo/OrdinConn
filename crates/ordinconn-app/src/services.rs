@@ -1,6 +1,7 @@
 use agent_runtime::{AgentRuntime, PageContext, build_contextual_request};
 use approval_engine::{ApprovalEngine, ApprovalError, ApprovalRequest};
 use chrono::{Duration, Utc};
+use collector_runtime::{BinanceFuturesWebSocket, CollectorScheduler};
 use connector_runtime::{ConnectorDescriptor, MockConnectorSet};
 use evidence_core::Evidence;
 use execution_core::{
@@ -20,6 +21,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
 };
+use strategy_core::RollingHistoryEngine;
 use thiserror::Error;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -276,8 +278,12 @@ pub struct AppRuntime {
     agent_runtime: AgentRuntime,
     approval_engine: ApprovalEngine,
     execution_guard: Mutex<()>,
-    event_bus: RuntimeEventBus,
+    pub(crate) event_bus: RuntimeEventBus,
     accepting_tasks: AtomicBool,
+    pub(crate) scheduler: Mutex<Option<Arc<CollectorScheduler>>>,
+    pub(crate) futures_stream: Mutex<Option<Arc<BinanceFuturesWebSocket>>>,
+    pub(crate) history: Mutex<RollingHistoryEngine>,
+    pub(crate) continuous_tasks: Mutex<Vec<tokio::task::JoinHandle<()>>>,
 }
 
 impl AppRuntime {
@@ -291,9 +297,18 @@ impl AppRuntime {
             execution_guard: Mutex::new(()),
             event_bus: RuntimeEventBus::default(),
             accepting_tasks: AtomicBool::new(true),
+            scheduler: Mutex::new(None),
+            futures_stream: Mutex::new(None),
+            history: Mutex::new(RollingHistoryEngine::new(
+                4_096,
+                chrono::Duration::seconds(5),
+            )),
+            continuous_tasks: Mutex::new(vec![]),
         });
         runtime.recover_interrupted_tasks().await?;
         runtime.initialize_core_intelligence_catalogs().await?;
+        let buckets = runtime.load_metric_buckets(20_000).await?;
+        runtime.history.lock().await.restore_buckets(&buckets);
         Ok(runtime)
     }
 
@@ -307,6 +322,18 @@ impl AppRuntime {
 
     pub async fn shutdown(&self) -> Result<(), AppError> {
         self.accepting_tasks.store(false, Ordering::Release);
+        if let Some(scheduler) = self.scheduler.lock().await.take() {
+            scheduler.shutdown().await;
+            self.persist_scheduler_state(&scheduler.snapshot().await)
+                .await?;
+        }
+        if let Some(stream) = self.futures_stream.lock().await.take() {
+            stream.shutdown().await;
+        }
+        for handle in self.continuous_tasks.lock().await.drain(..) {
+            let _ = handle.await;
+        }
+        self.flush_history_buckets().await?;
         self.agent_runtime.cancel_all().await;
         let mut transaction = self.pool.begin().await?;
         let rows = sqlx::query(
@@ -369,18 +396,18 @@ impl AppRuntime {
         }
         let mut emitted = Vec::new();
         for signal in &output.signals {
-            sqlx::query("INSERT INTO signal_candidates (id,market,category,asset,title,summary,status,created_at) VALUES (?,?,?,?,?,?,?,?)")
+            sqlx::query("INSERT INTO signal_candidates (id,market,category,asset,title,summary,status,created_at,data_origin) VALUES (?,?,?,?,?,?,?,?,?)")
                 .bind(&signal.candidate_id).bind(signal.market()).bind(signal.category.as_str())
                 .bind(&signal.asset.symbol).bind(&signal.title).bind(&signal.summary)
-                .bind("published").bind(signal.created_at.to_rfc3339())
+                .bind("published").bind(signal.created_at.to_rfc3339()).bind("MOCK")
                 .execute(&mut *transaction).await?;
-            sqlx::query("INSERT INTO signals (id,candidate_id,market,category,asset,title,summary,direction,confidence,urgency,time_horizon,evidence_quality,agent_id,model_id,status,created_at,updated_at,domain_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+            sqlx::query("INSERT INTO signals (id,candidate_id,market,category,asset,title,summary,direction,confidence,urgency,time_horizon,evidence_quality,agent_id,model_id,status,created_at,updated_at,domain_json,data_origin,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
                 .bind(&signal.id).bind(&signal.candidate_id).bind(signal.market()).bind(signal.category.as_str())
                 .bind(&signal.asset.symbol).bind(&signal.title).bind(&signal.summary).bind(enum_json(&signal.direction))
                 .bind(signal.confidence).bind(signal.urgency).bind(&signal.time_horizon).bind(signal.evidence_quality)
                 .bind(&signal.agent_id).bind(&signal.model_id).bind(enum_json(&signal.status))
                 .bind(signal.created_at.to_rfc3339()).bind(signal.updated_at.to_rfc3339())
-                .bind(serde_json::to_string(signal)?).execute(&mut *transaction).await?;
+                .bind(serde_json::to_string(signal)?).bind("MOCK").bind(signal.published_at.map(|value|value.to_rfc3339())).execute(&mut *transaction).await?;
             for link in &signal.evidence {
                 sqlx::query(
                     "INSERT INTO signal_evidence (signal_id,evidence_id,relation) VALUES (?,?,?)",
@@ -1015,12 +1042,12 @@ pub(crate) async fn insert_evidence(
     transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     item: &Evidence,
 ) -> Result<(), AppError> {
-    sqlx::query("INSERT INTO evidence (id,source,source_type,market,asset,title,content,raw_reference,captured_at,freshness,reliability,factual_level,confidence,metadata_json,domain_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+    sqlx::query("INSERT INTO evidence (id,source,source_type,market,asset,title,content,raw_reference,captured_at,freshness,reliability,factual_level,confidence,metadata_json,domain_json,data_origin) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
         .bind(&item.id).bind(&item.source).bind(enum_json(&item.source_type)).bind(item.asset.market.as_str())
         .bind(&item.asset.symbol).bind(&item.title).bind(&item.content).bind(&item.raw_reference)
         .bind(item.captured_at.to_rfc3339()).bind(item.freshness).bind(item.reliability)
         .bind(enum_json(&item.factual_level)).bind(item.confidence).bind(serde_json::to_string(&item.metadata)?)
-        .bind(serde_json::to_string(item)?).execute(&mut **transaction).await?;
+        .bind(serde_json::to_string(item)?).bind(enum_json(&item.data_origin)).execute(&mut **transaction).await?;
     Ok(())
 }
 

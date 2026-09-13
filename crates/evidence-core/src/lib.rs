@@ -29,6 +29,67 @@ pub enum ClusterRelation {
     Original,
     Syndication,
     Independent,
+    Contradicting,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DataOrigin {
+    Real,
+    Mock,
+    #[default]
+    Unknown,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EvidenceFingerprint {
+    pub source_id: String,
+    pub canonical_url: Option<String>,
+    pub original_url: Option<String>,
+    pub content: String,
+}
+
+pub fn classify_cluster_relation(
+    original: &EvidenceFingerprint,
+    candidate: &EvidenceFingerprint,
+    contradicting: bool,
+) -> ClusterRelation {
+    if contradicting {
+        return ClusterRelation::Contradicting;
+    }
+    let shared_url = candidate.canonical_url.as_ref().is_some_and(|url| {
+        original.canonical_url.as_ref() == Some(url) || original.original_url.as_ref() == Some(url)
+    }) || candidate.original_url.as_ref().is_some_and(|url| {
+        original.canonical_url.as_ref() == Some(url) || original.original_url.as_ref() == Some(url)
+    });
+    if candidate.source_id == original.source_id
+        || shared_url
+        || content_similarity(&original.content, &candidate.content) >= 0.8
+    {
+        ClusterRelation::Syndication
+    } else {
+        ClusterRelation::Independent
+    }
+}
+
+fn content_similarity(left: &str, right: &str) -> f64 {
+    let tokens = |value: &str| {
+        value
+            .to_lowercase()
+            .split(|character: char| !character.is_alphanumeric())
+            .filter(|token| token.len() > 2)
+            .map(str::to_owned)
+            .collect::<std::collections::HashSet<_>>()
+    };
+    let left = tokens(left);
+    let right = tokens(right);
+    let union = left.union(&right).count();
+    if union == 0 {
+        0.0
+    } else {
+        left.intersection(&right).count() as f64 / union as f64
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -202,6 +263,8 @@ pub struct Evidence {
     pub factual_level: FactualLevel,
     pub confidence: f64,
     pub metadata: Value,
+    #[serde(default)]
+    pub data_origin: DataOrigin,
 }
 
 impl Evidence {
@@ -231,6 +294,7 @@ impl Evidence {
             factual_level,
             confidence: confidence.clamp(0.0, 1.0),
             metadata: Value::Object(Default::default()),
+            data_origin: DataOrigin::Unknown,
         }
     }
 
@@ -313,5 +377,39 @@ mod tests {
         };
         assert_eq!(policy.score(now - chrono::Duration::seconds(30), now), 1.0);
         assert_eq!(policy.score(now - chrono::Duration::seconds(121), now), 0.0);
+    }
+
+    #[test]
+    fn canonical_url_and_similar_content_are_syndication_not_confirmation() {
+        let original = EvidenceFingerprint {
+            source_id: "official".into(),
+            canonical_url: Some("https://source.test/a".into()),
+            original_url: None,
+            content: "Federal Reserve policy statement holds rates steady today".into(),
+        };
+        let linked = EvidenceFingerprint {
+            source_id: "wire-copy".into(),
+            canonical_url: Some("https://copy.test/a".into()),
+            original_url: Some("https://source.test/a".into()),
+            content: "Federal Reserve policy statement holds rates steady today".into(),
+        };
+        assert_eq!(
+            classify_cluster_relation(&original, &linked, false),
+            ClusterRelation::Syndication
+        );
+        let independent = EvidenceFingerprint {
+            source_id: "independent".into(),
+            canonical_url: Some("https://independent.test/b".into()),
+            original_url: None,
+            content: "Bond yields moved after the central bank announcement".into(),
+        };
+        assert_eq!(
+            classify_cluster_relation(&original, &independent, false),
+            ClusterRelation::Independent
+        );
+        assert_eq!(
+            classify_cluster_relation(&original, &independent, true),
+            ClusterRelation::Contradicting
+        );
     }
 }

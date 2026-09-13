@@ -42,6 +42,11 @@ async fn migrations_create_required_tables_and_sqlite_safety_pragmas() {
         "supply_chain_relations",
         "wallet_watchlist",
         "website_watches",
+        "scheduler_state",
+        "market_metric_buckets",
+        "evidence_cluster_members",
+        "demand_timelines",
+        "intelligence_diagnostics",
     ] {
         assert!(tables.contains(&required.to_owned()), "missing {required}");
     }
@@ -72,8 +77,8 @@ async fn migrations_create_required_tables_and_sqlite_safety_pragmas() {
         .fetch_one(runtime.pool())
         .await
         .unwrap();
-    assert_eq!(source_count, 5);
-    assert_eq!(strategy_count, 15);
+    assert_eq!(source_count, 6);
+    assert_eq!(strategy_count, 21);
 }
 
 #[tokio::test]

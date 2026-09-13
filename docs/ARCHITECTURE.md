@@ -36,11 +36,11 @@ Startup follows database initialization, migrations, runtime initialization, con
 
 The Signal Engine computes evidence quality from evidence freshness, source reliability, factual level, and evidence confidence. Model inference cannot satisfy the publication gate. Contradicting evidence stays attached, reduces quality and confidence, and moves the signal to watch when appropriate. The formula is intentionally simple and replaceable in V0.1.
 
-Evidence clusters distinguish original, syndicated, and independent records. Only distinct original/independent sources add confirmation weight. The application persists every collection boundary in relational tables; completed Signals retain strategy ID, version, parameters, reason codes, and observation IDs through stable domain serialization.
+Evidence clusters persist original, syndicated, independent, and contradicting members. Only distinct original/independent sources add confirmation weight. The application persists every collection boundary in relational tables; completed Signals retain data origin, strategy ID/version/parameters, reason codes, observation/source/Evidence IDs, baseline window, trigger metrics, input snapshot, and publication time.
 
 ## Core intelligence lifecycle
 
-Catalog initialization registers validated sources and immutable strategy versions during application startup. The Tauri host starts public collection as a background task after event forwarding is ready, so UI initialization is not blocked. Each collector run records success/failure and source health. Schema drift and missing rolling history produce rejected strategy runs and insufficient Candidates; no mock fallback is used on a real path.
+Catalog initialization registers validated sources and immutable strategy versions during application startup. The Tauri host starts the application-owned `CollectorScheduler` and Binance Futures WebSocket after event forwarding is ready. Per-source tasks are single-flight, globally bounded, pausable, and gracefully awaited on shutdown; failure cadence uses capped exponential backoff with deterministic jitter. Scheduler state and aggregate history buckets are restored after restart. Each collector run records success/failure and source health. Schema drift and missing rolling history produce not-ready Strategy Runs and no Candidate; no mock fallback is used on a real path.
 
 ## UI and localization
 

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use evidence_core::{Evidence, EvidenceRelation, FactualLevel, SourceType};
+use evidence_core::{DataOrigin, Evidence, EvidenceRelation, FactualLevel, SourceType};
 use market_core::{AssetRef, Market};
 use serde::{Deserialize, Serialize};
 use signal_core::{
@@ -40,7 +40,7 @@ impl MockConnectorSet {
         let mut signals = Vec::with_capacity(definitions.len());
 
         for definition in definitions {
-            let item = Evidence::new(
+            let mut item = Evidence::new(
                 definition.connector,
                 definition.source_type,
                 AssetRef::new(definition.market, definition.asset),
@@ -51,6 +51,7 @@ impl MockConnectorSet {
                 definition.confidence,
                 Utc::now(),
             );
+            item.data_origin = DataOrigin::Mock;
             let candidate = SignalCandidate::new(
                 AssetRef::new(definition.market, definition.asset),
                 definition.category,
@@ -61,7 +62,8 @@ impl MockConnectorSet {
                     evidence: item.clone(),
                     relation: EvidenceRelation::Primary,
                 }],
-            );
+            )
+            .with_data_origin(DataOrigin::Mock);
             evidence.push(item);
             signals.push(publisher.publish(candidate)?);
         }

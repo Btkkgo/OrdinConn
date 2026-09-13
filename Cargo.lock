@@ -2793,6 +2793,7 @@ version = "0.1.0"
 dependencies = [
  "agent-runtime",
  "approval-engine",
+ "async-trait",
  "chrono",
  "collector-runtime",
  "connector-runtime",

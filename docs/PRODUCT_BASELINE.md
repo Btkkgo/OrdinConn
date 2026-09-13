@@ -54,7 +54,9 @@ V0.1 uses a Tauri single-process embedded Rust runtime. React communicates only 
 
 SQLite relational tables store current state. `runtime_events` stores append-only audit history. Live deltas use an in-memory event bus. Startup marks unsafe unfinished work interrupted and never replays side-effecting tools automatically.
 
-Public data follows `Source -> RawRecord -> NormalizedObservation -> Dedup -> Evidence -> Strategy -> SignalCandidate -> Evidence Gate -> Published Signal -> Agent Analysis`. REST, WebSocket, RSS/Atom, and HTML collectors use explicit public-data policies, health, schema-drift detection, rate budgets, retention, and deterministic source reliability. Login, paywall, CAPTCHA, cookie-gated, and private access are prohibited.
+Public data follows `Continuous Collection -> Rolling History -> Baseline -> Ready Strategy -> SignalCandidate -> Evidence Gate -> Published Signal -> Agent Analysis`. The embedded runtime owns per-source scheduling, bounded history, restart-restored aggregate buckets, and long-lived WebSocket reconnect/resubscribe behavior. Binance Spot and USDⓈ-M perpetuals use separate canonical instruments. REST, WebSocket, RSS/Atom, and HTML collectors use explicit public-data policies, health, schema-drift detection, rate budgets, retention, and deterministic source reliability. Login, paywall, CAPTCHA, cookie-gated, and private access are prohibited.
+
+Strategy readiness is distinct from Evidence validation. `WARMING_UP`, `MISSING_INPUT`, `STALE_INPUT`, `SCHEMA_ERROR`, and `INSUFFICIENT_HISTORY` produce an auditable Strategy Run but no ordinary Candidate. A real Published Signal may contain only real Evidence; zero real Signals is valid when no ready threshold is crossed.
 
 ## Approval and execution policy
 

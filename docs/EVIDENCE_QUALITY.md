@@ -8,5 +8,6 @@ The independent bonus is `0.05` per distinct independent source, capped at three
 
 Reliability tiers have deterministic defaults: Tier 1 official `0.95`, Tier 2 primary `0.85`, Tier 3 secondary `0.65`, Tier 4 unverified `0.35`. Freshness declines linearly between each policy's fresh and stale boundaries.
 
-Clusters distinguish original, syndication, and independent records. Syndication never counts as an independent confirmation. Contradictions remain attached and visible. `MODEL_INFERENCE` cannot qualify as the sole publication Evidence.
+Clusters persist original, syndication, independent, and contradicting records. Syndication never counts as an independent confirmation; confirmation counts distinct canonical sources only. Summaries expose source count, independent confirmations, highest reliability, latest capture time, and contradictions. `MODEL_INFERENCE` cannot qualify as the sole publication Evidence.
 
+Every Evidence item and Candidate declares `real`, `mock`, or `unknown` origin. A `real` Candidate fails closed if any linked Evidence is not `real`, preventing demo fixtures from entering a live Signal.

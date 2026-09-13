@@ -9,6 +9,11 @@ use signal_core::{
 use std::collections::HashMap;
 use thiserror::Error;
 
+pub mod rolling;
+pub use rolling::*;
+pub mod derivatives;
+pub use derivatives::*;
+
 pub const ROLLING_WINDOWS: &[&str] = &["1m", "5m", "15m", "1h", "4h", "24h"];
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -43,6 +48,20 @@ pub struct StrategyResult {
     pub observation_ids: Vec<String>,
     pub parameter_snapshot: Value,
     pub rejected_reason: Option<String>,
+    #[serde(default)]
+    pub readiness: Readiness,
+    #[serde(default)]
+    pub instrument_id: Option<String>,
+    #[serde(default)]
+    pub baseline_window: Option<String>,
+    #[serde(default)]
+    pub input_snapshot: Value,
+    #[serde(default)]
+    pub trigger_metrics: HashMap<String, f64>,
+    #[serde(default)]
+    pub started_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub completed_at: Option<DateTime<Utc>>,
 }
 
 impl StrategyResult {
@@ -54,7 +73,11 @@ impl StrategyResult {
         summary: impl Into<String>,
         evidence: Vec<EvidenceLink>,
     ) -> Option<SignalCandidate> {
-        self.triggered.then(|| {
+        (self.triggered && self.readiness == Readiness::Ready).then(|| {
+            let evidence_ids = evidence
+                .iter()
+                .map(|link| link.evidence.id.clone())
+                .collect();
             SignalCandidate::new(asset, category, title, summary, self.direction, evidence)
                 .with_strategy(StrategyProvenance {
                     strategy_id: self.strategy_id.clone(),
@@ -62,6 +85,11 @@ impl StrategyResult {
                     parameter_snapshot: self.parameter_snapshot.clone(),
                     reason_codes: self.reason_codes.clone(),
                     observation_ids: self.observation_ids.clone(),
+                    baseline_window: self.baseline_window.clone(),
+                    trigger_metrics: self.trigger_metrics.clone(),
+                    source_ids: vec![],
+                    evidence_ids,
+                    input_snapshot: self.input_snapshot.clone(),
                 })
         })
     }
@@ -241,6 +269,7 @@ impl StrategyEngine {
             result.score = result.score.min(0.35);
             result.reason_codes.push("stale_input".into());
             result.rejected_reason = Some("stale_observation".into());
+            result.readiness = Readiness::StaleInput;
         }
         Ok(result)
     }
@@ -261,6 +290,13 @@ fn base_result(
         observation_ids: observations.iter().map(|o| o.id.clone()).collect(),
         parameter_snapshot: definition.parameters.clone(),
         rejected_reason: None,
+        readiness: Readiness::Ready,
+        instrument_id: observations.first().map(|item| item.asset.symbol.clone()),
+        baseline_window: None,
+        input_snapshot: Value::Null,
+        trigger_metrics: HashMap::new(),
+        started_at: Some(Utc::now()),
+        completed_at: Some(Utc::now()),
     }
 }
 fn first_metric(observations: &[&NormalizedObservation], key: &str) -> Result<f64, StrategyError> {
@@ -574,16 +610,24 @@ impl InstrumentRegistry {
     pub fn with_defaults() -> Self {
         let mut r = Self::default();
         for base in ["BTC", "ETH", "SOL"] {
-            let asset = AssetRef::new(Market::Crypto, format!("{base}-USDT"));
+            let asset = AssetRef::new(Market::Crypto, format!("{base}-USDT-SPOT"));
             for alias in [
                 format!("{base}USDT"),
                 format!("{base}/USDT"),
                 format!("{base}-USDT"),
+                format!("{base}-USDT-SPOT"),
             ] {
                 r.aliases.insert(alias, asset.clone());
             }
         }
         r
+    }
+    pub fn resolve_perpetual(&self, value: &str) -> Option<AssetRef> {
+        let compact = value.to_ascii_uppercase().replace(['-', '/'], "");
+        ["BTC", "ETH", "SOL"]
+            .into_iter()
+            .find(|base| compact == format!("{base}USDT") || compact == format!("{base}USDTPERP"))
+            .map(|base| AssetRef::new(Market::Crypto, format!("{base}-USDT-PERP")))
     }
     pub fn resolve(&self, value: &str) -> Option<&AssetRef> {
         self.aliases.get(&value.to_ascii_uppercase())
@@ -625,6 +669,41 @@ pub struct SupplyChainRelation {
     pub evidence_ids: Vec<String>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransmissionPathProposal {
+    pub event_class: String,
+    pub source_entity_id: String,
+    pub path: Vec<String>,
+    pub factual_level: TransmissionFactualLevel,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum TransmissionFactualLevel {
+    Inference,
+}
+
+pub fn fed_transmission_paths(event_class: &str) -> Vec<TransmissionPathProposal> {
+    if !matches!(event_class, "monetary_policy" | "inflation") {
+        return vec![];
+    }
+    [
+        vec!["rates", "usd"],
+        vec!["rates", "gold"],
+        vec!["rates", "equity"],
+        vec!["rates", "crypto"],
+    ]
+    .into_iter()
+    .map(|path| TransmissionPathProposal {
+        event_class: event_class.into(),
+        source_entity_id: "entity:federal-reserve".into(),
+        path: path.into_iter().map(str::to_owned).collect(),
+        factual_level: TransmissionFactualLevel::Inference,
+    })
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -657,6 +736,22 @@ mod tests {
         assert!(e.definitions().iter().all(|d| d.version == "1.0.0"
             && d.rolling_windows.len() == 6
             && !d.parameters.is_null()));
+    }
+
+    #[test]
+    fn fed_transmission_paths_are_never_promoted_to_fact() {
+        let paths = fed_transmission_paths("monetary_policy");
+        assert_eq!(paths.len(), 4);
+        assert!(
+            paths
+                .iter()
+                .all(|path| path.factual_level == TransmissionFactualLevel::Inference)
+        );
+        assert!(
+            paths
+                .iter()
+                .any(|path| path.path == vec!["rates", "crypto"])
+        );
     }
     #[test]
     fn traditional_price_volume_requires_both_thresholds() {
@@ -785,7 +880,14 @@ mod tests {
     #[test]
     fn aliases_are_canonical_and_bilingual() {
         let instruments = InstrumentRegistry::with_defaults();
-        assert_eq!(instruments.resolve("btc/usdt").unwrap().symbol, "BTC-USDT");
+        assert_eq!(
+            instruments.resolve("btc/usdt").unwrap().symbol,
+            "BTC-USDT-SPOT"
+        );
+        assert_eq!(
+            instruments.resolve_perpetual("BTCUSDT").unwrap().symbol,
+            "BTC-USDT-PERP"
+        );
         let entities = EntityRegistry::with_defaults();
         assert_eq!(entities.resolve("英伟达"), Some("entity:nvidia"));
     }

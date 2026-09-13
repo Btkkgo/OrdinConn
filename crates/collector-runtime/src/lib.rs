@@ -17,6 +17,11 @@ use tokio::sync::{Mutex, watch};
 use tokio_tungstenite::connect_async;
 use url::Url;
 
+pub mod scheduler;
+pub use scheduler::*;
+pub mod binance_futures;
+pub use binance_futures::*;
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CollectorKind {
@@ -847,7 +852,7 @@ pub fn normalize_binance_24h(
             let price = required_number(&value, "lastPrice")?;
             let volume = required_number(&value, "volume")?;
             let quote_volume = required_number(&value, "quoteVolume")?;
-            let canonical = canonical_crypto_pair(symbol)?;
+            let canonical = canonical_spot_instrument(symbol)?;
             Ok(NormalizedObservation {
                 id: new_id("observation"),
                 raw_record_id: record.id.clone(),
@@ -1000,6 +1005,7 @@ pub fn builtin_sources() -> Vec<SourceDefinition> {
     };
     vec![
         SourceDefinition { id: "binance-spot-24h".into(), name: "Binance Public Spot 24h".into(), endpoint: "https://data-api.binance.vision/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22ETHUSDT%22,%22SOLUSDT%22%5D".into(), collector_kind: CollectorKind::Rest, classification: SourceClass::Exchange, capabilities: vec!["price".into(), "volume".into()], reliability_tier: ReliabilityTier::Tier1Official, poll: poll(60), rate_limit: rate.clone(), auth: AuthRequirement::None, retention: retention.clone(), enabled: true },
+        SourceDefinition { id: "binance-usdm-futures".into(), name: "Binance USD-M Futures Public Market Data".into(), endpoint: "https://fapi.binance.com".into(), collector_kind: CollectorKind::Rest, classification: SourceClass::Exchange, capabilities: vec!["mark_price".into(), "funding_rate".into(), "open_interest".into(), "agg_trade".into(), "best_bid_ask".into(), "limited_depth".into(), "ticker_24h".into(), "public_only".into()], reliability_tier: ReliabilityTier::Tier1Official, poll: poll(60), rate_limit: rate.clone(), auth: AuthRequirement::None, retention: retention.clone(), enabled: true },
         SourceDefinition { id: "binance-btc-trade-stream".into(), name: "Binance Public BTC Trade Stream".into(), endpoint: "wss://data-stream.binance.vision/ws/btcusdt@trade".into(), collector_kind: CollectorKind::WebSocket, classification: SourceClass::Exchange, capabilities: vec!["streaming".into(), "trades".into()], reliability_tier: ReliabilityTier::Tier1Official, poll: poll(1), rate_limit: rate.clone(), auth: AuthRequirement::None, retention: retention.clone(), enabled: true },
         SourceDefinition { id: "federal-reserve-press".into(), name: "Federal Reserve Press Releases".into(), endpoint: "https://www.federalreserve.gov/feeds/press_all.xml".into(), collector_kind: CollectorKind::Rss, classification: SourceClass::CentralBank, capabilities: vec!["official_events".into()], reliability_tier: ReliabilityTier::Tier1Official, poll: poll(900), rate_limit: rate.clone(), auth: AuthRequirement::None, retention: retention.clone(), enabled: true },
         SourceDefinition { id: "nvidia-newsroom".into(), name: "NVIDIA Newsroom".into(), endpoint: "https://nvidianews.nvidia.com/releases.xml".into(), collector_kind: CollectorKind::Rss, classification: SourceClass::Company, capabilities: vec!["company_events".into(), "demand_observations".into()], reliability_tier: ReliabilityTier::Tier1Official, poll: poll(1800), rate_limit: rate.clone(), auth: AuthRequirement::None, retention: retention.clone(), enabled: true },
@@ -1164,7 +1170,7 @@ mod tests {
         )
         .unwrap();
         let obs = normalize_binance_24h(&raw).unwrap();
-        assert_eq!(obs[0].asset.symbol, "BTC-USDT");
+        assert_eq!(obs[0].asset.symbol, "BTC-USDT-SPOT");
         let drift = RawRecord::new(
             "binance",
             r#"{"symbol":"BTCUSDT"}"#,
@@ -1200,7 +1206,7 @@ mod tests {
     #[test]
     fn builtin_sources_are_public_and_explicit() {
         let sources = builtin_sources();
-        assert_eq!(sources.len(), 5);
+        assert_eq!(sources.len(), 6);
         assert!(
             sources
                 .iter()

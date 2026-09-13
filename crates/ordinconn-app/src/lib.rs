@@ -1,3 +1,4 @@
+pub mod continuous_intelligence;
 pub mod core_intelligence;
 pub mod db;
 pub mod events;

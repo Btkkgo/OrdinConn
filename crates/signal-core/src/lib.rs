@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
-use evidence_core::{Evidence, EvidenceRelation};
+use evidence_core::{DataOrigin, Evidence, EvidenceRelation};
 use market_core::{AssetRef, new_id};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -69,6 +70,8 @@ pub struct SignalCandidate {
     pub status: CandidateStatus,
     #[serde(default)]
     pub strategy: Option<StrategyProvenance>,
+    #[serde(default)]
+    pub data_origin: DataOrigin,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -79,6 +82,16 @@ pub struct StrategyProvenance {
     pub parameter_snapshot: Value,
     pub reason_codes: Vec<String>,
     pub observation_ids: Vec<String>,
+    #[serde(default)]
+    pub baseline_window: Option<String>,
+    #[serde(default)]
+    pub trigger_metrics: HashMap<String, f64>,
+    #[serde(default)]
+    pub source_ids: Vec<String>,
+    #[serde(default)]
+    pub evidence_ids: Vec<String>,
+    #[serde(default)]
+    pub input_snapshot: Value,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -108,11 +121,17 @@ impl SignalCandidate {
             evidence,
             status: CandidateStatus::PendingValidation,
             strategy: None,
+            data_origin: DataOrigin::Unknown,
         }
     }
 
     pub fn with_strategy(mut self, strategy: StrategyProvenance) -> Self {
         self.strategy = Some(strategy);
+        self
+    }
+
+    pub fn with_data_origin(mut self, data_origin: DataOrigin) -> Self {
+        self.data_origin = data_origin;
         self
     }
 }
@@ -142,6 +161,10 @@ pub struct Signal {
     pub status: SignalStatus,
     #[serde(default)]
     pub strategy: Option<StrategyProvenance>,
+    #[serde(default)]
+    pub data_origin: DataOrigin,
+    #[serde(default)]
+    pub published_at: Option<DateTime<Utc>>,
 }
 
 impl Signal {
@@ -161,6 +184,8 @@ impl Signal {
 pub enum PublishError {
     #[error("candidate does not contain qualifying source evidence")]
     InsufficientEvidence,
+    #[error("real candidate contains non-real evidence")]
+    MixedDataOrigin,
 }
 
 #[derive(Default)]
@@ -176,6 +201,14 @@ impl SignalPublisher {
         if qualifying == 0 {
             candidate.status = CandidateStatus::InsufficientEvidence;
             return Err(PublishError::InsufficientEvidence);
+        }
+        if candidate.data_origin == DataOrigin::Real
+            && candidate
+                .evidence
+                .iter()
+                .any(|link| link.evidence.data_origin != DataOrigin::Real)
+        {
+            return Err(PublishError::MixedDataOrigin);
         }
 
         let contradiction_count = candidate
@@ -220,6 +253,8 @@ impl SignalPublisher {
                 SignalStatus::New
             },
             strategy: candidate.strategy,
+            data_origin: candidate.data_origin,
+            published_at: Some(now),
         })
     }
 }
@@ -306,11 +341,25 @@ mod tests {
             parameter_snapshot: serde_json::json!({"zScore": 2.0}),
             reason_codes: vec!["volume_zscore_high".into()],
             observation_ids: vec!["obs-1".into()],
+            baseline_window: None,
+            trigger_metrics: HashMap::new(),
+            source_ids: vec!["fixture".into()],
+            evidence_ids: vec![],
+            input_snapshot: Value::Null,
         });
         let signal = SignalPublisher.publish(candidate).unwrap();
         assert_eq!(
             signal.strategy.unwrap().strategy_id,
             "crypto.c.volume_expansion"
         );
+    }
+
+    #[test]
+    fn real_signal_rejects_mock_evidence() {
+        let mut link = evidence(SourceType::ExchangeApi, EvidenceRelation::Primary);
+        link.evidence.data_origin = evidence_core::DataOrigin::Mock;
+        let result = SignalPublisher
+            .publish(candidate(vec![link]).with_data_origin(evidence_core::DataOrigin::Real));
+        assert_eq!(result.unwrap_err(), PublishError::MixedDataOrigin);
     }
 }

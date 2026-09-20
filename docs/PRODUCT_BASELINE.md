@@ -16,7 +16,9 @@ The two markets are Traditional Finance and Crypto. The shared workflow is:
 
 V0.1 contains the desktop shell, Agent Runtime, Model Gateway, Tool Runtime, Approval Engine, Evidence and Signal domains, Traditional Finance and Crypto experiences, contextual Agent Dock, SQLite persistence, mock connectors, public-data Collector Runtime, Source Registry, deterministic Strategy Engine, at least 18 demo signals, Agent Reports, Trade Proposals, Approval Capability, and Paper Execution.
 
-It does not contain real brokerage or exchange execution, real-money trading, deposits, withdrawals, transfers, wallet signing, private-key or seed-phrase access, subscriptions, mobile applications, a cloud platform, high-frequency background automation, or advanced computer vision.
+The Mobile Intelligence M0/M1 extension adds an observe-only Android Emulator collection surface, semantic UI snapshots, sanitized Mobile Observations, and the Home/Warehouse/Settings shell. It does not add mobile action execution. Mobile data remains subject to the same Source Registry, Evidence, Strategy, and Signal gates as every other source.
+
+It does not contain real brokerage or exchange execution, real-money trading, deposits, withdrawals, transfers, wallet signing, private-key or seed-phrase access, subscriptions, a cloud platform, high-frequency background automation, advanced computer vision, or automatic mobile clicking, swiping, typing, login, posting, messaging, or ordering.
 
 ## Markets and ABC lanes
 
@@ -54,7 +56,7 @@ V0.1 uses a Tauri single-process embedded Rust runtime. React communicates only 
 
 SQLite relational tables store current state. `runtime_events` stores append-only audit history. Live deltas use an in-memory event bus. Startup marks unsafe unfinished work interrupted and never replays side-effecting tools automatically.
 
-Public data follows `Continuous Collection -> Rolling History -> Baseline -> Ready Strategy -> SignalCandidate -> Evidence Gate -> Published Signal -> Agent Analysis`. The embedded runtime owns per-source scheduling, bounded history, restart-restored aggregate buckets, and long-lived WebSocket reconnect/resubscribe behavior. Binance Spot and USDⓈ-M perpetuals use separate canonical instruments. REST, WebSocket, RSS/Atom, and HTML collectors use explicit public-data policies, health, schema-drift detection, rate budgets, retention, and deterministic source reliability. Login, paywall, CAPTCHA, cookie-gated, and private access are prohibited.
+Public data follows `Continuous Collection -> Rolling History -> Baseline -> Ready Strategy -> SignalCandidate -> Evidence Gate -> Published Signal -> Agent Analysis`. The embedded runtime owns per-source scheduling, bounded history, restart-restored aggregate buckets, and long-lived WebSocket reconnect/resubscribe behavior. Binance Spot and USDⓈ-M perpetuals use separate canonical instruments. REST, WebSocket, RSS/Atom, HTML, and allowlisted observe-only mobile collectors use explicit public-data policies, health, schema-drift detection, rate budgets, retention, and deterministic source reliability. Login, paywall, CAPTCHA, cookie-gated, private access, private messages, and sensitive-field capture are prohibited.
 
 Strategy readiness is distinct from Evidence validation. `WARMING_UP`, `MISSING_INPUT`, `STALE_INPUT`, `SCHEMA_ERROR`, and `INSUFFICIENT_HISTORY` produce an auditable Strategy Run but no ordinary Candidate. A real Published Signal may contain only real Evidence; zero real Signals is valid when no ready threshold is crossed.
 
@@ -68,7 +70,7 @@ Paper Execution is the only V0.1 execution adapter and it must pass through the 
 
 ## UI
 
-The desktop shell provides Overview, Traditional Finance, Crypto, Signals, Agent, Automations, Models, Data Sources, Approvals, and Settings. It uses left navigation, top context, center workspace, and a collapsible Agent Dock.
+The primary desktop shell provides Home, Warehouse, and Settings. Home integrates the Intelligence Feed, Mobile Live View, related Signals, and contextual data discussion. Existing market, signal, agent, automation, model, source, and approval capabilities remain available through those consolidated workspaces rather than separate primary navigation entries.
 
 The final visual direction is derived from the user-provided `Conor右1.0.jpg`: its black-and-yellow geometric pattern is the OrdinConn mark, its purple background defines the new interface family, deep-purple surfaces preserve financial readability, black anchors navigation and Agent chrome, and yellow is reserved for selection, signals, approvals, and primary actions. The system remains minimal, professional, and restrained; it avoids casino styling and excessive motion.
 

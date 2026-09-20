@@ -37,6 +37,7 @@ export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 export const EVENT_FAMILIES = [
   "agent",
   "model",
+  "mobile",
   "signal",
   "approval",
   "execution",
@@ -217,6 +218,194 @@ export interface AppSnapshotDto {
   providers: ModelProviderDto[];
   pendingApprovals: ApprovalRequestDto[];
   recentExecutions: ExecutionRecordDto[];
+}
+
+export const MOBILE_RUNTIME_STATUSES = [
+  "unavailable",
+  "disconnected",
+  "observing",
+  "paused",
+  "error",
+] as const;
+export type MobileRuntimeStatus = (typeof MOBILE_RUNTIME_STATUSES)[number];
+
+export const MOBILE_VERIFICATION_RESULTS = [
+  "VERIFIED",
+  "NO_CHANGE",
+  "UNEXPECTED_STATE",
+  "TARGET_MISSING",
+  "PERMISSION_REQUIRED",
+  "LOGIN_REQUIRED",
+  "CAPTCHA_BLOCKED",
+  "SENSITIVE_FIELD_BLOCKED",
+  "FINANCIAL_ACTION_BLOCKED",
+  "STALE_OBSERVATION",
+  "APP_CRASHED",
+  "DEVICE_OFFLINE",
+  "INTERRUPTED",
+] as const;
+export type MobileVerificationResult = (typeof MOBILE_VERIFICATION_RESULTS)[number];
+
+export interface MobileBoundsDto {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MobileDeviceSessionDto {
+  sessionId: string;
+  deviceId: string;
+  platform: "android" | "ios";
+  deviceType: "emulator" | "physical";
+  osVersion: string;
+  screenWidth: number;
+  screenHeight: number;
+  connectedAt: string;
+  currentApp?: string;
+  currentActivity?: string;
+  status: "connected" | "offline" | "blocked" | "ended";
+  lastObservationAt?: string;
+}
+
+export interface MobileElementDto {
+  ref: string;
+  text?: string;
+  role: string;
+  className: string;
+  contentDescription?: string;
+  bounds: MobileBoundsDto;
+  clickable: boolean;
+  scrollable: boolean;
+  enabled: boolean;
+  focused: boolean;
+  selected: boolean;
+  resourceId?: string;
+  extractionSource: "accessibility" | "ocr" | "vision" | "hybrid";
+  confidence: number;
+}
+
+export interface MobileUiSnapshotDto {
+  snapshotId: string;
+  sessionId: string;
+  packageName: string;
+  activity: string;
+  screenWidth: number;
+  screenHeight: number;
+  capturedAt: string;
+  elements: MobileElementDto[];
+}
+
+export interface MobileFrameDto {
+  frameId: string;
+  sessionId: string;
+  timestamp: string;
+  width: number;
+  height: number;
+  orientation: "portrait" | "landscape" | "unknown";
+  frameHash: string;
+  dataUrl: string;
+}
+
+export interface MobileObservationDto {
+  id: string;
+  taskId?: string;
+  deviceSessionId: string;
+  appId: string;
+  packageName: string;
+  activity: string;
+  screenState: string;
+  observedAt: string;
+  frameHash: string;
+  uiTreeHash: string;
+  sourceLocator: string;
+  visibleFacts: string[];
+  extractedEntities: string[];
+  author?: string;
+  publishedAt?: string;
+  extractionMethod: "accessibility" | "ocr" | "vision" | "hybrid";
+  extractionConfidence: number;
+  redactions: string[];
+  privacyClass: "public" | "user_allowed" | "sensitive";
+  verificationStatus: MobileVerificationResult;
+  evidenceStatus: "observation_only" | "validated" | "rejected";
+  metadata: Record<string, unknown>;
+}
+
+export interface IntelligenceItemDto {
+  id: string;
+  sourceMethod: "MOBILE" | "API" | "WEBSOCKET" | "RSS" | "HTML" | "WEB" | "DESKTOP";
+  sourceApp: string;
+  sourceAccount?: string;
+  title: string;
+  summary: string;
+  observedAt: string;
+  dataType: string;
+  evidenceStatus: "observation_only" | "validated" | "published" | "rejected";
+  evidenceQuality?: number;
+  confidence: number;
+  assets: string[];
+  favorite: boolean;
+  saved: boolean;
+  officialSource: boolean;
+  hasContradiction: boolean;
+  mobileObservationId?: string;
+  evidenceIds: string[];
+  relatedSignalIds: string[];
+  sourceLocator?: string;
+}
+
+export interface WarehouseEntryDto {
+  id: string;
+  itemId: string;
+  favorite: boolean;
+  saved: boolean;
+  tags: string[];
+  note?: string;
+  collection?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StrategyDefinitionDto {
+  id: string;
+  version: string;
+  market: string;
+  category: string;
+  enabled: boolean;
+  requiredInputs: string[];
+  readiness: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface MobileResearchBudgetDto {
+  maxDurationSeconds: number;
+  maxSteps: number;
+  maxScrolls: number;
+  maxPages: number;
+  maxObservations: number;
+  maxModelCalls: number;
+}
+
+export interface MobileRuntimeSettingsDto {
+  androidSdk?: string;
+  allowedApps: string[];
+  screenshotRetention: "memory_only";
+  researchBudget: MobileResearchBudgetDto;
+  textScale: 90 | 100 | 110 | 120;
+}
+
+export interface MobileWorkspaceDto {
+  runtimeStatus: MobileRuntimeStatus;
+  adbStatus: "ready" | "missing" | "offline" | "error";
+  session?: MobileDeviceSessionDto;
+  uiSnapshot?: MobileUiSnapshotDto;
+  frame?: MobileFrameDto;
+  observations: MobileObservationDto[];
+  feed: IntelligenceItemDto[];
+  warehouse: WarehouseEntryDto[];
+  strategies: StrategyDefinitionDto[];
+  settings: MobileRuntimeSettingsDto;
 }
 
 export function isSignalStatus(value: unknown): value is SignalStatus {

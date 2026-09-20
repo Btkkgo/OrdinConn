@@ -28,12 +28,18 @@ token_pattern = re.compile(
     r"sk-[A-Za-z0-9_-]{20,}|xox[bp]-[A-Za-z0-9-]{20,})"
 )
 bearer_pattern = re.compile(r"(?im)^\s*Authorization\s*:\s*Bearer\s+\S+")
-header_pattern = re.compile(r"(?im)^\s*(?:Cookie|Set-Cookie|Session)\s*:\s*\S+")
+header_pattern = re.compile(r"(?im)^\s*(?:Cookie|Set-Cookie)\s*:\s*\S+")
 assignment_pattern = re.compile(
-    r"(?im)^\s*(?:export\s+)?"
+    r"(?m)^\s*(?:export\s+)?"
     r"(?:API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|SECRET|PASSWORD|COOKIE|SESSION|"
     r"GITHUB_TOKEN|X_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY)"
     r"\s*[:=]\s*(?P<value>[^\r\n]+)"
+)
+structured_secret_pattern = re.compile(
+    r"(?im)^\s*[\"']?"
+    r"(?:api_key|access_token|refresh_token|secret|password|cookie|session|"
+    r"github_token|x_token|openai_api_key|anthropic_api_key|gemini_api_key)"
+    r"[\"']?\s*:\s*[\"'](?P<value>[^\"']+)[\"']"
 )
 mnemonic_pattern = re.compile(
     r"(?im)^\s*(?:MNEMONIC|SEED_PHRASE|RECOVERY_PHRASE)\s*[:=]\s*"
@@ -83,6 +89,8 @@ def meaningful_assignment(match: re.Match[str]) -> bool:
         return False
     if value.startswith("${") or value.startswith("<"):
         return False
+    if re.fullmatch(r"(?:Option<)?[A-Z][A-Za-z0-9_:<>]*(?:,|;)?", value):
+        return False
     return normalized not in {
         "redacted",
         "example",
@@ -110,6 +118,8 @@ def categories(path: Path, text: str) -> list[str]:
         if pattern.search(text):
             findings.append(label)
     if any(meaningful_assignment(match) for match in assignment_pattern.finditer(text)):
+        findings.append("credential-assignment")
+    if any(meaningful_assignment(match) for match in structured_secret_pattern.finditer(text)):
         findings.append("credential-assignment")
     return findings
 

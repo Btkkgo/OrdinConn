@@ -33,6 +33,9 @@ expect_blocked() {
 printf '%s\n' 'A verified build completed with no private data.' > "$fixture_dir/safe.md"
 "$scanner" --check "$fixture_dir/safe.md"
 
+printf '%s\n' 'session: Option<MobileDeviceSession>,' 'api_key: String,' > "$fixture_dir/safe-code.rs"
+"$scanner" --check "$fixture_dir/safe-code.rs"
+
 private_header="-----BEGIN PRIVATE"" KEY-----"
 printf '%s\n' "$private_header" > "$fixture_dir/private.txt"
 expect_blocked private-key "$fixture_dir/private.txt"
@@ -77,5 +80,6 @@ redacted=$("$scanner" --redact "$fixture_dir/path.txt")
 mkdir "$fixture_dir/nested"
 cp "$fixture_dir/safe.md" "$fixture_dir/nested/safe.md"
 "$scanner" --check "$fixture_dir/nested"
+"$scanner" --check "$scanner" "$repo_root/scripts/public-log/tests/test_sanitize_public_log.sh"
 
 echo "PASS: sanitizer blocks sensitive material and redacts home paths"

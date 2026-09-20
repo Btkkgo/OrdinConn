@@ -11,11 +11,11 @@ const workspace: MobileWorkspaceDto = {
     sdkStatus: "detected",
     adbStatus: "ready",
     emulatorStatus: "ready",
-    sdkRoot: "~/Library/Android/sdk",
-    adbPath: "~/Library/Android/sdk/platform-tools/adb",
-    emulatorPath: "~/Library/Android/sdk/emulator/emulator",
-    sdkmanagerPath: "~/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager",
-    avdmanagerPath: "~/Library/Android/sdk/cmdline-tools/latest/bin/avdmanager",
+    sdkRoot: "/opt/android-sdk",
+    adbPath: "/opt/android-sdk/platform-tools/adb",
+    emulatorPath: "/opt/android-sdk/emulator/emulator",
+    sdkmanagerPath: "/opt/android-sdk/cmdline-tools/latest/bin/sdkmanager",
+    avdmanagerPath: "/opt/android-sdk/cmdline-tools/latest/bin/avdmanager",
     adbVersion: "Android Debug Bridge version 1.0.41",
     availableAvds: [{ name: "Pixel_9_API_36", status: "stopped", deviceProfile: "pixel_9", architecture: "arm64-v8a", running: false }],
     onlineDevices: [],
@@ -40,7 +40,7 @@ describe("mobile runtime settings diagnostics", () => {
     expect(html).toContain("Emulator");
     expect(html).toContain("AVDs");
     expect(html).toContain("Connected devices");
-    expect(html).toContain("~/Library/Android/sdk/platform-tools/adb");
+    expect(html).toContain("/opt/android-sdk/platform-tools/adb");
     expect(html).toContain("Pixel_9_API_36");
     expect(html).toContain("Start AVD");
     expect(html).not.toContain("Tap element");

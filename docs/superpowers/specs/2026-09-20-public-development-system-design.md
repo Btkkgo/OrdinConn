@@ -39,9 +39,7 @@ The install script renders a local LaunchAgent from a username-free repository t
 
 ### X publication
 
-`social/x/queue/` contains reviewed stage threads; `social/x/published/` contains successful publication records. The publisher accepts an official user-context API token only from the runtime environment or macOS Keychain. It scans content, enforces post length, hashes the thread, records partial progress, and resumes without duplicating already-posted entries.
-
-If official API authentication is absent, the queue remains intact and the command returns `X_AUTH_NOT_CONFIGURED`. A logged-in browser may be used only for already-sanitized public content. A missing verified GitHub project URL blocks publication when the thread specification requires that link.
+`social/x/queue/` contains reviewed stage threads; `social/x/published/` contains successful publication records. Publication is manual and user-owned. Repository automation does not log in to X, read browser state, or call the X API. A missing verified GitHub project URL leaves the draft queued.
 
 ## Interaction flow
 
@@ -58,6 +56,6 @@ Every engineering-significant task ends with a sanitized `Public Interaction Sum
 
 ## Verification
 
-Integration tests exercise real scripts in temporary Git repositories. They cover secret rejection, home-path redaction, allowlisted staging, no-op sync, push-failure preservation, missing remote behavior, LaunchAgent rendering, X authentication fallback, post-length rejection, thread posting, reply chaining, publication metadata, and duplicate prevention.
+Integration tests exercise real scripts in temporary Git repositories. They cover secret rejection, home-path redaction, allowlisted staging, no-op sync, push-failure preservation, missing remote behavior, and LaunchAgent rendering. Static validation checks the manual X queue structure and post lengths.
 
 Repository-level validation additionally runs shell syntax checks, plist validation, product TypeScript and Rust checks, frontend build, desktop bundle build, `git diff --check`, and a final full-tree secret scan.

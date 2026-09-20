@@ -12,4 +12,6 @@ target/
 *.sqlite3
 *.log
 coverage/
+__pycache__/
+*.pyc
 apps/desktop/src-tauri/gen/

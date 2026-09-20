@@ -65,6 +65,23 @@ for field in (
 ):
     require(field in policy, f"interaction policy missing {field}")
 
+queue = ROOT / "social" / "x" / "queue" / "current-stage.md"
+template = ROOT / "social" / "x" / "templates" / "STAGE_POST_TEMPLATE.md"
+require(queue.is_file(), "manual X queue missing")
+require(template.is_file(), "manual X template missing")
+queue_text = queue.read_text(encoding="utf-8")
+require("status: blocked_remote" in queue_text, "manual X queue must disclose remote blocker")
+require("github_reference: pending" in queue_text, "manual X queue must not invent a GitHub URL")
+thread_body = queue_text.split("\n## Screenshot suggestions", 1)[0]
+markers = list(re.finditer(r"(?m)^Thread\s+(\d+)/(\d+)\s*$", thread_body))
+require(3 <= len(markers) <= 6, "manual X queue must contain 3-6 posts")
+for expected, marker in enumerate(markers, start=1):
+    require(int(marker.group(1)) == expected, "manual X queue order is invalid")
+    require(int(marker.group(2)) == len(markers), "manual X queue total is invalid")
+    end = markers[expected].start() if expected < len(markers) else len(thread_body)
+    post = thread_body[marker.end() : end].strip()
+    require(0 < len(post) <= 280, f"manual X post {expected} length is {len(post)}")
+
 link_pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 for document in [ROOT / "README.md", *sorted(OPEN.glob("*.md"))]:
     text = document.read_text(encoding="utf-8")

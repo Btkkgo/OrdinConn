@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Establish truthful public development documentation, fail-closed GitHub devlog synchronization, a two-hour macOS scheduler, and a safe X stage-publication queue for OrdinConn.
+**Goal:** Establish truthful public development documentation, fail-closed GitHub devlog synchronization, a two-hour macOS scheduler, and a manual X stage-content queue for OrdinConn.
 
-**Architecture:** Keep public knowledge in repository Markdown, enforce disclosure policy with standalone scripts, and separate scheduled documentation commits from product-code delivery. Shell integration tests exercise Git and LaunchAgent behavior in temporary directories; a standard-library Python publisher handles X thread parsing, API calls, resumable state, and duplicate prevention.
+**Architecture:** Keep public knowledge in repository Markdown, enforce disclosure policy with standalone scripts, and separate scheduled documentation commits from product-code delivery. Shell integration tests exercise Git and LaunchAgent behavior in temporary directories. X content remains a sanitized manual queue owned and published by the user.
 
-**Tech Stack:** Markdown, POSIX-oriented Bash, Python 3 standard library, Git, macOS launchd, X API v2, existing Rust/Tauri/React workspace.
+**Tech Stack:** Markdown, POSIX-oriented Bash, Python 3 standard library, Git, macOS launchd, existing Rust/Tauri/React workspace.
 
 **Spec:** `docs/superpowers/specs/2026-09-20-public-development-system-design.md`
 
@@ -26,7 +26,7 @@
 - Existing staged product files cannot be swept into an automated documentation commit.
 - Push failure leaves the local commit and files intact for recovery.
 - LaunchAgent XML remains valid when the checkout path contains XML-special or whitespace characters.
-- A partially published X thread resumes after the last recorded post and never duplicates a completed thread.
+- X queue posts remain within platform length limits and cannot be mistaken for already published material.
 
 ---
 
@@ -193,49 +193,33 @@ Run: `git add scripts/public-log && git commit -m "chore: automate public develo
 
 Expected: only public-log automation files are committed.
 
-### Task 4: X stage queue and safe publisher
+### Task 4: X stage queue for manual publication
 
 **Files:**
 - Create: `social/x/README.md`
 - Create: `social/x/templates/STAGE_POST_TEMPLATE.md`
 - Create: `social/x/queue/current-stage.md`
 - Create: `social/x/published/.gitkeep`
-- Create: `scripts/social/publish-x-queue.py`
-- Create: `scripts/social/tests/test_publish_x_queue.py`
 
 **Interfaces:**
 - Consumes: Task 1 verified current-stage facts and Task 2 sanitizer.
-- Produces: a reviewed 3–6 post thread, API authentication fallback, resumable publication state, published metadata, URLs, and a content hash.
+- Produces: a reviewed 3–6 post thread and a manual publication record format.
 
-- [ ] **Step 1: Write failing publisher integration tests**
-
-Start a local HTTP server and assert unauthenticated fallback, 280-character enforcement, ordered reply chaining, partial-state resume, metadata writing, queue movement, and duplicate-hash rejection.
-
-- [ ] **Step 2: Run publisher tests and verify RED**
-
-Run: `python3 -m unittest scripts/social/tests/test_publish_x_queue.py -v`
-
-Expected: FAIL because the publisher does not exist.
-
-- [ ] **Step 3: Implement the publisher**
-
-Parse `Thread N/M` blocks, obtain a user token only from `X_API_USER_TOKEN` or Keychain service `com.ordinconn.x.user-token`, invoke the sanitizer, post JSON to X API v2, persist progress after each post, and move a completed queue file into `published/` with timestamp, URL list, source commit, and SHA-256 hash.
-
-- [ ] **Step 4: Run publisher tests and verify GREEN**
-
-Run: `python3 -m unittest scripts/social/tests/test_publish_x_queue.py -v`
-
-Expected: all publisher cases pass.
-
-- [ ] **Step 5: Generate the verified current-stage thread**
+- [ ] **Step 1: Generate the verified current-stage thread**
 
 Write 3–6 concise posts covering why, real problem, engineering, result, reusable lesson, and a candid Codex note. State that real Android M1.5 failed because the SDK/emulator was absent. Keep the GitHub reference pending because no repository remote is configured.
 
-- [ ] **Step 6: Commit social assets**
+- [ ] **Step 2: Validate the queue structure, lengths, and sanitizer**
 
-Run: `git add social/x scripts/social && git commit -m "chore: add safe X stage publishing queue"`
+Run: `python3 scripts/public-log/tests/validate_public_docs.py && scripts/public-log/sanitize-public-log.sh --check social/x`
 
-Expected: queue, template, publisher, and tests are committed.
+Expected: the queue is structurally valid, every post is at most 280 characters, and the sanitizer passes.
+
+- [ ] **Step 3: Commit social assets**
+
+Run: `git add social/x && git commit -m "docs: add manual X stage content queue"`
+
+Expected: queue and template are committed; no X credential or publishing automation exists.
 
 ### Task 5: Install, validate, review, and synchronize
 
@@ -251,7 +235,7 @@ Expected: queue, template, publisher, and tests are committed.
 
 - [ ] **Step 1: Run focused automation validation**
 
-Run: `bash -n scripts/public-log/*.sh && bash scripts/public-log/tests/test_sanitize_public_log.sh && bash scripts/public-log/tests/test_sync_public_devlog.sh && bash scripts/public-log/tests/test_macos_sync_install.sh && python3 -m unittest scripts/social/tests/test_publish_x_queue.py -v && python3 scripts/public-log/tests/validate_public_docs.py`
+Run: `bash -n scripts/public-log/*.sh && bash scripts/public-log/tests/test_sanitize_public_log.sh && bash scripts/public-log/tests/test_sync_public_devlog.sh && bash scripts/public-log/tests/test_macos_sync_install.sh && python3 scripts/public-log/tests/validate_public_docs.py`
 
 Expected: all checks pass.
 
@@ -279,9 +263,9 @@ Run: `scripts/public-log/sync-public-devlog.sh`
 
 Expected in the current audited environment: nonzero with `GITHUB_REMOTE_REQUIRED`, with no file loss or unintended staging.
 
-- [ ] **Step 6: Check X authorization and publication eligibility**
+- [ ] **Step 6: Preserve the X draft for manual publication**
 
-Check official API configuration, then an existing logged-in browser session without extracting cookies. Because the required verified GitHub URL is unavailable, keep the thread queued even if browser login exists.
+Do not inspect X authentication, open a browser, or publish. The project owner owns X publication. Keep the thread queued until a verified GitHub URL can be added.
 
 - [ ] **Step 7: Request whole-branch review and fix Critical/Important findings once**
 

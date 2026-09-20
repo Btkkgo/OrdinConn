@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/../../.." && pwd -P)"
 gate="$repo_root/scripts/security/check-public-repo.sh"
 sanitizer="$repo_root/scripts/public-log/sanitize-public-log.sh"
+redactor="$repo_root/scripts/security/redact-history-home-paths.py"
 fixture_root="$(mktemp -d)"
 trap 'rm -rf "$fixture_root"' EXIT
 
@@ -42,5 +43,12 @@ esac
 case "$output" in
   *private-person@example.com*) fail "private commit email value leaked" ;;
 esac
+
+redact_root="$fixture_root/redact-home"
+mkdir -p "$redact_root"
+raw_home="/""Users/""example/Project/file.txt"
+printf '%s\n' "$raw_home" > "$redact_root/path.txt"
+(cd "$redact_root" && "$redactor")
+[ "$(cat "$redact_root/path.txt")" = '~/Project/file.txt' ] || fail "history redactor did not normalize a macOS home path"
 
 echo "PASS: public repository gate scans worktree, history, paths, and commit metadata"

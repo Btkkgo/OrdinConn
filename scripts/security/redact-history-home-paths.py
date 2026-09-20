@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 
-private_prefix = os.environ.get("ORDINCONN_PRIVATE_HOME_PREFIX", "").encode("utf-8")
-if not private_prefix:
-    raise SystemExit("ORDINCONN_PRIVATE_HOME_PREFIX is required")
+home_root = b"/" + b"Users/"
+home_prefix = re.compile(home_root + rb"[^/\s]+/")
 
 for root, dirs, files in os.walk(".", followlinks=False):
     dirs[:] = [name for name in dirs if name != ".git"]
@@ -16,6 +16,6 @@ for root, dirs, files in os.walk(".", followlinks=False):
         if path.is_symlink():
             continue
         data = path.read_bytes()
-        if b"\x00" in data[:8192] or private_prefix not in data:
+        if b"\x00" in data[:8192] or not home_prefix.search(data):
             continue
-        path.write_bytes(data.replace(private_prefix, b"~/"))
+        path.write_bytes(home_prefix.sub(b"~/", data))

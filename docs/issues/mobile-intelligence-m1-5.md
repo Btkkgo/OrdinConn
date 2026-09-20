@@ -18,7 +18,7 @@ Establish a real Android Emulator environment and complete M1.5 validation.
 - M1.5 Gate: PASS
 - M2: NOT STARTED
 
-The real Android 16 / API 36 ARM64 gate passed all ten production checks. The temporary sensitive-node test app and artifacts were removed after validation. Intermittent default-concurrency process-fixture timeouts remain separately tracked in Issue #4.
+The real Android 16 / API 36 ARM64 capture gate passed all ten checks, including honest `WORKSPACE_PROJECTION`. A separate packaged-desktop smoke passed the real Rust → Tauri command/event → React path for status, allowlist error, session start, observation, and stop. The temporary sensitive-node test app and artifacts were removed after validation. Intermittent default-concurrency process-fixture timeouts remain separately tracked in Issue #4.
 
 ## Completed Work
 
@@ -38,7 +38,7 @@ The real Android 16 / API 36 ARM64 gate passed all ten production checks. The te
 
 ## Acceptance Criteria
 
-Every mandatory M1.5 item ran against the real production path. Mock or fixture output was not used as a substitute. M1.5 may be marked passed; M2 still requires a separate explicit owner instruction.
+Every mandatory M1.5 item ran against the real production path. Workspace projection and real GUI IPC are recorded as separate evidence so the helper test is not overstated. Mock or fixture output was not used as a substitute. M1.5 may be marked passed; M2 still requires a separate explicit owner instruction.
 
 ## Current Boundary
 

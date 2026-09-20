@@ -28,13 +28,15 @@
 
 在产品源码基线 `c4f2d66` 上，最近一次完整记录为：126 个 Rust 测试通过、31 个 TypeScript 测试通过、Rust 格式与 Clippy 通过、TypeScript Typecheck 与 Vite Build 通过，并成功生成 macOS Tauri App Bundle。
 
-在当前产品源码基线 `7c323b7` 上，完整默认并行 Rust Workspace Run 通过 130 个测试；31 个 TypeScript 测试、TypeScript Typecheck、Vite Build、macOS Tauri Bundle、rustfmt 以及禁止 Warning 的 Clippy 也全部通过。
+在 Issue #1 修正分支上，最终默认并行 Rust Workspace 重跑通过 125 个测试；31 个 TypeScript 测试、TypeScript Typecheck、Vite Build、macOS Tauri Bundle、rustfmt 以及禁止 Warning 的 Clippy 也全部通过。
 
-真实 Android Smoke 已在专用 `OrdinConn_M1_5` AVD 上通过全部 10 项检查。该 AVD 使用 Pixel 8 设备配置和 Android 36 Google APIs ARM64 镜像；在线设备报告 Android 16 / API 36、1080×2400、420 dpi。最终生产重跑捕获了 189,961 bytes PNG，解析出 70 个已脱敏 UI 元素和 70 个 Snapshot Ref，生成 `MobileObservation`，通过持久化、审计和类型化 Tauri IPC，并完成逻辑 Session Shutdown。
+真实 Android Smoke 已在专用 `OrdinConn_M1_5` AVD 上通过全部 10 项检查。该 AVD 使用 Pixel 8 设备配置和 Android 36 Google APIs ARM64 镜像；在线设备报告 Android 16 / API 36、1080×2400、420 dpi。最终生产重跑捕获了 188,909 bytes PNG，解析出 70 个已脱敏 UI 元素和 70 个 Snapshot Ref，生成 `MobileObservation`，通过持久化、审计和 Workspace Projection，并完成逻辑 Session Shutdown。
+
+类型化 IPC 另有真实 GUI 证据：打包 Tauri 应用先在空白名单下显示受控错误；允许 `com.android.settings` 后，React UI 显示 `Observing`、`emulator-5554`、包名、`VERIFIED`、真实画面和 70 个 UI 元素。新增 Stop Session Command 让界面返回 `Disconnected`；同一 Session 持久化完整的 start/snapshot/observation/end 事件序列，且用户拥有的 AVD 仍保持在线。
 
 独立的临时本地测试 App 产生了 1 个真实 `password=true` 节点。UIAutomator 没有输出测试明文，OrdinConn 记录了 1 次 Redaction，序列化 Capture 不含测试值。验收后已卸载 App 并清理临时产物。
 
-开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。首次变更后默认并行 Desktop Package Run 有 3 项进程 Fixture 测试超时（21/24 通过）；24 项串行测试全部通过，随后默认并行 Workspace Run 也通过。该不确定性仍记录在 Issue #4，不能因后续重跑变绿而删除。
+开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。本次修正的第一次默认并行 Workspace 尝试暴露 2 个间歇性 AVD lifecycle Fixture 失败；修正另一个无关的 Gate 标签断言后，完整默认并行 Workspace 重跑通过，28 个 Desktop 测试也全部串行通过。该不确定性仍记录在 Issue #4，不能因后续重跑变绿而删除。
 
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 

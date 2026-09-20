@@ -19,12 +19,13 @@ const signals = [{ id: "signal-1", title: "BTC linked signal", asset: "BTC" }] a
 describe("mobile home workspace", () => {
   it("renders feed, live mobile state, and related signals as linked columns", () => {
     const html = renderToStaticMarkup(
-      <MobileHomePage workspace={workspace} signals={signals} selectedItemId="mobile-1" onSelectItem={() => undefined} onObserve={() => undefined} onOpenDetail={() => undefined} t={createTranslator("en")} />,
+      <MobileHomePage workspace={workspace} signals={signals} selectedItemId="mobile-1" onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onOpenDetail={() => undefined} t={createTranslator("en")} />,
     );
     expect(html).toContain("aria-label=\"Intelligence feed\"");
     expect(html).toContain("aria-label=\"Mobile live view\"");
     expect(html).toContain("aria-label=\"Related signals\"");
     expect(html).toContain("ADB unavailable");
     expect(html).toContain("BTC linked signal");
+    expect(html).toContain("Stop session");
   });
 });

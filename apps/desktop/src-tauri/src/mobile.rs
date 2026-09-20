@@ -9,7 +9,8 @@ use quick_xml::{Reader, events::Event};
 use serde::Serialize;
 use std::{
     env, fs,
-    io::Read,
+    io::{ErrorKind, Read},
+    os::{fd::AsRawFd, unix::process::CommandExt},
     path::{Path, PathBuf},
     process::{Child, Command, Output, Stdio},
     sync::{
@@ -29,7 +30,7 @@ const M1_5_CAPTURE_GATES: [&str; 7] = [
     "SNAPSHOT_PARSE",
     "ELEMENT_REFS",
     "MOBILE_OBSERVATION",
-    "TAURI_IPC",
+    "WORKSPACE_PROJECTION",
     "SESSION_SHUTDOWN",
 ];
 
@@ -175,9 +176,9 @@ fn m1_5_capture_gate(
             capture.observation.id.clone(),
         ),
         gate_check(
-            "TAURI_IPC",
+            "WORKSPACE_PROJECTION",
             ipc_serializable,
-            "production capture persisted, audited, projected, and serialized through the typed Tauri workspace boundary",
+            "production capture persisted, audited, projected, and serialized; real Tauri command and frontend acceptance is verified separately",
         ),
         gate_check(
             "SESSION_SHUTDOWN",
@@ -449,13 +450,14 @@ fn run_command_text_with_timeout(
     args: &[&str],
     timeout: Duration,
 ) -> Option<String> {
-    let child = Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
-        .spawn()
-        .ok()?;
+        .process_group(0);
+    let child = command.spawn().ok()?;
     let output = wait_for_output_with_timeout(child, timeout).ok()?;
     output
         .status
@@ -473,11 +475,14 @@ fn run_command_bytes_with_timeout(
     args: &[&str],
     timeout: Duration,
 ) -> Result<Vec<u8>, MobileHostError> {
-    let child = Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
+        .process_group(0);
+    let child = command
         .spawn()
         .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
     let output =
@@ -493,53 +498,74 @@ fn run_command_bytes_with_timeout(
     ))
 }
 
-fn read_child_pipe<R>(mut pipe: R) -> thread::JoinHandle<std::io::Result<Vec<u8>>>
-where
-    R: Read + Send + 'static,
-{
-    thread::spawn(move || {
-        let mut bytes = Vec::new();
-        pipe.read_to_end(&mut bytes)?;
-        Ok(bytes)
-    })
+fn set_nonblocking(pipe: &impl AsRawFd) -> Result<(), String> {
+    let fd = pipe.as_raw_fd();
+    // SAFETY: `fd` belongs to the live pipe borrowed for this call. `fcntl` does
+    // not take ownership, and both operations preserve all existing flags.
+    let flags = unsafe { libc::fcntl(fd, libc::F_GETFL) };
+    if flags == -1 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    // SAFETY: as above; only O_NONBLOCK is added to the descriptor's flags.
+    if unsafe { libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) } == -1 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
+    Ok(())
+}
+
+fn drain_available(pipe: &mut impl Read, output: &mut Vec<u8>) -> Result<(), String> {
+    let mut buffer = [0_u8; 16 * 1024];
+    loop {
+        match pipe.read(&mut buffer) {
+            Ok(0) => return Ok(()),
+            Ok(count) => output.extend_from_slice(&buffer[..count]),
+            Err(error) if error.kind() == ErrorKind::WouldBlock => return Ok(()),
+            Err(error) if error.kind() == ErrorKind::Interrupted => continue,
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+}
+
+fn kill_owned_process_group(child: &mut Child) {
+    let process_group = -(child.id() as i32);
+    // SAFETY: the child was spawned as leader of a new process group. A
+    // negative PID targets only that owned group, never an existing emulator.
+    let _ = unsafe { libc::kill(process_group, libc::SIGKILL) };
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 fn wait_for_output_with_timeout(mut child: Child, timeout: Duration) -> Result<Output, String> {
-    let stdout = child
+    let mut stdout = child
         .stdout
         .take()
         .ok_or_else(|| "child stdout was not piped".to_owned())?;
-    let stdout_reader = read_child_pipe(stdout);
-    let stderr_reader = child.stderr.take().map(read_child_pipe);
+    let mut stderr = child.stderr.take();
+    set_nonblocking(&stdout)?;
+    if let Some(stderr) = &stderr {
+        set_nonblocking(stderr)?;
+    }
+    let mut stdout_bytes = Vec::new();
+    let mut stderr_bytes = Vec::new();
     let deadline = Instant::now() + timeout;
     loop {
+        drain_available(&mut stdout, &mut stdout_bytes)?;
+        if let Some(stderr) = &mut stderr {
+            drain_available(stderr, &mut stderr_bytes)?;
+        }
         if let Some(status) = child.try_wait().map_err(|error| error.to_string())? {
-            let stdout = stdout_reader
-                .join()
-                .map_err(|_| "stdout reader thread panicked".to_owned())?
-                .map_err(|error| error.to_string())?;
-            let stderr = stderr_reader
-                .map(|reader| {
-                    reader
-                        .join()
-                        .map_err(|_| "stderr reader thread panicked".to_owned())?
-                        .map_err(|error| error.to_string())
-                })
-                .transpose()?
-                .unwrap_or_default();
+            drain_available(&mut stdout, &mut stdout_bytes)?;
+            if let Some(stderr) = &mut stderr {
+                drain_available(stderr, &mut stderr_bytes)?;
+            }
             return Ok(Output {
                 status,
-                stdout,
-                stderr,
+                stdout: stdout_bytes,
+                stderr: stderr_bytes,
             });
         }
         if Instant::now() >= deadline {
-            let _ = child.kill();
-            let _ = child.wait();
-            let _ = stdout_reader.join();
-            if let Some(reader) = stderr_reader {
-                let _ = reader.join();
-            }
+            kill_owned_process_group(&mut child);
             return Err(format!(
                 "command timed out after {} ms",
                 timeout.as_millis()
@@ -784,6 +810,10 @@ impl MobileHost {
         &self.session_id
     }
 
+    pub fn is_session_active(&self) -> bool {
+        self.session_active.load(Ordering::SeqCst)
+    }
+
     pub fn observe_with_sdk(
         &self,
         android_sdk: Option<&str>,
@@ -923,13 +953,8 @@ fn parse_uiautomator_xml(xml: &str) -> Result<Vec<RawMobileElement>, MobileHostE
                         .into_owned();
                     values.insert(key, value);
                 }
-                let Some(bounds) =
-                    parse_bounds(values.get("bounds").map(String::as_str).unwrap_or_default())
-                else {
-                    continue;
-                };
                 let class_name = values.remove("class").unwrap_or_default();
-                elements.push(RawMobileElement {
+                let mut element = RawMobileElement {
                     text: optional_value(values.remove("text")),
                     role: class_name
                         .rsplit('.')
@@ -938,7 +963,12 @@ fn parse_uiautomator_xml(xml: &str) -> Result<Vec<RawMobileElement>, MobileHostE
                         .to_ascii_lowercase(),
                     class_name,
                     content_description: optional_value(values.remove("content-desc")),
-                    bounds,
+                    bounds: MobileBounds {
+                        x: 0,
+                        y: 0,
+                        width: 0,
+                        height: 0,
+                    },
                     clickable: bool_value(values.get("clickable")),
                     scrollable: bool_value(values.get("scrollable")),
                     enabled: bool_value(values.get("enabled")),
@@ -946,7 +976,19 @@ fn parse_uiautomator_xml(xml: &str) -> Result<Vec<RawMobileElement>, MobileHostE
                     selected: bool_value(values.get("selected")),
                     resource_id: optional_value(values.remove("resource-id")),
                     password: bool_value(values.get("password")),
-                });
+                };
+                let Some(bounds) =
+                    parse_bounds(values.get("bounds").map(String::as_str).unwrap_or_default())
+                else {
+                    if element.requires_redaction() {
+                        return Err(MobileHostError::InvalidUiTree(
+                            "sensitive node has invalid bounds".into(),
+                        ));
+                    }
+                    continue;
+                };
+                element.bounds = bounds;
+                elements.push(element);
             }
             Ok(Event::Eof) => break,
             Ok(_) => {}
@@ -1092,6 +1134,18 @@ mod tests {
         assert_eq!(elements[0].text.as_deref(), Some("visible"));
         assert_eq!(elements[0].bounds.width, 90);
         assert_eq!(elements[0].bounds.height, 60);
+    }
+
+    #[test]
+    fn uiautomator_parser_fails_closed_for_sensitive_nodes_with_reversed_bounds() {
+        let xml = r#"<hierarchy><node text="secret" password="true" class="android.widget.EditText" bounds="[0,2364][1080,2337]"/><node text="public" class="android.widget.TextView" bounds="[10,20][100,80]"/></hierarchy>"#;
+
+        let error = parse_uiautomator_xml(xml).unwrap_err();
+
+        assert_eq!(
+            error,
+            MobileHostError::InvalidUiTree("sensitive node has invalid bounds".into())
+        );
     }
 
     #[test]
@@ -1508,6 +1562,43 @@ esac
         assert_eq!(output.len(), 256 * 1024);
     }
 
+    #[test]
+    fn command_returns_after_success_when_descendant_keeps_stdout_open() {
+        let fixture = TempDir::new().unwrap();
+        let tool = fixture.path().join("successful-tool-with-descendant");
+        executable(
+            &tool,
+            "#!/bin/sh\n(trap '' HUP TERM; sleep 3) &\nexec /usr/bin/printf done\n",
+        );
+        let started = Instant::now();
+
+        let output = run_command_bytes_with_timeout(&tool, &[], Duration::from_secs(1))
+            .expect("direct child succeeded before its deadline");
+
+        assert_eq!(output, b"done");
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+
+    #[test]
+    fn command_timeout_does_not_wait_for_descendant_inherited_pipe() {
+        let fixture = TempDir::new().unwrap();
+        let tool = fixture.path().join("timed-out-tool-with-descendant");
+        executable(
+            &tool,
+            "#!/bin/sh\n(trap '' HUP TERM; sleep 3) &\nwhile :; do :; done\n",
+        );
+        let started = Instant::now();
+
+        let error = run_command_bytes_with_timeout(&tool, &[], Duration::from_millis(30))
+            .expect_err("direct child must hit the deadline");
+
+        assert_eq!(
+            error,
+            MobileHostError::CommandFailed("command timed out after 30 ms".into())
+        );
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+
     fn lifecycle_fixture(adb_body: &str) -> (TempDir, AndroidEnvironmentDetector) {
         let fixture = TempDir::new().unwrap();
         let sdk = fixture.path().join("sdk");
@@ -1582,7 +1673,7 @@ exit 1
             "SNAPSHOT_PARSE",
             "ELEMENT_REFS",
             "MOBILE_OBSERVATION",
-            "TAURI_IPC",
+            "WORKSPACE_PROJECTION",
             "SESSION_SHUTDOWN",
         ] {
             assert_eq!(report.status(name), Some(MobileGateStatus::Blocked));
@@ -1612,7 +1703,10 @@ exit 1
         assert_eq!(report.status("ADB_READY"), Some(MobileGateStatus::Pass));
         assert_eq!(report.status("DEVICE_ONLINE"), Some(MobileGateStatus::Pass));
         assert_eq!(report.status("FRAME_CAPTURE"), Some(MobileGateStatus::Fail));
-        assert_eq!(report.status("TAURI_IPC"), Some(MobileGateStatus::Blocked));
+        assert_eq!(
+            report.status("WORKSPACE_PROJECTION"),
+            Some(MobileGateStatus::Blocked)
+        );
     }
 
     #[test]
@@ -1671,6 +1765,59 @@ exit 1
                 "mobile.snapshot",
                 "mobile.observation"
             ]
+        );
+    }
+
+    #[test]
+    fn mobile_ipc_stop_ends_the_persisted_session_without_stopping_the_avd() {
+        let directory = TempDir::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let app_runtime = runtime
+            .block_on(ordinconn_app::AppRuntime::initialize(
+                &directory.path().join("ipc-stop.sqlite3"),
+            ))
+            .unwrap();
+        let host = MobileHost::new(None);
+        let capture = bind_capture_to_session(
+            capture_from_outputs(
+                &AdbObservationOutput {
+                    device_id: "emulator-5554".into(),
+                    os_version: "15".into(),
+                    size_output: "Physical size: 1080x2400".into(),
+                    focus_output: FOCUS.into(),
+                    ui_xml: XML.into(),
+                    png: vec![1, 2, 3],
+                },
+                &["com.example.news".into()],
+            )
+            .unwrap(),
+            host.session_id(),
+        );
+        host.session_active.store(true, Ordering::SeqCst);
+        runtime
+            .block_on(crate::commands::record_mobile_capture_workspace(
+                app_runtime.as_ref(),
+                host.environment_diagnostics(None),
+                capture,
+            ))
+            .unwrap();
+        let mut events = app_runtime.subscribe();
+
+        let workspace = runtime
+            .block_on(crate::commands::stop_mobile_workspace(
+                app_runtime.as_ref(),
+                &host,
+            ))
+            .unwrap();
+
+        assert_eq!(workspace.runtime_status, "disconnected");
+        assert!(workspace.session.is_none());
+        assert!(workspace.frame.is_none());
+        assert!(workspace.ui_snapshot.is_none());
+        assert!(!host.is_session_active());
+        assert_eq!(
+            events.try_recv().unwrap().event_type,
+            "mobile.session_ended"
         );
     }
 }

@@ -42,12 +42,14 @@ The harness may start one existing AVD when none is online. It waits at most 120
 6. `SNAPSHOT_PARSE`
 7. `ELEMENT_REFS`
 8. `MOBILE_OBSERVATION`
-9. `TAURI_IPC`
+9. `WORKSPACE_PROJECTION`
 10. `SESSION_SHUTDOWN`
 
 Every check must be `PASS`. Missing prerequisites make dependent checks `BLOCKED`; no skipped or unknown result is converted to `PASS`.
 
-`TAURI_IPC` passes only after the real capture has traversed the same production helper used by `observe_mobile_device`: SQLite capture persistence, the three allowed mobile audit events, `MobileWorkspaceData` projection containing the observation/feed item, and JSON serialization must all succeed. `SESSION_SHUTDOWN` additionally requires both logical host shutdown and the persisted `ended` session transition.
+`WORKSPACE_PROJECTION` passes only after the real capture has traversed the persistence/projection helper used by `observe_mobile_device`: SQLite capture persistence, the three allowed mobile audit events, `MobileWorkspaceData` projection containing the observation/feed item, and JSON serialization must all succeed. It is not presented as proof that a Tauri command was invoked from the frontend. `SESSION_SHUTDOWN` additionally requires both logical host shutdown and the persisted `ended` session transition.
+
+Typed Tauri IPC is a separate real-desktop acceptance item. The packaged application must visibly demonstrate the Rust → Tauri command/event → React path for initial status, a controlled error, session start, observation, and session stop. The persisted event sequence must contain `mobile.session_started`, `mobile.snapshot`, `mobile.observation`, and `mobile.session_ended` for the same session.
 
 Sensitive-node acceptance uses a temporary local application with a password input and an ephemeral test value. The app is allowlisted only for the test. Run the separately gated check without placing the test value in source control:
 
@@ -69,11 +71,12 @@ The check requires at least one recorded redaction, `SensitiveFieldBlocked`, a `
 - System image: `system-images;android-36;google_apis;arm64-v8a` revision 7.
 - AVD: `OrdinConn_M1_5`, Pixel 8 profile.
 - Online device: `emulator-5554`, Android 16 / API 36, 1080×2400 at 420 dpi.
-- Final rerun frame: 189,961-byte PNG with a non-empty SHA-256 hash.
+- Final automated rerun frame: 188,909-byte PNG with a non-empty SHA-256 hash.
 - UI tree: 70 valid sanitized elements; two Android-generated nodes with reversed bounds were ignored as invalid rectangles.
-- Snapshot/refs/observation/IPC/shutdown: `PASS` through the production persistence, audit, projection, serialization, and logical-session path.
+- Snapshot/refs/observation/workspace projection/shutdown: `PASS` through the production persistence, audit, projection, serialization, and logical-session path.
+- Tauri IPC: `PASS` in the packaged desktop application. An empty allowlist produced the expected frontend error; after allowlisting `com.android.settings`, the UI showed `Observing`, `emulator-5554`, `com.android.settings`, `VERIFIED`, a real frame, and 70 UI elements. Stop returned the UI to `Disconnected`, persisted `mobile.session_ended`, and left the emulator online.
 - Sensitive-node check: one real password node, one OrdinConn redaction, and no test value in serialized capture data.
 
 Result: **M1.5 PASS — M2 remains NOT STARTED.** No mobile navigation actions were implemented or enabled.
 
-The first post-change default-parallel desktop package run failed three process-fixture tests at 21/24. The same 24 tests passed serially, and the later default-parallel workspace run passed. This intermittent behavior remains tracked in Issue #4 and is not hidden by either the passing real gate or the green rerun.
+The first corrective default-parallel workspace run failed two existing AVD lifecycle process fixtures plus one corrected gate-label assertion. After the assertion fix, all 125 Rust tests passed in the default-parallel workspace rerun and all 28 desktop tests passed serially. The AVD fixture nondeterminism remains tracked in Issue #4 and is not hidden by the green rerun.

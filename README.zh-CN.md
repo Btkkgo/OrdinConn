@@ -50,7 +50,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 - M2：**尚未开始**
 - 真实资金执行：未实现，V0.1 仅支持 Paper Execution
 
-真实 Android Gate 已在 Android 16 ARM64 Emulator 上通过全部 10 项生产链路检查：环境、Frame、UI Tree、Snapshot Parse、Element Refs、`MobileObservation`、Tauri IPC 和 Session Shutdown。独立的真实密码节点测试也确认敏感内容不会进入序列化 Capture。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
+真实 Android Gate 已在 Android 16 ARM64 Emulator 上通过环境、Frame、UI Tree、Snapshot Parse、Element Refs、`MobileObservation`、Workspace Projection 和 Session Shutdown。另一次打包桌面 Smoke 真实执行了 Rust → Tauri Command/Event → React 链路，覆盖状态、白名单错误、Session Start、Observation 和 Stop。独立的真实密码节点测试也确认敏感内容不会进入序列化 Capture。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
 
 ## Mobile Intelligence
 

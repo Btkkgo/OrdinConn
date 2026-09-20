@@ -9,7 +9,7 @@
 
 ## Suggested Post
 
-OrdinConn Mobile Intelligence M1.5 now passes against a real Android 16 ARM64 Emulator: SDK/ADB/AVD readiness, frame capture, UI tree, snapshot refs, MobileObservation, typed Tauri IPC, sensitive-node redaction, and session shutdown. M2 remains intentionally not started.
+OrdinConn Mobile Intelligence M1.5 now passes against a real Android 16 ARM64 Emulator. The packaged desktop also proved status, allowlist error, observation, and stop through the real Rust → Tauri → React path. Sensitive redaction passed; M2 remains intentionally not started.
 
 ## Suggested Thread
 
@@ -27,7 +27,7 @@ The real device exposed three fixture-blind problems: PNG output filled a child-
 
 ### 4/5
 
-Final result: 10/10 production checks PASS, a 189,961-byte frame, 70 sanitized UI elements and refs, a real MobileObservation, persisted/audited typed Tauri IPC, and clean shutdown. A real password node was redacted; its test value stayed out of serialized capture data.
+Final result: the capture gate passed with a 188,909-byte frame, 70 sanitized UI elements and refs, a real MobileObservation, persisted/audited workspace projection, and clean shutdown. Packaged Tauri GUI IPC passed separately. A real password node was redacted without serialized plaintext.
 
 ### 5/5
 
@@ -49,7 +49,7 @@ The strongest contribution was preserving the first blocked result, then using t
 
 ## Chinese Reference
 
-OrdinConn Mobile Intelligence M1.5 已在真实 Android 16 ARM64 Emulator 上通过：环境、Frame、UI Tree、Snapshot Ref、MobileObservation、类型化 Tauri IPC、真实密码节点脱敏和 Session Shutdown 均有实际证据。M2 仍未开始，等待项目所有者人工验收与后续明确授权。
+OrdinConn Mobile Intelligence M1.5 已在真实 Android 16 ARM64 Emulator 上通过。打包桌面应用另行验证了真实 Rust → Tauri → React 的状态、白名单错误、观察与停止链路；密码节点脱敏也通过。M2 仍未开始，等待后续明确授权。
 
 ## Manual Publication Reminder
 

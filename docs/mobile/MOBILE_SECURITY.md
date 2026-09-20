@@ -19,7 +19,7 @@ Frames are not persisted by default. Only sanitized semantic snapshots and struc
 
 Environment discovery is read-only. OrdinConn may start an already-existing AVD after resolving its exact name, but it does not create, edit, reset, delete, or automatically terminate AVDs. It does not install Android Studio, command-line tools, system images, applications, or permissions.
 
-The M1.5 gate fails closed. Missing tools or an offline device block every downstream frame, UI tree, observation, IPC, and shutdown acceptance claim. Test fixtures prove parser behavior only and are never presented as real-device evidence.
+The M1.5 gate fails closed. Missing tools or an offline device block every downstream frame, UI tree, observation, IPC, and shutdown acceptance claim. A malformed sensitive or financial node also fails the entire UI-tree parse; only malformed non-sensitive platform nodes may be discarded. Test fixtures prove parser behavior only and are never presented as real-device evidence.
 
 ## Real redaction acceptance
 

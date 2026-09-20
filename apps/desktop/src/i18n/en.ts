@@ -51,6 +51,7 @@ export const en = {
   "mobile.selectObservation": "Select an observation.",
   "mobile.openDetail": "Open data detail",
   "mobile.observeNow": "Observe now",
+  "mobile.stopSession": "Stop session",
   "mobile.inspectElements": "Inspect UI elements",
   "mobile.adbUnavailable": "ADB unavailable",
   "mobile.noLiveFrame": "No live frame",

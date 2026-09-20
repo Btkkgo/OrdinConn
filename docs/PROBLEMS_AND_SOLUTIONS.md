@@ -110,11 +110,11 @@ The first acceptance run intentionally failed closed rather than fabricating dev
 
 ### Final Solution
 
-Install OpenJDK 21 and the official Android command-line tools, then create `OrdinConn_M1_5` from the Android 36 Google APIs ARM64 image. Keep ordered environment discovery, bounded boot readiness, and the ten-check report that distinguishes `FAIL` from `BLOCKED`.
+Install OpenJDK 21 and the official Android command-line tools, then create `OrdinConn_M1_5` from the Android 36 Google APIs ARM64 image. Keep ordered environment discovery, bounded boot readiness, and the capture report that distinguishes `FAIL` from `BLOCKED`; verify real GUI IPC separately.
 
 ### Verification
 
-The AVD cold-booted to `adb` online and `sys.boot_completed=1`. The production gate passed all ten checks, including real frame/UI capture, snapshot parse, refs, observation, typed IPC, persistence, audit events, and session shutdown. A separate real password-node test also passed.
+The AVD cold-booted to `adb` online and `sys.boot_completed=1`. The production capture gate passed real frame/UI capture, snapshot parse, refs, observation, persistence, audit events, workspace projection, and session shutdown. The packaged desktop separately passed real typed IPC and frontend acceptance. A separate real password-node test also passed.
 
 ### Reusable Lesson
 
@@ -140,11 +140,11 @@ Independent review of the first M1.5 implementation identified both gaps before 
 
 ### Final Solution
 
-Use one ordered resolver for diagnostics and observation, put process work on a blocking pool, enforce total deadlines, drain stdout/stderr concurrently, and terminate timed-out children.
+Use one ordered resolver for diagnostics and observation, put process work on a blocking pool, enforce total deadlines, drain stdout/stderr through nonblocking pipes, and place each owned command in its own process group. On timeout, terminate only that group; when the direct child exits, return without waiting for unrelated descendants that inherited a pipe.
 
 ### Verification
 
-Regression tests covered standalone ADB paths, configured-SDK consistency, a deliberately hung fixture, and a 256 KiB stdout payload. Real approximately 190 KiB PNG frames then traversed the same helper successfully.
+Regression tests covered standalone ADB paths, configured-SDK consistency, a deliberately hung fixture, descendants that retain inherited output pipes after success or timeout, and a 256 KiB stdout payload. Real approximately 190 KiB PNG frames then traversed the same helper successfully.
 
 ### Reusable Lesson
 
@@ -170,12 +170,38 @@ The unchanged fixture-compatible commands passed unit tests but failed against t
 
 ### Final Solution
 
-Read the full window dump for focus detection. Reject only nodes whose bounds cannot form a valid non-negative rectangle while preserving the remainder of the snapshot.
+Read the full window dump for focus detection. Discard malformed non-sensitive platform nodes while preserving the remainder of the snapshot, but fail the whole parse when the malformed node is sensitive or financial so the screen cannot be misclassified as ordinary.
 
 ### Verification
 
-Regression tests were observed failing before the fixes and passing afterward. The real Settings snapshot produced 70 valid sanitized elements while two reversed-bound platform nodes were excluded; the full ten-check gate passed.
+Regression tests were observed failing before the fixes and passing afterward, including a malformed password node and a financial-action classifier. The real Settings snapshot produced 70 valid sanitized elements while two reversed-bound non-sensitive platform nodes were excluded; the full gate passed.
 
 ### Reusable Lesson
 
-Treat operating-system diagnostics as versioned external schemas. Fail closed on missing identity, but isolate malformed optional nodes instead of discarding an otherwise valid observation.
+Treat operating-system diagnostics as versioned external schemas. Fail closed on missing identity, but isolate only malformed non-sensitive optional nodes instead of discarding an otherwise valid observation.
+
+## Problem 007 — Workspace serialization was not proof of Tauri IPC
+
+### Context
+
+M1.5 requires the real Rust Mobile Runtime → Tauri command/event → React frontend chain, including status, error, start, observation, and stop.
+
+### Symptom
+
+The first real-smoke harness called the persistence/projection helper directly and labeled the result `TAURI_IPC`, even though no frontend invocation or stop command was exercised.
+
+### Root Cause
+
+A useful lower-level integration test was given a broader acceptance label than its actual boundary, and the product exposed observation but no explicit frontend stop control.
+
+### Final Solution
+
+Rename the automated gate to `WORKSPACE_PROJECTION`, add a registered `stop_mobile_session` Tauri command and localized React control, project active/disconnected status from the host, and keep GUI acceptance as a separate real-desktop check.
+
+### Verification
+
+The packaged application first displayed the expected empty-allowlist error. After allowlisting `com.android.settings`, it showed the real emulator, package, verified observation, frame, and 70 UI elements. Stop returned the UI to `Disconnected`; SQLite recorded `mobile.session_started`, `mobile.snapshot`, `mobile.observation`, and `mobile.session_ended` for one session; ADB still reported the emulator online.
+
+### Reusable Lesson
+
+Serialization at a command helper boundary is not evidence that the UI invoked the Tauri command. Name lower-level gates precisely and verify GUI-only acceptance in the real desktop application.

@@ -10,10 +10,11 @@ interface MobileDeviceViewProps {
   inspect: boolean;
   onInspectChange: (value: boolean) => void;
   onObserve: () => void;
+  onStop: () => void;
   t: Translator;
 }
 
-export function MobileDeviceView({ frame, snapshot, adbStatus, inspect, onInspectChange, onObserve, t }: MobileDeviceViewProps) {
+export function MobileDeviceView({ frame, snapshot, adbStatus, inspect, onInspectChange, onObserve, onStop, t }: MobileDeviceViewProps) {
   const aligned = frame && snapshot && frame.width === snapshot.screenWidth && frame.height === snapshot.screenHeight;
   const [selectedRef, setSelectedRef] = useState<string>();
   const selected = snapshot?.elements.find((element) => element.ref === selectedRef);
@@ -21,6 +22,7 @@ export function MobileDeviceView({ frame, snapshot, adbStatus, inspect, onInspec
     <div className="device-stage">
       <div className="device-toolbar">
         <button className="secondary-button" type="button" onClick={onObserve}>{t("mobile.observeNow")}</button>
+        <button className="secondary-button" type="button" onClick={onStop}>{t("mobile.stopSession")}</button>
         <button className={inspect ? "icon-button active" : "icon-button"} type="button" onClick={() => onInspectChange(!inspect)} aria-pressed={inspect} aria-label={t("mobile.inspectElements")}><Crosshair size={16} /></button>
       </div>
       <div className="phone-frame" style={{ "--phone-aspect": frame ? `${frame.width} / ${frame.height}` : "9 / 20" } as React.CSSProperties}>

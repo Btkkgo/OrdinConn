@@ -43,4 +43,4 @@ Logical shutdown is also persisted: the session row transitions to `ended` and a
 
 ## Verified environment
 
-M1.5 passed on macOS arm64 with OpenJDK 21, Android API 36 Google APIs ARM64, Emulator 37.1.11, ADB 37.0.1, and the dedicated `OrdinConn_M1_5` Pixel 8 AVD. This evidence covers observation only; it does not authorize M2 actions.
+M1.5 passed on macOS arm64 with OpenJDK 21, Android API 36 Google APIs ARM64, Emulator 37.1.11, ADB 37.0.1, and the dedicated `OrdinConn_M1_5` Pixel 8 AVD. The packaged desktop path also verified status, a controlled allowlist error, observation, and logical stop without terminating the AVD. This evidence covers observation only; it does not authorize M2 actions.

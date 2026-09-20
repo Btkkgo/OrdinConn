@@ -102,3 +102,5 @@ cargo test -p ordinconn-desktop real_sensitive_redaction_smoke -- --nocapture
 结果：**M1.5 PASS — M2 仍为 NOT STARTED。** 未实现或启用任何 Mobile Navigation Action。
 
 第一次 Corrective Default-parallel Workspace Run 中，两个现有 AVD Lifecycle Process Fixture 失败，另有一个 Gate-label Assertion 随后被修正。修正后 Default-parallel Workspace 重跑 125 个 Rust Test 全部通过，28 个 Desktop Test 串行全部通过。AVD Fixture Nondeterminism 继续记录在 Issue #4，不能被后续绿色重跑隐藏。
+
+Stage Close 验证的第一次新鲜 Default-parallel Workspace Run 以更大的 4 项失败集合再次复现同一 Reliability Boundary。紧接着的 Serial Desktop Run 为 28/28 PASS，下一次 Default-parallel Workspace Rerun 为 125/125 PASS。因此 Issue #4 继续保持 Open；这组结果不改变已经独立验证的 15/15 真实环境验收，也不授权 M2。

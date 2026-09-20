@@ -47,6 +47,8 @@ A separate temporary local test application exposed one real `password=true` nod
 
 For the open-source initialization, public-log sanitizer, allowlisted Git sync, scheduler rendering, document validation, plist lint, TypeScript tests/typecheck, Vite build, and Tauri bundle passed. During the corrective run, the first default-parallel workspace attempt exposed two intermittent AVD lifecycle fixture failures; after an unrelated gate-label assertion was corrected, the complete default-parallel workspace rerun passed and all 28 desktop tests passed serially. The nondeterminism remains tracked in Issue #4 rather than being erased by the green rerun.
 
+The M1.5 stage-close verification reproduced Issue #4 again: the first fresh default-parallel workspace run passed 24 of 28 desktop tests and failed four process/AVD timing-sensitive fixtures. The immediate serial desktop run passed 28/28, and the next complete default-parallel workspace rerun passed 125/125. This fresh sequence reinforces that the issue is intermittent and remains open; it does not invalidate the separately completed 15/15 real M1.5 acceptance.
+
 The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
 
 ## Partial

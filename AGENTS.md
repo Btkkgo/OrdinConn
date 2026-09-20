@@ -42,7 +42,7 @@
 - DevLogs use `docs/devlog/YYYY-MM-DD.md` for English and `docs/devlog/YYYY-MM-DD.zh-CN.md` for Chinese. Both files describe the same sanitized facts and must be updated together for meaningful engineering work.
 - GitHub Issue titles use English. Issue bodies and important milestone comments put `# English` first and `# 中文` second, with Goal, Scope, Current State, Acceptance Criteria, Result, and Validation represented consistently in both languages. Very short mechanical status comments may be English-only.
 - Pull Request titles use English. Pull Request bodies put English first and Chinese second.
-- X drafts remain manual and owner-published. Each draft contains `## English` for the intended English post and `## 中文参考` for the corresponding Chinese review text. Derive both naturally from the same sanitized engineering facts; do not mechanically translate private conversation.
+- X drafts remain manual and owner-published. Each draft contains `## English — Publication Version` for the intended English post and `## 中文 — 参考版本` for the complete corresponding Chinese thread. Derive both naturally from the same sanitized engineering facts; do not mechanically translate private conversation.
 - Final Codex execution reports to the user are in Chinese by default. Never let GitHub's English-first policy change the actual collaboration language.
 
 ## ORDINCONN PUBLIC DEVELOPMENT RULES

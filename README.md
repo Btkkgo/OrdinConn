@@ -47,6 +47,7 @@ See the [architecture overview](docs/architecture/OVERVIEW.md) ([中文](docs/ar
 - Version: `0.1.0`
 - Mobile stage: M1.5 real-environment validation complete
 - M1.5 gate: **PASS**
+- Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - M2: **NOT STARTED**
 - Real-money execution: not implemented; V0.1 is paper-only
 
@@ -127,7 +128,7 @@ Development is issue-first. Open or join a scoped issue before significant work,
 - Mobile navigation actions are not implemented.
 - Computer Runtime support is partial and permission-bounded.
 - The current financial execution adapter is paper-only.
-- Three process-fixture tests can time out under default parallel Rust test load; the same 24-test desktop library suite passes serially. Follow [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
+- Process-fixture concurrency remains intermittently flaky: an initial desktop run failed 3 of 24 tests, and the first corrective workspace run reproduced two AVD lifecycle failures. The later default workspace rerun passed 125/125 and the desktop suite passed 28/28 serially, but that green rerun does not prove the flakiness is gone. Follow [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 
 ## License
 

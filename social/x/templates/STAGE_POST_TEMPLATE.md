@@ -7,7 +7,7 @@
 - Repository Link: https://github.com/Btkkgo/OrdinConn
 - Issue Link:
 
-## English
+## English — Publication Version
 
 ### Suggested Post
 
@@ -44,7 +44,7 @@ Reusable technical and Codex lesson with a verified GitHub reference.
 
 ### Codex Lesson
 
-## 中文参考
+## 中文 — 参考版本
 
 ### 正式内容对应
 

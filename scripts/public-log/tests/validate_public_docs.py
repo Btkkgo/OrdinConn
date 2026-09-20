@@ -39,6 +39,15 @@ CORE_PAIRS = (
     ("docs/codex/CODEX_FIELD_NOTES.md", "docs/codex/CODEX_FIELD_NOTES.zh-CN.md"),
     ("docs/decisions/README.md", "docs/decisions/README.zh-CN.md"),
     ("docs/devlog/2026-09-20.md", "docs/devlog/2026-09-20.zh-CN.md"),
+    ("docs/mobile/APP_SKILLS.md", "docs/mobile/APP_SKILLS.zh-CN.md"),
+    ("docs/mobile/DEVICE_RUNTIME.md", "docs/mobile/DEVICE_RUNTIME.zh-CN.md"),
+    ("docs/mobile/M1_5_ACCEPTANCE.md", "docs/mobile/M1_5_ACCEPTANCE.zh-CN.md"),
+    ("docs/mobile/MOBILE_ACTION_PROTOCOL.md", "docs/mobile/MOBILE_ACTION_PROTOCOL.zh-CN.md"),
+    ("docs/mobile/MOBILE_INTELLIGENCE.md", "docs/mobile/MOBILE_INTELLIGENCE.zh-CN.md"),
+    ("docs/mobile/MOBILE_OBSERVATION.md", "docs/mobile/MOBILE_OBSERVATION.zh-CN.md"),
+    ("docs/mobile/MOBILE_SECURITY.md", "docs/mobile/MOBILE_SECURITY.zh-CN.md"),
+    ("docs/mobile/MOBILE_UI.md", "docs/mobile/MOBILE_UI.zh-CN.md"),
+    ("docs/mobile/VIDEO_REFERENCE_ANALYSIS.md", "docs/mobile/VIDEO_REFERENCE_ANALYSIS.zh-CN.md"),
     ("social/x/README.md", "social/x/README.zh-CN.md"),
 )
 
@@ -71,15 +80,22 @@ for heading in (
 ):
     require(heading in stage, f"CURRENT_STATUS missing {heading}")
 require("- Gate: **M1.5 PASS**" in stage and "- Next phase: **M2 NOT STARTED**" in stage, "M1.5 gate status is unclear")
+require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage, "M1.5 acceptance total is unclear")
 require("125 Rust tests" in stage and "31 TypeScript tests" in stage, "verified counts missing")
 
 stage_zh = (ROOT / "docs" / "CURRENT_STATUS.zh-CN.md").read_text(encoding="utf-8")
 require("- Gate：**M1.5 通过**" in stage_zh and "- 下一阶段：**M2 尚未开始**" in stage_zh, "Chinese M1.5 gate status is unclear")
+require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage_zh, "Chinese M1.5 acceptance total is unclear")
 require("125 个测试" in stage_zh and "31 个 TypeScript 测试" in stage_zh, "Chinese verified counts missing")
 
 agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-for marker in ("## BUILD IN PUBLIC LANGUAGE POLICY", "Chinese by default", "English is the primary/default", "`## English`", "`## 中文参考`"):
+for marker in ("## BUILD IN PUBLIC LANGUAGE POLICY", "Chinese by default", "English is the primary/default", "`## English — Publication Version`", "`## 中文 — 参考版本`"):
     require(marker in agents, f"AGENTS language policy missing {marker}")
+
+acceptance = (ROOT / "docs" / "mobile" / "M1_5_ACCEPTANCE.md").read_text(encoding="utf-8")
+acceptance_zh = (ROOT / "docs" / "mobile" / "M1_5_ACCEPTANCE.zh-CN.md").read_text(encoding="utf-8")
+require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in acceptance, "English M1.5 acceptance total missing")
+require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in acceptance_zh, "Chinese M1.5 acceptance total missing")
 
 policy = (OPEN / "INTERACTION_LOG_POLICY.md").read_text(encoding="utf-8")
 for field in (
@@ -108,8 +124,8 @@ queue_text = queue.read_text(encoding="utf-8")
 require("DRAFT" in queue_text, "manual X draft must disclose draft state")
 require("https://github.com/Btkkgo/OrdinConn" in queue_text, "manual X draft must include the verified repository URL")
 require("https://github.com/Btkkgo/OrdinConn/issues/1" in queue_text, "manual X draft must include the stage Issue")
-require("## English" in queue_text and "## 中文参考" in queue_text, "manual X draft must be bilingual")
-thread_body = queue_text.split("### Suggested Thread", 1)[1].split("### Suggested Screenshots", 1)[0]
+require("## English — Publication Version" in queue_text and "## 中文 — 参考版本" in queue_text, "manual X draft must be bilingual")
+thread_body = queue_text.split("## English — Publication Version", 1)[1].split("## 中文 — 参考版本", 1)[0]
 markers = list(re.finditer(r"(?m)^###\s+(\d+)/(\d+)\s*$", thread_body))
 require(len(markers) == 5, "introductory X draft must contain 5 posts")
 for expected, marker in enumerate(markers, start=1):
@@ -121,10 +137,21 @@ for expected, marker in enumerate(markers, start=1):
 
 for draft in sorted(ROOT.joinpath("social", "x", "drafts").glob("*.md")):
     draft_text = draft.read_text(encoding="utf-8")
-    require("## English" in draft_text and "## 中文参考" in draft_text, f"X draft is not bilingual: {draft.name}")
+    require("## English — Publication Version" in draft_text and "## 中文 — 参考版本" in draft_text, f"X draft is not bilingual: {draft.name}")
+    english_thread = draft_text.split("## English — Publication Version", 1)[1].split("## 中文 — 参考版本", 1)[0]
+    chinese_thread = draft_text.split("## 中文 — 参考版本", 1)[1]
+    english_posts_only = english_thread.split("### Suggested Screenshots", 1)[0]
+    english_markers = list(re.finditer(r"(?m)^###\s+(\d+)/5\s*$", english_posts_only))
+    require(len(english_markers) == 5, f"English X thread is incomplete: {draft.name}")
+    for expected, marker in enumerate(english_markers, start=1):
+        require(int(marker.group(1)) == expected, f"English X thread order is invalid: {draft.name}")
+        end = english_markers[expected].start() if expected < len(english_markers) else len(english_posts_only)
+        post = english_posts_only[marker.end() : end].strip()
+        require(0 < len(post) <= 280, f"English X post {expected} in {draft.name} has length {len(post)}")
+    require(len(re.findall(r"(?m)^###\s+\d+/5\s*$", chinese_thread)) == 5, f"Chinese X thread is incomplete: {draft.name}")
 
 template_text = template.read_text(encoding="utf-8")
-require("## English" in template_text and "## 中文参考" in template_text, "X draft template is not bilingual")
+require("## English — Publication Version" in template_text and "## 中文 — 参考版本" in template_text, "X draft template is not bilingual")
 
 for issue_file in sorted(ROOT.joinpath("docs", "issues").glob("*.md")):
     issue_text = issue_file.read_text(encoding="utf-8")

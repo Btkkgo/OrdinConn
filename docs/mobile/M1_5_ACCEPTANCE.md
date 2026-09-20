@@ -102,3 +102,5 @@ Final count: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**.
 Result: **M1.5 PASS — M2 remains NOT STARTED.** No mobile navigation actions were implemented or enabled.
 
 The first corrective default-parallel workspace run failed two existing AVD lifecycle process fixtures plus one corrected gate-label assertion. After the assertion fix, all 125 Rust tests passed in the default-parallel workspace rerun and all 28 desktop tests passed serially. The AVD fixture nondeterminism remains tracked in Issue #4 and is not hidden by the green rerun.
+
+The stage-close verification reproduced the same reliability boundary with a wider four-test failure set on its first fresh default-parallel workspace run. The immediately following serial desktop run passed 28/28 and the next default-parallel workspace rerun passed 125/125. Issue #4 therefore remains open; this sequence does not change the independently verified 15/15 real-environment acceptance or authorize M2.

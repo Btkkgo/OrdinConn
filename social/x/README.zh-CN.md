@@ -17,7 +17,7 @@ Template 位于 `templates/`。普通 Code Change 应记录在 Daily DevLog，�
 - Stage Thread 必须包含已验证 GitHub Project Reference。
 - 不读取 Browser Cookie/Session，不索取 Password，不在 Git 中保存 Authentication。
 - 发布由项目所有者人工完成。Repository Automation 不登录 X、不读取 Browser State、也不调用 X API。
-- 每份 Draft 使用 `## English` 放置正式英文发布稿，使用 `## 中文参考` 供用户检查。两部分应基于同一脱敏事实自然表达，不能机械翻译私密对话。
+- 每份 Draft 使用 `## English — Publication Version` 放置正式英文 Thread，使用 `## 中文 — 参考版本` 放置完整中文参考 Thread。两部分应基于同一脱敏事实自然表达，不能机械翻译私密对话。
 
 ## 人工流程
 

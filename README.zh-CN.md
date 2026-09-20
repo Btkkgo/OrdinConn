@@ -47,6 +47,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 - 版本：`0.1.0`
 - Mobile 阶段：M1.5 真实环境验收完成
 - M1.5 Gate：**通过**
+- 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - M2：**尚未开始**
 - 真实资金执行：未实现，V0.1 仅支持 Paper Execution
 
@@ -122,7 +123,7 @@ GitHub 是 OrdinConn 唯一的公开工程事实来源。Issue 定义正式工�
 - Mobile Navigation Actions 尚未实现。
 - Computer Runtime 仍是受权限约束的部分实现。
 - 当前金融执行适配器仅支持 Paper Execution。
-- 默认并行 Rust 测试负载下，三项进程 Fixture 测试可能超时；同一组 24 个 Desktop Library 测试串行运行时通过。见 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
+- Process Fixture 并发仍存在间歇性 Flaky：最初 Desktop Run 有 3/24 失败，第一次修正 Workspace Run 又复现 2 个 AVD Lifecycle Failure。之后 Default Workspace 重跑 125/125 通过，Desktop Suite 串行 28/28 通过，但一次绿色重跑不能证明 Flakiness 已消失。见 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 
 ## License
 

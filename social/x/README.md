@@ -17,7 +17,7 @@ Templates live in `templates/`. Ordinary code changes belong in the daily DevLog
 - Require a verified GitHub project reference for stage threads.
 - Never read browser cookies or sessions, request a password, or store authentication in Git.
 - Publication is performed manually by the project owner. Repository automation does not log in to X, read browser state, or call the X API.
-- Every draft contains `## English` for the intended public post and `## 中文参考` for owner review. Both sections must express the same sanitized facts naturally rather than mechanically translating private conversation.
+- Every draft contains `## English — Publication Version` for the intended public thread and `## 中文 — 参考版本` for the complete Chinese reference thread. Both sections must express the same sanitized facts naturally rather than mechanically translating private conversation.
 
 ## Manual workflow
 

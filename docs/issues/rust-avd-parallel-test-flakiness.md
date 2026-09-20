@@ -19,6 +19,9 @@ Issue #4 remains **OPEN** with `status:needs-validation`. It does not block the 
 - First corrective default-parallel workspace run: two AVD lifecycle fixture failures were reproduced; one unrelated gate-label assertion was also corrected.
 - Final default-parallel workspace rerun: 125/125 passed.
 - Final serial desktop run: 28/28 passed.
+- Fresh stage-close default-parallel workspace run: 24/28 desktop tests passed and four timing-sensitive fixtures failed (`adb_command_drains_large_stdout_before_process_exit`, both AVD lifecycle cases, and `command_returns_after_success_when_descendant_keeps_stdout_open`).
+- Immediate stage-close serial desktop run: 28/28 passed.
+- Immediate stage-close default-parallel workspace rerun: 125/125 passed.
 
 The later green rerun does not prove that the intermittent concurrency sensitivity has been eliminated.
 
@@ -46,7 +49,7 @@ Open and not yet resolved. The final workspace and serial reruns were green, but
 
 ## Validation
 
-Current evidence consists of the initial 21/24 desktop result, the 24/24 serial result, two reproduced AVD lifecycle failures during the corrective workspace run, the later 125/125 workspace rerun, and the final 28/28 serial desktop run.
+Current evidence consists of the initial 21/24 desktop result, the 24/24 serial result, two reproduced AVD lifecycle failures during the corrective workspace run, its later 125/125 workspace rerun, and the fresh stage-close sequence of 24/28 desktop tests on the first workspace attempt, 28/28 serial desktop tests, then 125/125 on the next workspace rerun.
 
 ## Boundary
 
@@ -73,6 +76,9 @@ Issue #4 继续保持 **OPEN** 和 `status:needs-validation`。它不阻塞已�
 - 第一次 Corrective Default-parallel Workspace Run：再次出现 2 个 AVD Lifecycle Fixture Failure；同时修正了 1 个无关的 Gate-label Assertion。
 - 最终 Default-parallel Workspace 重跑：125/125 通过。
 - 最终 Serial Desktop Run：28/28 通过。
+- 本次 Stage Close 的新鲜 Default-parallel Workspace Run：Desktop Test 为 24/28，4 个 Timing-sensitive Fixture 失败（`adb_command_drains_large_stdout_before_process_exit`、两个 AVD Lifecycle Case，以及 `command_returns_after_success_when_descendant_keeps_stdout_open`）。
+- 紧接着的 Stage Close Serial Desktop Run：28/28 通过。
+- 紧接着的 Stage Close Default-parallel Workspace 重跑：125/125 通过。
 
 后续一次绿色重跑不能证明间歇性并发敏感问题已经消失。
 
@@ -100,7 +106,7 @@ Issue #4 继续保持 **OPEN** 和 `status:needs-validation`。它不阻塞已�
 
 ## 验证
 
-当前 Evidence 包括最初 21/24 Desktop Result、24/24 Serial Result、Corrective Workspace Run 中再次出现的两个 AVD Lifecycle Failure、之后 125/125 Workspace Rerun，以及最终 28/28 Serial Desktop Run。
+当前 Evidence 包括最初 21/24 Desktop Result、24/24 Serial Result、Corrective Workspace Run 中再次出现的两个 AVD Lifecycle Failure 及之后的 125/125 Workspace Rerun，以及本次 Stage Close 的新鲜序列：第一次 Workspace Attempt 中 Desktop 24/28、Serial Desktop 28/28、下一次 Workspace Rerun 125/125。
 
 ## 边界
 

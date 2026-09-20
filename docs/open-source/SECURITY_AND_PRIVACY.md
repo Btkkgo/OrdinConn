@@ -29,3 +29,9 @@ OrdinConn does not collect private keys, recovery phrases, or password-field con
 ## Incident response
 
 If a secret is suspected in Git history, stop sync and publication. Rotate or revoke the credential first, then follow the hosting provider's history-remediation process. Do not rely on a later deletion commit to make an exposed secret safe. Private commit emails and raw machine home prefixes must be removed from the public branch before its first push.
+
+## Privacy repair record — 2026-09-20
+
+One one-time, explicitly authorized privacy history repair replaced only the Author and Committer identity metadata of the M1.5 merge commit with the current GitHub no-reply identity. The tree, both parents, timestamps, commit message, files, code, tests, documentation, and Issue state were unchanged. A precise `--force-with-lease` updated `main` only after the remote still matched the expected old SHA; ordinary force-push remains prohibited.
+
+The pre-repair SHA remained directly accessible through GitHub and remained referenced by PR #5 after the branch update. No further history rewrite was attempted. This is recorded as `GITHUB_CACHED_COMMIT_REMAINS`; GitHub Support cleanup may require separate evaluation.

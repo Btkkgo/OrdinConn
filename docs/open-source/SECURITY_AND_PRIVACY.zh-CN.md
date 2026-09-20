@@ -29,3 +29,9 @@ OrdinConn 不采集 Private Key、Recovery Phrase 或 Password-field Content。�
 ## 事件响应
 
 如果怀疑 Git History 中存在 Secret，立即停止 Sync 和 Publication。先轮换或撤销 Credential，再按 Hosting Provider 的 History-remediation 流程处理。不能依靠之后的删除 Commit 把已暴露 Secret 变安全。首次 Push 前必须从 Public Branch 中移除私人 Commit Email 与原始机器 Home Prefix。
+
+## 隐私修复记录 — 2026-09-20
+
+一次经过明确授权的一次性 Privacy History Repair，只把 M1.5 Merge Commit 的 Author/Committer Identity Metadata 替换为当前 GitHub No-reply Identity。Tree、两个 Parent、Timestamp、Commit Message、File、Code、Test、Documentation 与 Issue State 均未变化。只有在 Remote 仍与预期旧 SHA 完全一致后，才使用精确 `--force-with-lease` 更新 `main`；普通 Force-push 继续禁止。
+
+Branch 更新后，修复前 SHA 仍可通过 GitHub 直接访问，PR #5 也仍引用该 SHA。没有继续执行更多历史重写。该状态记录为 `GITHUB_CACHED_COMMIT_REMAINS`；是否需要 GitHub Support Cleanup 应另行评估。

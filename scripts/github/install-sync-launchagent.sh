@@ -6,16 +6,16 @@ project_root="${ORDINCONN_PROJECT_ROOT:-$(git -C "$script_dir" rev-parse --show-
 project_root="$(cd "$project_root" && pwd -P)"
 agent_dir="${ORDINCONN_LAUNCH_AGENT_DIR:-$HOME/Library/LaunchAgents}"
 log_dir="${ORDINCONN_PUBLIC_LOG_DIR:-$HOME/Library/Logs/OrdinConn}"
-label="com.ordinconn.public-devlog-sync"
+python_bin="${ORDINCONN_PUBLIC_PYTHON_BIN:-$(command -v python3 || true)}"
+label="com.ordinconn.github-sync"
 template="$script_dir/$label.plist.template"
 plist="$agent_dir/$label.plist"
-sync_script="$project_root/scripts/public-log/sync-public-devlog.sh"
-log_path="$log_dir/public-devlog-sync.log"
-python_bin="${ORDINCONN_PUBLIC_PYTHON_BIN:-$(command -v python3 || true)}"
+sync_script="$project_root/scripts/github/sync-public-log.sh"
+log_path="$log_dir/github-sync.log"
 
 [ "$(uname -s)" = "Darwin" ] || { echo "MACOS_REQUIRED" >&2; exit 2; }
 [ -f "$template" ] || { echo "LAUNCH_AGENT_TEMPLATE_REQUIRED" >&2; exit 2; }
-[ -x "$sync_script" ] || { echo "PUBLIC_SYNC_SCRIPT_REQUIRED" >&2; exit 2; }
+[ -x "$sync_script" ] || { echo "GITHUB_SYNC_SCRIPT_REQUIRED" >&2; exit 2; }
 [ -n "$python_bin" ] && [ -x "$python_bin" ] || { echo "PYTHON3_REQUIRED" >&2; exit 2; }
 command -v plutil >/dev/null 2>&1 || { echo "PLUTIL_REQUIRED" >&2; exit 2; }
 

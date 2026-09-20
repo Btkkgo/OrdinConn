@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
-  echo "usage: sanitize-public-log.sh --check PATH... | --redact FILE" >&2
+  echo "usage: sanitize-public-log.sh --check PATH... | --check-history REPO | --redact FILE" >&2
   exit 2
 fi
 
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -51,6 +52,7 @@ mnemonic_pattern = re.compile(
 def iter_files(paths: list[Path]):
     for path in paths:
         if path.is_symlink():
+            yield path
             continue
         if path.is_file():
             yield path
@@ -59,11 +61,16 @@ def iter_files(paths: list[Path]):
             yield path
             continue
         for root, dirs, files in os.walk(path, followlinks=False):
-            dirs[:] = [name for name in dirs if name not in excluded_dirs]
+            symlink_dirs = [Path(root) / name for name in dirs if (Path(root) / name).is_symlink()]
+            dirs[:] = [
+                name
+                for name in dirs
+                if name not in excluded_dirs and not (Path(root) / name).is_symlink()
+            ]
+            yield from symlink_dirs
             for name in files:
                 candidate = Path(root) / name
-                if not candidate.is_symlink():
-                    yield candidate
+                yield candidate
 
 
 def display(path: Path) -> str:
@@ -74,6 +81,8 @@ def display(path: Path) -> str:
 
 
 def read_text(path: Path) -> str | None:
+    if path.is_symlink():
+        return os.readlink(path)
     data = path.read_bytes()
     if b"\x00" in data[:8192]:
         return None
@@ -135,6 +144,64 @@ if mode == "--redact":
         raise SystemExit(2)
     sys.stdout.write(home_pattern.sub("~/", text))
     raise SystemExit(0)
+
+if mode == "--check-history":
+    if len(inputs) != 1 or not inputs[0].is_dir():
+        print("--check-history requires exactly one Git repository", file=sys.stderr)
+        raise SystemExit(2)
+    repo = inputs[0].resolve()
+    try:
+        objects = subprocess.run(
+            ["git", "-C", str(repo), "rev-list", "--objects", "--all"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        messages = subprocess.run(
+            ["git", "-C", str(repo), "log", "--all", "--format=%B%x00"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        print("PUBLIC_LOG_SCAN_BLOCKED git-history-read-error", file=sys.stderr)
+        raise SystemExit(1)
+
+    blocked = False
+    seen_objects: set[str] = set()
+    for entry in objects:
+        object_id, _, object_path = entry.partition(" ")
+        if object_id in seen_objects:
+            continue
+        seen_objects.add(object_id)
+        object_type = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "-t", object_id],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        if object_type != "blob":
+            continue
+        data = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "blob", object_id],
+            check=True,
+            capture_output=True,
+        ).stdout
+        if b"\x00" in data[:8192]:
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        history_path = Path(object_path or f"object-{object_id[:12]}")
+        for label in categories(history_path, text):
+            print(f"PUBLIC_LOG_SCAN_BLOCKED history-{label} {history_path}", file=sys.stderr)
+            blocked = True
+
+    for label in categories(Path("commit-message"), messages):
+        print(f"PUBLIC_LOG_SCAN_BLOCKED history-{label} commit-message", file=sys.stderr)
+        blocked = True
+    raise SystemExit(1 if blocked else 0)
 
 if mode != "--check":
     print(f"unsupported mode: {mode}", file=sys.stderr)

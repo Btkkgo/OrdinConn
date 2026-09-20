@@ -28,6 +28,23 @@ expect_blocked() {
   fi
 }
 
+expect_history_blocked() {
+  local label=$1
+  local repo=$2
+  local secret=${3:-}
+  local output
+  if output=$("$scanner" --check-history "$repo" 2>&1); then
+    fail "$label was not blocked"
+  fi
+  case "$output" in
+    *PUBLIC_LOG_SCAN_BLOCKED*) ;;
+    *) fail "$label did not return a fail-closed diagnostic" ;;
+  esac
+  if [ -n "$secret" ] && printf '%s' "$output" | grep -Fq "$secret"; then
+    fail "$label leaked the suspected value"
+  fi
+}
+
 [ -x "$scanner" ] || fail "sanitizer is missing or not executable"
 
 printf '%s\n' 'A verified build completed with no private data.' > "$fixture_dir/safe.md"
@@ -71,6 +88,9 @@ raw_home="/""Users/""alice/Documents/OrdinConn"
 printf '%s\n' "$raw_home" > "$fixture_dir/path.txt"
 expect_blocked home-path "$fixture_dir/path.txt" "$raw_home"
 
+ln -s "$raw_home" "$fixture_dir/home-link"
+expect_blocked symlink-home-path "$fixture_dir/home-link" "$raw_home"
+
 printf '%s\n' 'SAFE_EXAMPLE=true' > "$fixture_dir/.env"
 expect_blocked env-file "$fixture_dir/.env"
 
@@ -81,5 +101,18 @@ mkdir "$fixture_dir/nested"
 cp "$fixture_dir/safe.md" "$fixture_dir/nested/safe.md"
 "$scanner" --check "$fixture_dir/nested"
 "$scanner" --check "$scanner" "$repo_root/scripts/public-log/tests/test_sanitize_public_log.sh"
+
+history_repo="$fixture_dir/history-repo"
+git init -q -b main "$history_repo"
+git -C "$history_repo" config user.name "History Scan Test"
+git -C "$history_repo" config user.email "history-scan@example.invalid"
+history_secret="not-a-real-history-value-1234567890"
+printf 'API_%s=%s\n' 'KEY' "$history_secret" > "$history_repo/temporary.txt"
+git -C "$history_repo" add temporary.txt
+git -C "$history_repo" commit -q -m "add temporary fixture"
+git -C "$history_repo" rm -q temporary.txt
+git -C "$history_repo" commit -q -m "remove temporary fixture"
+"$scanner" --check "$history_repo"
+expect_history_blocked history-secret "$history_repo" "$history_secret"
 
 echo "PASS: sanitizer blocks sensitive material and redacts home paths"

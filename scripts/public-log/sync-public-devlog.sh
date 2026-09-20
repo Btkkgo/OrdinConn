@@ -8,7 +8,8 @@ if [ -z "$repo_root" ]; then
 fi
 repo_root="$(cd "$repo_root" && pwd -P)"
 sanitizer="${ORDINCONN_PUBLIC_SANITIZER:-$repo_root/scripts/public-log/sanitize-public-log.sh}"
-log_file="${ORDINCONN_PUBLIC_SYNC_LOG:-$HOME/Library/Logs/OrdinConn/public-devlog-sync.log}"
+security_gate="${ORDINCONN_PUBLIC_SECURITY_GATE:-$repo_root/scripts/security/check-public-repo.sh}"
+log_file="${ORDINCONN_PUBLIC_SYNC_LOG:-$HOME/Library/Logs/OrdinConn/github-sync.log}"
 lock_key="$(printf '%s' "$repo_root" | cksum | awk '{print $1}')"
 lock_dir="${TMPDIR:-/tmp}/ordinconn-public-devlog-sync-$lock_key.lock"
 
@@ -33,15 +34,26 @@ fi
 trap 'rmdir "$lock_dir" 2>/dev/null || true' EXIT
 
 git -C "$repo_root" rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail "GIT_REPOSITORY_REQUIRED" 2
-git -C "$repo_root" remote get-url origin >/dev/null 2>&1 || fail "GITHUB_REMOTE_REQUIRED" 3
+origin_url="$(git -C "$repo_root" remote get-url origin 2>/dev/null || true)"
+[ -n "$origin_url" ] || fail "GITHUB_REMOTE_REQUIRED" 3
+expected_remote="${ORDINCONN_PUBLIC_EXPECTED_REMOTE:-}"
+if [ -n "$expected_remote" ]; then
+  [ "$origin_url" = "$expected_remote" ] || fail "OFFICIAL_GITHUB_REMOTE_REQUIRED" 3
+else
+  case "$origin_url" in
+    git@github.com:Btkkgo/OrdinConn.git|https://github.com/Btkkgo/OrdinConn|https://github.com/Btkkgo/OrdinConn.git) ;;
+    *) fail "OFFICIAL_GITHUB_REMOTE_REQUIRED" 3 ;;
+  esac
+fi
 [ -x "$sanitizer" ] || fail "PUBLIC_LOG_SANITIZER_REQUIRED" 2
+[ -x "$security_gate" ] || fail "PUBLIC_REPOSITORY_SECURITY_GATE_REQUIRED" 2
 
 branch="$(git -C "$repo_root" branch --show-current)"
 [ -n "$branch" ] || fail "PUBLIC_DEVLOG_BRANCH_REQUIRED" 2
 
 is_allowed_path() {
   case "$1" in
-    docs/open-source/*|docs/devlog/*|social/x/*|scripts/public-log/*|scripts/social/*) return 0 ;;
+    docs/*|social/x/drafts/*|.github/*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -55,7 +67,7 @@ while IFS= read -r path; do
 done < <(git -C "$repo_root" diff --cached --name-only)
 [ -z "$out_of_scope" ] || fail "OUT_OF_SCOPE_STAGED_FILES" 4
 
-if ! "$sanitizer" --check "$repo_root"; then
+if ! ORDINCONN_PUBLIC_REPO="$repo_root" ORDINCONN_PUBLIC_SANITIZER="$sanitizer" "$security_gate"; then
   fail "PUBLIC_LOG_SECRET_SCAN_FAILED" 5
 fi
 
@@ -64,7 +76,7 @@ if ! git -C "$repo_root" diff --check; then
 fi
 
 allowed_paths=()
-for path in docs/open-source docs/devlog social/x scripts/public-log scripts/social; do
+for path in docs social/x/drafts .github; do
   if [ -e "$repo_root/$path" ]; then
     allowed_paths+=("$path")
   fi

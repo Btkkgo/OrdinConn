@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.ordinconn.public-devlog-sync</string>
+  <string>com.ordinconn.github-sync</string>
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>

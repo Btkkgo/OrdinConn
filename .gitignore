@@ -4,6 +4,8 @@
 !.env.example
 node_modules/
 dist/
+build/
+.next/
 target/
 *.db
 *.db-shm
@@ -15,3 +17,12 @@ coverage/
 __pycache__/
 *.pyc
 apps/desktop/src-tauri/gen/
+.local/
+runtime-data/
+captures/private/
+screenshots/private/
+.android/
+android-sdk/
+*.avd/
+*.avd.ini
+config/*.local.*

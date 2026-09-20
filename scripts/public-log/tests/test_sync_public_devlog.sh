@@ -4,6 +4,7 @@ set -euo pipefail
 source_root="$(cd "$(dirname "$0")/../../.." && pwd -P)"
 sync_script="$source_root/scripts/public-log/sync-public-devlog.sh"
 sanitizer="$source_root/scripts/public-log/sanitize-public-log.sh"
+security_gate="$source_root/scripts/security/check-public-repo.sh"
 test_root="$(mktemp -d)"
 trap 'rm -rf "$test_root"' EXIT
 
@@ -41,8 +42,12 @@ add_remote() {
 
 run_sync() {
   local repo=$1
+  local expected_remote
+  expected_remote=$(git -C "$repo" remote get-url origin 2>/dev/null || true)
   ORDINCONN_PUBLIC_SYNC_REPO="$repo" \
   ORDINCONN_PUBLIC_SYNC_LOG="$test_root/sync.log" \
+  ORDINCONN_PUBLIC_SECURITY_GATE="$security_gate" \
+  ORDINCONN_PUBLIC_EXPECTED_REMOTE="$expected_remote" \
   "$sync_script"
 }
 

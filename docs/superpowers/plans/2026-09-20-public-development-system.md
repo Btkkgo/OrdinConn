@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Public facts must be supported by the current code, documents, Git history, or fresh verification.
-- Raw prompts, private chat, credentials, session material, account identifiers, and raw `~/` paths must not enter public files.
+- Raw prompts, private chat, credentials, session material, account identifiers, and raw macOS home paths must not enter public files.
 - The scheduled sync may stage only public-log documentation and its directly related scripts.
 - Secret detection, an invalid diff, a missing remote, or an invalid X payload fails closed.
 - No force push, hard reset, clean, repository creation, password collection, cookie extraction, or browser-session extraction.
@@ -76,11 +76,11 @@ Add a `PUBLIC DEVELOPMENT LOG POLICY` section requiring a sanitized summary afte
 
 - [ ] **Step 6: Remove known machine-identity paths from tracked public text**
 
-Replace the two current `~/` references with `~/...` or a repository-relative spec reference.
+Replace the two current machine-specific home references with `~/...` or a repository-relative spec reference.
 
 - [ ] **Step 7: Validate files and factual markers**
 
-Run: `test "$(find docs/open-source -maxdepth 1 -type f | wc -l | tr -d ' ')" = 11 && test -f docs/devlog/2026-09-20.md && ! rg -n '~/]+/' README.md AGENTS.md docs/open-source docs/devlog docs/mobile/M1_5_ACCEPTANCE.md docs/superpowers/plans/2026-09-20-mobile-intelligence-m1-5.md`
+Run: `test "$(find docs/open-source -maxdepth 1 -type f | wc -l | tr -d ' ')" = 11 && test -f docs/devlog/2026-09-20.md && ! rg -n '/''Users/[^/]+/' README.md AGENTS.md docs/open-source docs/devlog docs/mobile/M1_5_ACCEPTANCE.md docs/superpowers/plans/2026-09-20-mobile-intelligence-m1-5.md`
 
 Expected: all required documents exist and no raw macOS home path remains in the public-document set.
 
@@ -103,7 +103,7 @@ Expected: only documentation/policy files are committed.
 
 - [ ] **Step 1: Write failing sanitizer integration tests**
 
-Create fixtures at runtime and assert that ordinary prose passes; private-key headers, assigned credentials, bearer authorization, token-shaped strings, cookie/session values, mnemonic-shaped assignments, `.env` files, and raw `~/` paths fail; redaction emits `~/...`.
+Create fixtures at runtime and assert that ordinary prose passes; private-key headers, assigned credentials, bearer authorization, token-shaped strings, cookie/session values, mnemonic-shaped assignments, sensitive environment files, and raw macOS home paths fail; redaction emits `~/...`.
 
 - [ ] **Step 2: Run the tests and verify RED**
 

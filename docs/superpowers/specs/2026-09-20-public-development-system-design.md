@@ -23,7 +23,7 @@ Plans are never reported as implemented. Fixture-backed behavior is distinguishe
 
 ### Sanitization boundary
 
-`scripts/public-log/sanitize-public-log.sh` supports checking and redacting text files. It rejects credential-shaped values, private-key headers, sensitive environment files, authorization headers, cookies or sessions with values, mnemonic-shaped assignments, and raw macOS home paths. Redaction converts `~/` to `~/`; it never silently edits the source during a check.
+`scripts/public-log/sanitize-public-log.sh` supports checking and redacting text files. It rejects credential-shaped values, private-key headers, sensitive environment files, authorization headers, cookies or sessions with values, mnemonic-shaped assignments, and raw macOS home paths. Redaction converts a raw macOS home prefix to `~/`; it never silently edits the source during a check.
 
 The scanner examines all tracked text plus public-log candidates before a sync. Detection is fail-closed: no commit or push follows a finding.
 

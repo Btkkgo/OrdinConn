@@ -9,7 +9,8 @@ fi
 mode=$1
 shift
 
-exec python3 - "$mode" "$@" <<'PY'
+python_bin="${ORDINCONN_PUBLIC_PYTHON:-python3}"
+exec "$python_bin" - "$mode" "$@" <<'PY'
 from __future__ import annotations
 
 import os

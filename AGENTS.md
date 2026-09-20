@@ -11,7 +11,7 @@
 9. Keep core crates transport-agnostic and keep React behind typed IPC contracts.
 10. Use the approved user-provided purple, black, and yellow brand system and locale keys for all formal UI copy.
 11. For product code changes, run Rust tests, TypeScript tests, typecheck, and Rust/frontend builds before declaring completion. Run desktop packaging when packaging, native integration, or release delivery is affected. For read-only or instruction/documentation-only tasks, validate the relevant instructions, links, and diff instead. Reuse successful checks for identical code, dependencies, commands, and relevant environment; rerun affected checks after changes and report failures or unverified criteria explicitly.
-12. Do not push unless the user explicitly asks.
+12. Push only when the user explicitly asks or when the issue-first public development workflow below already authorizes the same scoped task. Never force-push.
 
 ## Task scope and Skills
 
@@ -27,6 +27,26 @@
 - After an engineering-significant task, append a sanitized `Public Interaction Summary` to `docs/devlog/YYYY-MM-DD.md` with: Timestamp, Stage, User Goal, inspected areas, changes, files changed, problems, solution, commands/tests, result, remaining risks, next step, and a Codex engineering note.
 - Never copy a full prompt, private conversation, credential, token, cookie, session, password, account identity, customer data, private contact detail, exact personal address, restricted asset, or raw machine home path into the public log.
 - Use current code, current documentation, Git history, and fresh verification as truth sources. Keep `Implemented`, `Designed`, `Verified`, and `Blocked` distinct; fixture coverage never substitutes for real-environment evidence.
-- Scheduled public-log sync may stage only `docs/open-source/`, `docs/devlog/`, `social/x/`, and the directly related `scripts/public-log/` and `scripts/social/` paths. Product-code commits and pushes remain separate and require their own verification.
+- Scheduled public-log sync may stage only `docs/`, `social/x/drafts/`, and `.github/`. Product code and sync/security scripts must use the verified task-completion commit path, never the two-hour documentation job.
 - Run the public-log sanitizer before any public commit, GitHub push, or X publication. Any suspected secret fails closed; do not print the suspected value or continue publication.
-- Generate X material only for a meaningful stage, reusable engineering failure, or weekly summary. Move a queue item to `published/` only after recording its timestamp, URL, source commit, and content hash.
+- Generate X material only for a meaningful stage, reusable engineering failure, or weekly summary. X publication is always manual and user-owned. Never authenticate to X, read an X browser session, call an X API, or publish automatically. Move a draft to `published/` only after the owner records its timestamp, URL, source commit, and content hash.
+
+## ORDINCONN PUBLIC DEVELOPMENT RULES
+
+- Official GitHub repository: `https://github.com/Btkkgo/OrdinConn`. Never create another OrdinConn repository, an `OrdinConn-v2`, or a substitute repository. Continue all public development in this repository.
+- GitHub is the public engineering source of truth. If code, tests, Current Status, Issues, DevLogs, and X differ, trust them in that order; X can never claim a more advanced state.
+- Meaningful engineering work is issue-first:
+  1. Read the relevant Issue.
+  2. Create a scoped Issue if none exists.
+  3. Implement within the Issue boundary.
+  4. Run proportional tests and real-environment gates.
+  5. Update the daily DevLog.
+  6. Update the Issue with inspected areas, changes, files, commands, tests, problems, result, remaining work, and next step.
+  7. Run `scripts/security/check-public-repo.sh` and `git diff --check`.
+  8. Commit with `Refs #N`; use `Fixes #N` only when every acceptance criterion is complete.
+  9. Push the active issue branch or `main` without force.
+  10. Create an X draft only when stage-worthy.
+  11. Never publish X automatically.
+- Use `status:in-progress` when work starts, `status:blocked` for a named unmet prerequisite, `status:needs-validation` when code exists without adequate real acceptance, and `status:verified` only after the Issue acceptance criteria pass. Close an Issue only when its complete acceptance criteria pass.
+- Use `main` as the default branch. Significant runtime work should normally use `issue/<number>-<short-name>`; small documentation changes may use `main`. Avoid complex Git Flow.
+- At the end of a meaningful task, update the Issue and DevLog, run the security/diff/test gates, commit, and push promptly. A failed or blocked test may still be recorded with an honest `wip:`, `docs:`, `test:`, or `investigation:` commit; never describe it as a completed feature.

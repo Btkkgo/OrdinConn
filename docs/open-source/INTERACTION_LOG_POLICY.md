@@ -10,6 +10,7 @@ Each `Public Interaction Summary` contains:
 
 - Timestamp
 - Stage
+- GitHub Issue
 - User Goal
 - What Codex inspected
 - What Codex changed

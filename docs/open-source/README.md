@@ -4,16 +4,16 @@ This directory is the public engineering record for OrdinConn. It documents what
 
 ## Read first
 
-- [Current Stage](CURRENT_STAGE.md)
-- [Architecture](ARCHITECTURE.md)
+- [Current Status](../CURRENT_STATUS.md) · [中文](../CURRENT_STATUS.zh-CN.md)
+- [Architecture](../architecture/OVERVIEW.md)
 - [Development Timeline](DEVELOPMENT_TIMELINE.md)
-- [Decisions](DECISIONS.md)
-- [Problems and Solutions](PROBLEMS_AND_SOLUTIONS.md)
-- [Codex Field Notes](CODEX_FIELD_NOTES.md)
+- [Decisions](../decisions/)
+- [Problems and Solutions](../PROBLEMS_AND_SOLUTIONS.md)
+- [Codex Field Notes](../codex/CODEX_FIELD_NOTES.md)
 - [Interaction Log Policy](INTERACTION_LOG_POLICY.md)
 - [Build in Public](BUILD_IN_PUBLIC.md)
 - [Security and Privacy](SECURITY_AND_PRIVACY.md)
-- [Roadmap](ROADMAP.md)
+- [Roadmap](../roadmap/)
 
 Daily, sanitized engineering summaries live in [`docs/devlog/`](../devlog/).
 

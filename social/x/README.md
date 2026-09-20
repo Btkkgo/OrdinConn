@@ -2,7 +2,7 @@
 
 Stage-level Build in Public material moves through two states:
 
-- `queue/`: sanitized, reviewed content waiting for all publication requirements.
+- `drafts/`: sanitized content waiting for manual owner review and publication.
 - `published/`: immutable content plus publication time, X URLs, source commit, and SHA-256 content hash.
 
 Templates live in `templates/`. Ordinary code changes belong in the daily DevLog, not in an X post.
@@ -18,8 +18,8 @@ Templates live in `templates/`. Ordinary code changes belong in the daily DevLog
 
 ## Manual workflow
 
-1. Review and sanitize the file in `queue/`.
-2. Add the verified GitHub reference.
+1. Review and sanitize the file in `drafts/`.
+2. Confirm the verified GitHub references and select real public-safe screenshots.
 3. Publish the thread manually.
 4. Add the publication time, X URLs, source commit, and content hash.
 5. Move the completed file into `published/`.

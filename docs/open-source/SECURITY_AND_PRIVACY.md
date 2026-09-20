@@ -16,7 +16,7 @@ The repository and its development log are treated as public. A value being pres
 
 ## Fail-closed publication
 
-Before a scheduled sync, the automation scans the tracked text and public candidates, validates the diff, verifies the remote, and ensures only allowlisted public-log paths enter the commit. Any suspicious credential-shaped value stops the operation.
+Before a push or scheduled sync, the automation scans the working tree, reachable Git history, tracked paths, and commit-email metadata; validates the diff; verifies the official remote; and ensures only allowlisted public-record paths enter a scheduled commit. Any suspicious credential-shaped value stops the operation.
 
 The scanner reports the file and detector category, not the suspected value. Redaction of a macOS home path produces `~/...`.
 
@@ -26,4 +26,4 @@ OrdinConn does not collect private keys, recovery phrases, or password-field con
 
 ## Incident response
 
-If a secret is suspected in Git history, stop sync and publication. Rotate or revoke the credential first, then follow the hosting provider's history-remediation process. Do not rely on a later deletion commit to make an exposed secret safe.
+If a secret is suspected in Git history, stop sync and publication. Rotate or revoke the credential first, then follow the hosting provider's history-remediation process. Do not rely on a later deletion commit to make an exposed secret safe. Private commit emails and raw machine home prefixes must be removed from the public branch before its first push.

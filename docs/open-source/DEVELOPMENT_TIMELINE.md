@@ -1,5 +1,13 @@
 # Development Timeline
 
+## 2026-09-20 — Open-source initialization
+
+**Goal:** Establish GitHub as the public engineering source of truth without exposing secrets, private paths, commit emails, or unverified completion claims.
+
+**Changes:** Created the official public repository, issue taxonomy and templates, bilingual entry documentation, canonical status and ADR structure, working-tree and Git-history security gates, documentation-only sync, and a manual X draft workflow.
+
+**Status:** Repository initialization is tracked in [Issue #2](https://github.com/Btkkgo/OrdinConn/issues/2). X automatic publishing is disabled.
+
 This timeline is derived from the current Git history and repository documents. It does not reconstruct private conversations.
 
 ## 2026-09-12 — V0.1 financial-agent foundation

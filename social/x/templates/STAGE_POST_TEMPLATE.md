@@ -1,38 +1,45 @@
----
-stage: Stage name
-created_at: ISO-8601 timestamp
-status: ready
-verified_commit: Git commit
-github_reference: Verified GitHub URL
----
+# X Draft — Stage Name
 
-Thread 1/6
+- Stage:
+- GitHub Issue:
+- GitHub Commit:
+- Status: DRAFT — manual owner review required
+- Repository Link: https://github.com/Btkkgo/OrdinConn
+- Issue Link:
 
-Hook and why this stage matters.
+## Suggested Post
 
-Thread 2/6
+One concise standalone post grounded in verified GitHub records.
+
+## Suggested Thread
+
+### 1/5
+
+What OrdinConn is and why this stage matters.
+
+### 2/5
 
 The real engineering problem or failed assumption.
 
-Thread 3/6
+### 3/5
 
-The chosen design and why it fits the constraints.
+The chosen design and its safety boundary.
 
-Thread 4/6
+### 4/5
 
 Measured result, named verification, and any blocked real-environment check.
 
-Thread 5/6
+### 5/5
 
-Reusable technical lesson.
+Reusable technical and Codex lesson with a verified GitHub reference.
 
-Thread 6/6
+## Suggested Screenshots
 
-Candid Codex lesson, GitHub reference, and suggested screenshots if real public assets exist.
+- A real public-safe product or architecture view.
+- A real test or diagnostic view with private data removed.
 
-## Screenshot suggestions
+## Technical Lesson
 
-- Screenshot 1: What a real repository or application view should demonstrate.
-- Screenshot 2: What a real test, diagnostic, or architecture view should demonstrate.
+## Codex Lesson
 
-Never fabricate a screenshot or attach private runtime content.
+Never fabricate screenshots, credentials, completion claims, or GitHub links. The owner reviews and publishes manually; repository automation never publishes X.

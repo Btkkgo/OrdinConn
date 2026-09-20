@@ -21,12 +21,14 @@ OrdinConn publishes engineering progress to make architecture, failure modes, an
 
 ## Cadence
 
-Ordinary engineering work updates the daily DevLog and waits for the two-hour documentation sync. The active local scheduler is a Codex heartbeat because macOS denied a standalone LaunchAgent access to this checkout under `Documents`; the failed LaunchAgent was removed. A meaningful stage close also updates Current Stage, Problems and Solutions, Codex Field Notes, and the X queue.
+Ordinary engineering work updates the daily DevLog and waits for the two-hour documentation sync. The active local scheduler is a Codex heartbeat because macOS denied a standalone LaunchAgent access to this checkout under `Documents`; the failed LaunchAgent was removed. A meaningful stage close also updates Current Status, Problems and Solutions, Codex Field Notes, and an X draft.
 
 Product-code delivery is separate. It requires the relevant test and build gate and uses a product commit, not the scheduled documentation-only commit.
 
+Meaningful work is issue-first. The Issue defines scope and acceptance, receives the execution result, and remains open when validation is blocked. Commits use `Refs #N` until the complete acceptance criteria justify `Fixes #N`.
+
 ## Publication states
 
-- `queue`: reviewed public material waiting for a verified GitHub reference and manual owner publication.
+- `draft`: reviewed public material waiting for manual owner publication.
 - `published`: material with timestamp, immutable content hash, source commit, and URL.
 - `blocked`: material that failed sanitization, verification, authentication, or remote checks.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Rust, Tauri 2, React 19, TypeScript, Vitest, Android command-line tools when already installed.
 
-**Spec:** `~/.codex/attachments/1bab149b-075e-4395-8d40-205086ee2ce2/已粘贴的文本.txt`
+**Spec:** User-provided execution specification (local attachment; not committed).
 
 ## Global Constraints
 

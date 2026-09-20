@@ -233,29 +233,33 @@ Expected: queue and template are committed; no X credential or publishing automa
 - Consumes: all prior tasks.
 - Produces: final verified local state, installed scheduler, GitHub/X outcome, and audit report.
 
-- [ ] **Step 1: Run focused automation validation**
+- [x] **Step 1: Run focused automation validation**
 
 Run: `bash -n scripts/public-log/*.sh && bash scripts/public-log/tests/test_sanitize_public_log.sh && bash scripts/public-log/tests/test_sync_public_devlog.sh && bash scripts/public-log/tests/test_macos_sync_install.sh && python3 scripts/public-log/tests/validate_public_docs.py`
 
 Expected: all checks pass.
 
-- [ ] **Step 2: Run the full product validation**
+- [x] **Step 2: Run the full product validation**
 
 Run: `cargo fmt --check && cargo clippy --workspace --all-targets --all-features -- -D warnings && cargo test --workspace && npm test && npm run typecheck && npm run build && npm run desktop:build`
 
 Expected: all non-real-Android checks and builds pass; the existing explicit M1.5 real gate remains separately failed due to environment.
 
-- [ ] **Step 3: Run repository hygiene and privacy validation**
+Actual: formatting, Clippy, TypeScript tests/typecheck, web build, and desktop bundle passed. Default-parallel Rust desktop tests failed two one-second AVD lifecycle cases; the same 20 desktop tests passed serially. No product code was changed in this GitHub-sync task.
+
+- [x] **Step 3: Run repository hygiene and privacy validation**
 
 Run: `git diff --check && scripts/public-log/sanitize-public-log.sh --check .`
 
 Expected: PASS without exposing matched contents.
 
-- [ ] **Step 4: Install and verify the LaunchAgent**
+- [x] **Step 4: Install and verify the LaunchAgent**
 
 Run: `scripts/public-log/install-macos-sync.sh && launchctl print "gui/$UID/com.ordinconn.public-devlog-sync"`
 
 Expected: plist lint passes and launchd reports the job; its first sync may log `GITHUB_REMOTE_REQUIRED`.
+
+Actual: rendering and plist validation passed, but the real first run exited 126 because macOS denied the background shell access to the checkout under `Documents`. The failing job and plist were removed, and an active two-hour Codex heartbeat now invokes the same sync script.
 
 - [ ] **Step 5: Run one manual sync**
 
@@ -263,7 +267,7 @@ Run: `scripts/public-log/sync-public-devlog.sh`
 
 Expected in the current audited environment: nonzero with `GITHUB_REMOTE_REQUIRED`, with no file loss or unintended staging.
 
-- [ ] **Step 6: Preserve the X draft for manual publication**
+- [x] **Step 6: Preserve the X draft for manual publication**
 
 Do not inspect X authentication, open a browser, or publish. The project owner owns X publication. Keep the thread queued until a verified GitHub URL can be added.
 

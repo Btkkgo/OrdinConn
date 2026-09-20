@@ -23,6 +23,7 @@ M1.5 has one narrow goal: prove that the production Tauri host can observe a rea
 - Mobile M0/M1 contracts for device sessions, frames, semantic UI snapshots, element references, privacy classification, and `MobileObservation`.
 - An observe-only Android adapter that can discover configured tools, enumerate existing AVDs, inspect online emulator devices, capture a frame, dump the UI tree, redact sensitive nodes, persist observations, and project the Home/Warehouse/Settings workspace.
 - M1.5 diagnostics, bounded subprocess execution, production capture persistence/events, and persisted logical-session shutdown.
+- A sanitized public engineering record, fail-closed privacy scanner, documentation-only Git sync script, manual X content queue, and two-hour local GitHub-sync heartbeat.
 
 ## Designed
 
@@ -44,6 +45,8 @@ At product source baseline `144c87f`, the most recent full local verification re
 - TypeScript type checking and the Vite production build passed.
 - The macOS Tauri application bundle was produced.
 - The explicit real Android smoke returned a truthful 10-check report: three environment prerequisites failed and seven dependent checks were blocked.
+- Public-log sanitizer, allowlisted Git-sync, scheduler rendering, document schema, plist lint, and repository hygiene checks passed.
+- The two-hour Codex heartbeat is active. A standalone LaunchAgent was tested, but macOS denied its background shell access to this checkout under `Documents`, so it was removed instead of leaving a failing duplicate scheduler.
 
 Fixture-based Android tests verify parsers, policies, timeouts, persistence, and IPC projection. They are not evidence of a working real emulator.
 
@@ -53,6 +56,7 @@ Fixture-based Android tests verify parsers, policies, timeouts, persistence, and
 - M1.5 therefore did not pass; real frame capture, UI-tree capture, observation creation, typed IPC traversal, and shutdown could not be accepted against an emulator.
 - M2 actions are intentionally absent and must remain absent until all ten M1.5 checks pass.
 - This checkout has no configured Git remote, so public GitHub synchronization cannot run yet.
+- The latest default-parallel Rust desktop unit run exposed two one-second AVD lifecycle tests that time out under suite concurrency; both pass when the desktop library suite runs serially. This is recorded as unresolved product-test timing behavior, not changed by the public-log task.
 
 ## Technical Decisions
 

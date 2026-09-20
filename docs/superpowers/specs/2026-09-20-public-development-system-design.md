@@ -35,7 +35,7 @@ Missing `origin` returns `GITHUB_REMOTE_REQUIRED`. A push failure preserves both
 
 ### macOS scheduling
 
-The install script renders a local LaunchAgent from a username-free repository template. The local plist may contain the absolute checkout path, runs at load, and repeats every 7,200 seconds. Logs live under `~/Library/Logs/OrdinConn/`. Install and uninstall scripts use modern `launchctl` bootstrap/bootout behavior and expose test-only directory overrides.
+The install script renders a local LaunchAgent from a username-free repository template. The local plist may contain the absolute checkout and Python paths, runs at load, and repeats every 7,200 seconds. Logs live under `~/Library/Logs/OrdinConn/`. Install and uninstall scripts use modern `launchctl` bootstrap/bootout behavior and expose test-only directory overrides. If macOS privacy controls deny a background shell access to a protected checkout, the failing agent must be removed; the active installation may instead schedule the same fail-closed script through a local Codex heartbeat.
 
 ### X publication
 

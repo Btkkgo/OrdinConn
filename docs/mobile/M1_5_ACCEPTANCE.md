@@ -1,5 +1,7 @@
 # Mobile Intelligence M1.5 Acceptance
 
+[English](M1_5_ACCEPTANCE.md) | [简体中文](M1_5_ACCEPTANCE.zh-CN.md)
+
 ## Purpose
 
 M1.5 proves that the production OrdinConn host can use a real, existing Android Emulator through its typed Tauri boundary. It is the mandatory gate between observe-only M1 and verified navigation M2.
@@ -76,6 +78,26 @@ The check requires at least one recorded redaction, `SensitiveFieldBlocked`, a `
 - Snapshot/refs/observation/workspace projection/shutdown: `PASS` through the production persistence, audit, projection, serialization, and logical-session path.
 - Tauri IPC: `PASS` in the packaged desktop application. An empty allowlist produced the expected frontend error; after allowlisting `com.android.settings`, the UI showed `Observing`, `emulator-5554`, `com.android.settings`, `VERIFIED`, a real frame, and 70 UI elements. Stop returned the UI to `Disconnected`, persisted `mobile.session_ended`, and left the emulator online.
 - Sensitive-node check: one real password node, one OrdinConn redaction, and no test value in serialized capture data.
+
+## Final mandatory acceptance matrix
+
+1. Android SDK readiness: `PASS`
+2. ADB readiness: `PASS`
+3. Emulator readiness: `PASS`
+4. Dedicated AVD readiness: `PASS`
+5. Online emulator device: `PASS`
+6. Real frame capture: `PASS`
+7. Real UI-tree capture: `PASS`
+8. Sensitive-node redaction: `PASS`
+9. Snapshot parse: `PASS`
+10. Snapshot-scoped element references: `PASS`
+11. Real `MobileObservation`: `PASS`
+12. Persisted and audited workspace projection: `PASS`
+13. Packaged Tauri IPC path: `PASS`
+14. Controlled allowlist error: `PASS`
+15. Persisted logical session shutdown: `PASS`
+
+Final count: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**.
 
 Result: **M1.5 PASS — M2 remains NOT STARTED.** No mobile navigation actions were implemented or enabled.
 

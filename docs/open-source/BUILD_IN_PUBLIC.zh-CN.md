@@ -37,7 +37,7 @@ Product-code Delivery 与文档同步分开。它必须通过相关 Test/Build G
 
 GitHub 公开记录以英文为主要/默认版本，简体中文作为同步维护的辅助版本。核心文档使用成对的 `.md` 与 `.zh-CN.md` 文件，并提供双向语言链接。Issue Title 与 Commit Message 使用英文；Issue Body、重要 Issue Comment 与 Pull Request Body 使用英文在前、中文在后。Codex 与用户默认使用中文沟通。
 
-DevLog 使用 `YYYY-MM-DD.md` 与 `YYYY-MM-DD.zh-CN.md`。X Draft 包含 `## English` 与 `## 中文参考`，由用户人工审核，且绝不自动发布。两个语言版本必须报告相同 Stage、Test、Result、Risk 与 Next Step。
+DevLog 使用 `YYYY-MM-DD.md` 与 `YYYY-MM-DD.zh-CN.md`。X Draft 包含 `## English — Publication Version` 与 `## 中文 — 参考版本`，两种语言都要提供完整 Thread，由用户人工审核，且绝不自动发布。两个语言版本必须报告相同 Stage、Test、Result、Risk 与 Next Step。
 
 ## 发布状态
 

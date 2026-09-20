@@ -1,5 +1,7 @@
 # Mobile Runtime Security
 
+[English](MOBILE_SECURITY.md) | [简体中文](MOBILE_SECURITY.zh-CN.md)
+
 ## Default policy
 
 Application access is deny-all. A package must be placed in the user-controlled allowlist before its UI content can be observed. The runtime never collects passwords, OTP values, seed phrases, private keys, payment details, or secure-field contents.

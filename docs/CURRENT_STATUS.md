@@ -10,6 +10,7 @@
 - Product source baseline: `f8705c5`
 - Mobile stage: M1.5 real-environment validation complete
 - Gate: **M1.5 PASS**
+- Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - Next phase: **M2 NOT STARTED**
 
 This document separates implementation, verification, partial work, blocked work, design, plans, and work that has not started. Written intent is never counted as runtime evidence.

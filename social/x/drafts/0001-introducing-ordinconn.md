@@ -1,66 +1,65 @@
 # X Draft 0001 — Introducing OrdinConn
 
-- Stage: Open-source initialization / Mobile Intelligence M1.5
+- Stage: Project introduction / Mobile Intelligence M1.5 verified
 - GitHub Issue: https://github.com/Btkkgo/OrdinConn/issues/1
-- Public workflow Issue: https://github.com/Btkkgo/OrdinConn/issues/2
-- GitHub Commit: open-source documentation `3d9434d`; product baseline `c4f2d66`
-- Status: SUPERSEDED DRAFT — historical blocked checkpoint; do not publish as current status
-- Repository Link: https://github.com/Btkkgo/OrdinConn
+- Known Reliability Issue: https://github.com/Btkkgo/OrdinConn/issues/4
+- Verified Product Commit: https://github.com/Btkkgo/OrdinConn/commit/f8705c5
+- Corrected Evidence Commit: https://github.com/Btkkgo/OrdinConn/commit/78dc1ef
+- Status: DRAFT — ready for manual owner publication; M1.5 VERIFIED; M2 NOT STARTED
+- Repository: https://github.com/Btkkgo/OrdinConn
 
-## English
-
-### Suggested Post
-
-I’m building OrdinConn: an open-source, model-agnostic runtime for AI agents to perceive, understand, and operate computers and mobile environments—with explicit permissions, evidence provenance, and post-action verification. Development is public on GitHub.
-
-### Suggested Thread
+## English — Publication Version
 
 ### 1/5
 
-I’m building OrdinConn: an open-source, model-agnostic runtime for AI agents to perceive, understand, and operate computers and mobile environments. Not another chatbot—the runtime is the durable layer between reasoning and real tools.
+I’m building OrdinConn: an open-source, model-agnostic AI Agent runtime. It is not another chatbot. The goal is a durable path from AI Model → OrdinConn Runtime → Perception → Tools / Apps → Action → Verification.
 
 ### 2/5
 
-Models can change. Permissions, provenance, tool contracts, audit trails, and post-action verification still need stable infrastructure. OrdinConn keeps those boundaries outside any one model provider.
+Model reasoning keeps improving, but real work still needs stable permissions, screen/window context, files, mobile state, task state, audit trails, and post-action verification. OrdinConn keeps that infrastructure outside any one model provider.
 
 ### 3/5
 
-The current direction is Mobile Intelligence: Emulator → Frame → UI Tree → Element Refs → MobileObservation. Structured UI state comes before vision, access is app-allowlisted, and sensitive nodes must be redacted.
+The current direction is Mobile Intelligence: Android Emulator → Frame → UI Tree → Element Refs → MobileObservation → Agent Action. Structured perception comes before vision, app access is allowlisted, sensitive fields are redacted, and claims require real validation.
 
 ### 4/5
 
-The first real M1.5 gate failed honestly: Android SDK, ADB, and Emulator were unavailable. Result: 3 FAIL, 7 BLOCKED. No frame or UI tree was fabricated, and M2 did not start. github.com/Btkkgo/OrdinConn/issues/1
+The first gate stopped honestly: no SDK, adb, Emulator, or AVD. After building a real Android 16 ARM64 Pixel 8 environment, M1.5 finished 15/15 PASS: frame, 70 sanitized UI elements, redaction, Tauri IPC, and shutdown. M2 is NOT STARTED.
 
 ### 5/5
 
-Codex lesson: fixture tests prove parsers and policy—not a real integration. A useful gate names prerequisites, blocks dependent claims, and preserves failure as engineering evidence. Source and DevLogs: github.com/Btkkgo/OrdinConn
+Code generated ≠ task completed. Read → Scope → Implement → Real Test → Verify → Move Forward. Issue #4 tracks parallel-test flakiness. Repo: github.com/Btkkgo/OrdinConn · M1.5: github.com/Btkkgo/OrdinConn/issues/1
 
-### Suggested Screenshots
+## 中文 — 参考版本
 
-1. OrdinConn architecture: `AI Model → OrdinConn Runtime → Computer / Android / Apps`.
-2. Real M1.5 terminal result showing Android SDK missing, ADB FAIL, Emulator FAIL, and AVD FAIL.
-3. Mobile Intelligence pipeline: `Emulator → Frame → UI Tree → Element Refs → Observation → Action`.
+### 1/5
 
-Do not fabricate screenshots. Remove any private app content, account identity, or local home path before manual publication.
+我正在开发 OrdinConn：一个开源、模型无关的 AI Agent Runtime。它不是另一个聊天机器人。目标是建立稳定链路：AI Model → OrdinConn Runtime → Perception → Tools / Apps → Action → Verification。
 
-### Technical Lesson
+### 2/5
 
-Real-environment acceptance and fixture coverage are separate evidence classes. A downstream stage must remain blocked when its external prerequisites are absent.
+模型推理能力持续增强，但真实工作仍需要稳定的权限、屏幕与窗口上下文、文件、移动环境状态、任务状态、审计轨迹和操作后验证。OrdinConn 把这些基础设施放在任何单一模型 Provider 之外。
 
-### Codex Lesson
+### 3/5
 
-Codex was most useful when the workflow forced explicit scope, named gates, independent review, and evidence-backed completion language. It could not turn a missing Android runtime into a verified integration.
+当前方向是 Mobile Intelligence：Android Emulator → Frame → UI Tree → Element Refs → MobileObservation → Agent Action。Structured Perception 优先于 Vision；App Access 使用 Allowlist；敏感字段必须脱敏；完成声明必须经过真实验证。
 
-## 中文参考
+### 4/5
 
-### 项目介绍
+第一次 Gate 如实停止：SDK、adb、Emulator 与 AVD 均不可用。建立真实 Android 16 ARM64 Pixel 8 环境后，M1.5 最终 15/15 PASS：Frame、70 个已脱敏 UI Element、Redaction、Tauri IPC 与 Shutdown 全部通过。M2 仍为 NOT STARTED。
 
-OrdinConn 是一个开源、模型无关的 AI Agent Runtime，目标是让不同模型通过稳定运行时感知、理解并操作电脑和移动设备环境。重点不是聊天界面，而是权限、来源、工具协议、审计和操作后验证。
+### 5/5
 
-### 当前 Mobile Intelligence 状态
+真实 Codex 经验：生成代码不等于完成任务。正确循环是 Read → Scope → Implement → Real Test → Verify → Move Forward。Issue #4 继续公开跟踪并行测试 Flakiness。仓库：github.com/Btkkgo/OrdinConn · M1.5 证据：github.com/Btkkgo/OrdinConn/issues/1
 
-本草稿保留 2026-09-20 的首次受阻检查点：当时真实 M1.5 Gate 没有检测到 Android SDK、ADB 与 Emulator，因此结果是 3 FAIL、7 BLOCKED，M2 没有开始。该状态后来已被真实验证取代；当前 M1.5 状态必须以 Issue #1 和 Draft 0002 为准。本草稿不得作为当前状态发布。
+## Suggested Images
 
-### 人工发布提醒
+1. **Architecture main image:** `AI Model ↓ OrdinConn Runtime ↓ Computer / Android / Apps`. Keep it simple, English-primary, and do not imply unimplemented M2 actions.
+2. **Real Android Emulator:** the public-safe `OrdinConn_M1_5` Android Settings screen, with no account, notification, or personal data.
+3. **M1.5 acceptance matrix:** `15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN`, covering Frame, UI Tree, Redaction, Observation, Tauri IPC, and Shutdown.
 
-本文件只保留历史工程过程，不应再作为当前发布稿。Codex 不会自动发布 X。
+Do not fabricate screenshots. Remove local paths, account identity, notifications, and private application content before manual publication.
+
+## Manual Publication Reminder
+
+This draft is ready for owner review and manual publication. Repository automation must not log in to X, read cookies or browser sessions, store an X token, call the X API, or publish this draft.

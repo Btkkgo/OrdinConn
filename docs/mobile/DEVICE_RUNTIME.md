@@ -1,5 +1,7 @@
 # Device Runtime
 
+[English](DEVICE_RUNTIME.md) | [简体中文](DEVICE_RUNTIME.zh-CN.md)
+
 ## M1 device contract
 
 `MobileDeviceSession` records session and device identity, platform, device type, OS version, screen size, connection time, current application/activity, status, and the latest observation time.

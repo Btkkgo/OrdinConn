@@ -1,5 +1,7 @@
 # Mobile Intelligence Runtime
 
+[English](MOBILE_INTELLIGENCE.md) | [简体中文](MOBILE_INTELLIGENCE.zh-CN.md)
+
 ## Product role
 
 Mobile Intelligence Runtime is a first-class OrdinConn collection surface. It observes user-authorized Android applications and produces structured observations that enter the same evidence and strategy path as API, WebSocket, RSS, HTML, browser, and desktop sources.

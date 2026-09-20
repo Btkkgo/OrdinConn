@@ -28,6 +28,8 @@ Closed as verified. M1.5 is **PASS** and M2 is **NOT STARTED**. The separate int
 - M1.5 Gate: PASS
 - M2: NOT STARTED
 
+Mandatory acceptance total: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**.
+
 The real Android 16 / API 36 ARM64 capture gate passed all ten checks, including honest `WORKSPACE_PROJECTION`. A separate packaged-desktop smoke passed the real Rust → Tauri command/event → React path for status, allowlist error, session start, observation, and stop. The temporary sensitive-node test app and artifacts were removed after validation. Intermittent default-concurrency process-fixture timeouts remain separately tracked in Issue #4.
 
 ## Validation
@@ -87,6 +89,8 @@ This Issue does not authorize M2 navigation actions, real-money operations, unre
 - Tauri IPC / Session Shutdown：PASS
 - M1.5 Gate：PASS
 - M2：NOT STARTED
+
+强制验收总计：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**。
 
 真实 Android 16 / API 36 ARM64 Capture Gate 已通过全部十项检查，包括准确命名的 `WORKSPACE_PROJECTION`。另一次打包桌面 Smoke 通过真实 Rust → Tauri Command/Event → React 链路，覆盖 Status、Allowlist Error、Session Start、Observation 与 Stop。临时 Sensitive-node Test App 与 Artifact 在验证后已清理。Default-concurrency Process-fixture 间歇 Timeout 单独记录在 Issue #4。
 

@@ -37,7 +37,7 @@ Meaningful work is issue-first. The Issue defines scope and acceptance, receives
 
 English is the primary/default language for public GitHub records; Simplified Chinese is maintained as the synchronized secondary edition. Core documents use paired `.md` and `.zh-CN.md` files with reciprocal language links. Issue titles and commit messages use English; Issue bodies, important Issue comments, and Pull Request bodies use English first and Chinese second. Codex communicates with the owner in Chinese by default.
 
-DevLogs use `YYYY-MM-DD.md` and `YYYY-MM-DD.zh-CN.md`. X drafts contain `## English` and `## 中文参考`, remain owner-reviewed, and are never published automatically. The two languages must report the same stage, tests, outcome, risks, and next step.
+DevLogs use `YYYY-MM-DD.md` and `YYYY-MM-DD.zh-CN.md`. X drafts contain `## English — Publication Version` and `## 中文 — 参考版本`, include the complete thread in both languages, remain owner-reviewed, and are never published automatically. The two languages must report the same stage, tests, outcome, risks, and next step.
 
 ## Publication states
 

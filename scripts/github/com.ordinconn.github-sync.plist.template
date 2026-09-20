@@ -6,16 +6,11 @@
   <string>com.ordinconn.github-sync</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
-    <string>__SYNC_SCRIPT__</string>
+    <string>__LAUNCHER_BIN__</string>
+    <string>__RUNNER_PATH__</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>__PROJECT_ROOT__</string>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>ORDINCONN_PUBLIC_PYTHON</key>
-    <string>__PYTHON_BIN__</string>
-  </dict>
+  <string>__AUTOMATION_DIR__</string>
   <key>RunAtLoad</key>
   <true/>
   <key>StartInterval</key>

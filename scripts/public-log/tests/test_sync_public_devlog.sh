@@ -42,11 +42,12 @@ add_remote() {
 
 run_sync() {
   local repo=$1
+  local selected_gate=${2:-$security_gate}
   local expected_remote
   expected_remote=$(git -C "$repo" remote get-url origin 2>/dev/null || true)
   ORDINCONN_PUBLIC_SYNC_REPO="$repo" \
   ORDINCONN_PUBLIC_SYNC_LOG="$test_root/sync.log" \
-  ORDINCONN_PUBLIC_SECURITY_GATE="$security_gate" \
+  ORDINCONN_PUBLIC_SECURITY_GATE="$selected_gate" \
   ORDINCONN_PUBLIC_EXPECTED_REMOTE="$expected_remote" \
   "$sync_script"
 }
@@ -100,6 +101,113 @@ case "$output" in
 esac
 [ "$(git -C "$staged_repo" rev-parse HEAD)" = "$staged_head" ] || fail "staged product case created a commit"
 git -C "$staged_repo" diff --cached --quiet -- src/product.rs && fail "staged product edit was altered"
+
+unpushed_repo=$(new_repo unpushed-product)
+unpushed_remote=$(add_remote "$unpushed_repo" unpushed-remote)
+printf '%s\n' '// committed product edit' >> "$unpushed_repo/src/product.rs"
+git -C "$unpushed_repo" add src/product.rs
+git -C "$unpushed_repo" commit -q -m "unverified product change"
+printf '%s\n' 'public update' >> "$unpushed_repo/docs/devlog/2026-09-20.md"
+unpushed_head=$(git -C "$unpushed_repo" rev-parse HEAD)
+remote_before_unpushed=$(git --git-dir="$unpushed_remote" rev-parse refs/heads/test-sync)
+if output=$(run_sync "$unpushed_repo" 2>&1); then
+  fail "unpushed product commit unexpectedly succeeded"
+fi
+case "$output" in
+  *UNPUSHED_PRODUCT_COMMITS*) ;;
+  *) fail "unpushed product commit was not reported" ;;
+esac
+[ "$(git -C "$unpushed_repo" rev-parse HEAD)" = "$unpushed_head" ] || fail "unpushed product case changed local history"
+[ "$(git --git-dir="$unpushed_remote" rev-parse refs/heads/test-sync)" = "$remote_before_unpushed" ] || fail "unpushed product commit reached the remote"
+
+reverted_repo=$(new_repo reverted-product)
+reverted_remote=$(add_remote "$reverted_repo" reverted-remote)
+printf '%s\n' '// temporary product edit' >> "$reverted_repo/src/product.rs"
+git -C "$reverted_repo" add src/product.rs
+git -C "$reverted_repo" commit -q -m "temporary product change"
+git -C "$reverted_repo" revert --no-edit HEAD >/dev/null
+printf '%s\n' 'public update' >> "$reverted_repo/docs/devlog/2026-09-20.md"
+reverted_head=$(git -C "$reverted_repo" rev-parse HEAD)
+remote_before_reverted=$(git --git-dir="$reverted_remote" rev-parse refs/heads/test-sync)
+if output=$(run_sync "$reverted_repo" 2>&1); then
+  fail "reverted product commits unexpectedly succeeded"
+fi
+case "$output" in
+  *UNPUSHED_PRODUCT_COMMITS*) ;;
+  *) fail "reverted product commits were not reported" ;;
+esac
+[ "$(git -C "$reverted_repo" rev-parse HEAD)" = "$reverted_head" ] || fail "reverted product case changed local history"
+[ "$(git --git-dir="$reverted_remote" rev-parse refs/heads/test-sync)" = "$remote_before_reverted" ] || fail "reverted product commits reached the remote"
+
+behind_repo=$(new_repo remote-ahead)
+behind_remote=$(add_remote "$behind_repo" remote-ahead-bare)
+ahead_clone="$test_root/remote-ahead-clone"
+git clone -q --branch test-sync "$behind_remote" "$ahead_clone"
+git -C "$ahead_clone" config user.name "Remote Advance Test"
+git -C "$ahead_clone" config user.email "remote-advance@example.invalid"
+printf '%s\n' 'remote public update' >> "$ahead_clone/docs/devlog/2026-09-20.md"
+git -C "$ahead_clone" add docs/devlog/2026-09-20.md
+git -C "$ahead_clone" commit -q -m "remote docs update"
+git -C "$ahead_clone" push -q origin test-sync
+behind_head=$(git -C "$behind_repo" rev-parse HEAD)
+if output=$(run_sync "$behind_repo" 2>&1); then
+  fail "remote-ahead branch unexpectedly succeeded"
+fi
+case "$output" in
+  *GITHUB_REMOTE_AHEAD_OR_DIVERGED*) ;;
+  *) fail "remote-ahead branch was not reported" ;;
+esac
+[ "$(git -C "$behind_repo" rev-parse HEAD)" = "$behind_head" ] || fail "remote-ahead case created a local commit"
+
+workflow_repo=$(new_repo ignored-workflow)
+workflow_remote=$(add_remote "$workflow_repo" workflow-remote)
+mkdir -p "$workflow_repo/.github/workflows"
+printf '%s\n' 'name: should-not-sync' > "$workflow_repo/.github/workflows/ci.yml"
+printf '%s\n' 'public update' >> "$workflow_repo/docs/devlog/2026-09-20.md"
+run_sync "$workflow_repo" >/dev/null
+if git --git-dir="$workflow_remote" cat-file -e 'refs/heads/test-sync:.github/workflows/ci.yml' 2>/dev/null; then
+  fail "GitHub workflow was pushed by documentation sync"
+fi
+[ -f "$workflow_repo/.github/workflows/ci.yml" ] || fail "ignored workflow was discarded"
+
+pushurl_repo=$(new_repo mismatched-pushurl)
+pushurl_remote=$(add_remote "$pushurl_repo" pushurl-official)
+pushurl_wrong="$test_root/pushurl-wrong.git"
+git init -q --bare "$pushurl_wrong"
+git -C "$pushurl_repo" remote set-url --push origin "$pushurl_wrong"
+printf '%s\n' 'public update' >> "$pushurl_repo/docs/devlog/2026-09-20.md"
+pushurl_head=$(git -C "$pushurl_repo" rev-parse HEAD)
+if output=$(run_sync "$pushurl_repo" 2>&1); then
+  fail "mismatched push URL unexpectedly succeeded"
+fi
+case "$output" in
+  *OFFICIAL_GITHUB_REMOTE_REQUIRED*) ;;
+  *) fail "mismatched push URL was not reported" ;;
+esac
+[ "$(git -C "$pushurl_repo" rev-parse HEAD)" = "$pushurl_head" ] || fail "mismatched push URL created a local commit"
+[ "$(git --git-dir="$pushurl_remote" rev-parse refs/heads/test-sync)" = "$pushurl_head" ] || fail "official remote changed during push URL rejection"
+
+mutation_repo=$(new_repo staged-snapshot-mutation)
+mutation_remote=$(add_remote "$mutation_repo" mutation-remote)
+mutation_gate="$test_root/mutation-gate.sh"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'mkdir -p "$ORDINCONN_PUBLIC_REPO/docs/devlog"' \
+  'printf '\''api_%s = "%s"\n'\'' '\''key'\'' '\''not-a-real-race-value-1234567890'\'' > "$ORDINCONN_PUBLIC_REPO/docs/devlog/race.md"' \
+  'exit 0' > "$mutation_gate"
+chmod +x "$mutation_gate"
+mutation_head=$(git -C "$mutation_repo" rev-parse HEAD)
+mutation_remote_head=$(git --git-dir="$mutation_remote" rev-parse refs/heads/test-sync)
+if output=$(run_sync "$mutation_repo" "$mutation_gate" 2>&1); then
+  fail "post-scan mutation unexpectedly succeeded"
+fi
+case "$output" in
+  *PUBLIC_LOG_STAGED_SECRET_SCAN_FAILED*) ;;
+  *) fail "post-scan mutation was not blocked by staged snapshot scan" ;;
+esac
+[ "$(git -C "$mutation_repo" rev-parse HEAD)" = "$mutation_head" ] || fail "post-scan mutation created a local commit"
+[ "$(git --git-dir="$mutation_remote" rev-parse refs/heads/test-sync)" = "$mutation_remote_head" ] || fail "post-scan mutation reached the remote"
+git -C "$mutation_repo" diff --cached --quiet || fail "failed staged snapshot scan left the index modified"
 
 reject_repo=$(new_repo push-rejection)
 reject_remote=$(add_remote "$reject_repo" reject-remote)

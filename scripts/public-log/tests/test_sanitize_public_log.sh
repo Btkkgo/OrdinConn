@@ -50,7 +50,12 @@ expect_history_blocked() {
 printf '%s\n' 'A verified build completed with no private data.' > "$fixture_dir/safe.md"
 "$scanner" --check "$fixture_dir/safe.md"
 
-printf '%s\n' 'session: Option<MobileDeviceSession>,' 'api_key: String,' > "$fixture_dir/safe-code.rs"
+printf '%s\n' \
+  'session: Option<MobileDeviceSession>,' \
+  'api_key: String,' \
+  'api_key: Option<&str>,' \
+  'password: bool_value(values.get("password")),' \
+  'session: {' > "$fixture_dir/safe-code.rs"
 "$scanner" --check "$fixture_dir/safe-code.rs"
 
 private_header="-----BEGIN PRIVATE"" KEY-----"
@@ -60,6 +65,9 @@ expect_blocked private-key "$fixture_dir/private.txt"
 credential_value="not-a-real-value-1234567890"
 printf 'API_%s="%s"\n' 'KEY' "$credential_value" > "$fixture_dir/assignment.txt"
 expect_blocked credential-assignment "$fixture_dir/assignment.txt" "$credential_value"
+
+printf 'api_%s = "%s"\n' 'key' "$credential_value" > "$fixture_dir/lowercase-assignment.txt"
+expect_blocked lowercase-credential-assignment "$fixture_dir/lowercase-assignment.txt" "$credential_value"
 
 bearer_value="not-a-real-bearer-1234567890"
 printf 'Authorization: Bearer %s\n' "$bearer_value" > "$fixture_dir/authorization.txt"

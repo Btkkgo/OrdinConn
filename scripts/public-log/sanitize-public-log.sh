@@ -32,7 +32,7 @@ token_pattern = re.compile(
 bearer_pattern = re.compile(r"(?im)^\s*Authorization\s*:\s*Bearer\s+\S+")
 header_pattern = re.compile(r"(?im)^\s*(?:Cookie|Set-Cookie)\s*:\s*\S+")
 assignment_pattern = re.compile(
-    r"(?m)^\s*(?:export\s+)?"
+    r"(?im)^\s*(?:export\s+)?"
     r"(?:API_KEY|ACCESS_TOKEN|REFRESH_TOKEN|SECRET|PASSWORD|COOKIE|SESSION|"
     r"GITHUB_TOKEN|X_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|GEMINI_API_KEY)"
     r"\s*[:=]\s*(?P<value>[^\r\n]+)"
@@ -41,7 +41,7 @@ structured_secret_pattern = re.compile(
     r"(?im)^\s*[\"']?"
     r"(?:api_key|access_token|refresh_token|secret|password|cookie|session|"
     r"github_token|x_token|openai_api_key|anthropic_api_key|gemini_api_key)"
-    r"[\"']?\s*:\s*[\"'](?P<value>[^\"']+)[\"']"
+    r"[\"']?\s*[:=]\s*[\"'](?P<value>[^\"']+)[\"']"
 )
 mnemonic_pattern = re.compile(
     r"(?im)^\s*(?:MNEMONIC|SEED_PHRASE|RECOVERY_PHRASE)\s*[:=]\s*"
@@ -93,13 +93,21 @@ def read_text(path: Path) -> str | None:
 
 
 def meaningful_assignment(match: re.Match[str]) -> bool:
-    value = match.group("value").strip().strip("\"'")
-    normalized = value.lower()
+    raw_value = match.group("value").strip()
+    quoted = (
+        len(raw_value) >= 2
+        and raw_value[0] in {"\"", "'"}
+        and raw_value[-1] == raw_value[0]
+    )
+    value = raw_value[1:-1] if quoted else raw_value
+    normalized = value.rstrip(",;").lower()
     if not value:
         return False
     if value.startswith("${") or value.startswith("<"):
         return False
-    if re.fullmatch(r"(?:Option<)?[A-Z][A-Za-z0-9_:<>]*(?:,|;)?", value):
+    if not quoted and any(marker in value for marker in ("(", ")", "{", "}", "[", "]", "::", "=>")):
+        return False
+    if re.fullmatch(r"(?:Option<)?[A-Z][A-Za-z0-9_:<>&,\s]*(?:,|;)?", value):
         return False
     return normalized not in {
         "redacted",
@@ -107,6 +115,10 @@ def meaningful_assignment(match: re.Match[str]) -> bool:
         "example-only",
         "changeme",
         "not-configured",
+        "none",
+        "null",
+        "true",
+        "false",
         "unset",
     }
 

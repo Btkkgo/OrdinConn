@@ -9,8 +9,9 @@ use quick_xml::{Reader, events::Event};
 use serde::Serialize;
 use std::{
     env, fs,
+    io::Read,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::{Child, Command, Output, Stdio},
     sync::{
         Mutex,
         atomic::{AtomicBool, Ordering},
@@ -448,28 +449,18 @@ fn run_command_text_with_timeout(
     args: &[&str],
     timeout: Duration,
 ) -> Option<String> {
-    let mut child = Command::new(program)
+    let child = Command::new(program)
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
         .ok()?;
-    let deadline = Instant::now() + timeout;
-    loop {
-        if let Some(status) = child.try_wait().ok()? {
-            let output = child.wait_with_output().ok()?;
-            return status
-                .success()
-                .then(|| String::from_utf8_lossy(&output.stdout).into_owned());
-        }
-        if Instant::now() >= deadline {
-            let _ = child.kill();
-            let _ = child.wait();
-            return None;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
+    let output = wait_for_output_with_timeout(child, timeout).ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
 fn run_command_text_until(program: &Path, args: &[&str], deadline: Instant) -> Option<String> {
@@ -482,39 +473,77 @@ fn run_command_bytes_with_timeout(
     args: &[&str],
     timeout: Duration,
 ) -> Result<Vec<u8>, MobileHostError> {
-    let mut child = Command::new(program)
+    let child = Command::new(program)
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
+    let output =
+        wait_for_output_with_timeout(child, timeout).map_err(MobileHostError::CommandFailed)?;
+    if output.status.success() {
+        return Ok(output.stdout);
+    }
+    Err(MobileHostError::CommandFailed(
+        String::from_utf8_lossy(&output.stderr)
+            .chars()
+            .take(240)
+            .collect(),
+    ))
+}
+
+fn read_child_pipe<R>(mut pipe: R) -> thread::JoinHandle<std::io::Result<Vec<u8>>>
+where
+    R: Read + Send + 'static,
+{
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        pipe.read_to_end(&mut bytes)?;
+        Ok(bytes)
+    })
+}
+
+fn wait_for_output_with_timeout(mut child: Child, timeout: Duration) -> Result<Output, String> {
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "child stdout was not piped".to_owned())?;
+    let stdout_reader = read_child_pipe(stdout);
+    let stderr_reader = child.stderr.take().map(read_child_pipe);
     let deadline = Instant::now() + timeout;
     loop {
-        if let Some(status) = child
-            .try_wait()
-            .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?
-        {
-            let output = child
-                .wait_with_output()
-                .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
-            if status.success() {
-                return Ok(output.stdout);
-            }
-            return Err(MobileHostError::CommandFailed(
-                String::from_utf8_lossy(&output.stderr)
-                    .chars()
-                    .take(240)
-                    .collect(),
-            ));
+        if let Some(status) = child.try_wait().map_err(|error| error.to_string())? {
+            let stdout = stdout_reader
+                .join()
+                .map_err(|_| "stdout reader thread panicked".to_owned())?
+                .map_err(|error| error.to_string())?;
+            let stderr = stderr_reader
+                .map(|reader| {
+                    reader
+                        .join()
+                        .map_err(|_| "stderr reader thread panicked".to_owned())?
+                        .map_err(|error| error.to_string())
+                })
+                .transpose()?
+                .unwrap_or_default();
+            return Ok(Output {
+                status,
+                stdout,
+                stderr,
+            });
         }
         if Instant::now() >= deadline {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(MobileHostError::CommandFailed(format!(
+            let _ = stdout_reader.join();
+            if let Some(reader) = stderr_reader {
+                let _ = reader.join();
+            }
+            return Err(format!(
                 "command timed out after {} ms",
                 timeout.as_millis()
-            )));
+            ));
         }
         thread::sleep(Duration::from_millis(10));
     }
@@ -780,10 +809,7 @@ impl MobileHost {
             ],
         )?;
         let size_output = run_text(adb, &["-s", &device_id, "shell", "wm", "size"])?;
-        let focus_output = run_text(
-            adb,
-            &["-s", &device_id, "shell", "dumpsys", "window", "windows"],
-        )?;
+        let focus_output = run_text(adb, &["-s", &device_id, "shell", "dumpsys", "window"])?;
         run_text(
             adb,
             &[
@@ -897,9 +923,11 @@ fn parse_uiautomator_xml(xml: &str) -> Result<Vec<RawMobileElement>, MobileHostE
                         .into_owned();
                     values.insert(key, value);
                 }
-                let bounds =
+                let Some(bounds) =
                     parse_bounds(values.get("bounds").map(String::as_str).unwrap_or_default())
-                        .ok_or_else(|| MobileHostError::InvalidUiTree("invalid bounds".into()))?;
+                else {
+                    continue;
+                };
                 let class_name = values.remove("class").unwrap_or_default();
                 elements.push(RawMobileElement {
                     text: optional_value(values.remove("text")),
@@ -1055,6 +1083,18 @@ mod tests {
     }
 
     #[test]
+    fn uiautomator_parser_skips_platform_nodes_with_reversed_bounds() {
+        let xml = r#"<hierarchy><node text="offscreen" class="android.view.View" bounds="[0,2364][1080,2337]"/><node text="visible" class="android.widget.TextView" bounds="[10,20][100,80]"/></hierarchy>"#;
+
+        let elements = parse_uiautomator_xml(xml).unwrap();
+
+        assert_eq!(elements.len(), 1);
+        assert_eq!(elements[0].text.as_deref(), Some("visible"));
+        assert_eq!(elements[0].bounds.width, 90);
+        assert_eq!(elements[0].bounds.height, 60);
+    }
+
+    #[test]
     fn fixture_capture_requires_an_explicit_app_allowlist() {
         let output = AdbObservationOutput {
             device_id: "emulator-5554".into(),
@@ -1171,6 +1211,38 @@ mod tests {
         let report = m1_5_capture_gate(&diagnostics, &capture, ipc_serializable, session_shutdown);
         println!("{}", serde_json::to_string_pretty(&report).unwrap());
         assert!(report.passed, "M1.5 gate failed; M2 is forbidden");
+    }
+
+    #[test]
+    fn real_sensitive_redaction_smoke_is_explicitly_gated() {
+        if std::env::var("ORDINCONN_MOBILE_SENSITIVE_SMOKE").as_deref() != Ok("1") {
+            return;
+        }
+        let secret = std::env::var("ORDINCONN_MOBILE_TEST_SECRET")
+            .expect("the temporary sensitive-smoke value must be provided by the caller");
+        let host = MobileHost::discover();
+        let capture = host
+            .observe_with_sdk(None, &["com.ordinconn.m15test".into()])
+            .expect("the temporary sensitive test app must be visible on an online emulator");
+        let serialized = serde_json::to_string(&capture).unwrap();
+
+        assert!(!serialized.contains(&secret));
+        assert!(!capture.snapshot.redactions.is_empty());
+        assert_eq!(
+            capture.snapshot.sensitive_state,
+            Some(mobile_runtime::VerificationResult::SensitiveFieldBlocked)
+        );
+        assert!(
+            capture
+                .snapshot
+                .elements
+                .iter()
+                .any(|element| element.text.as_deref() == Some("[REDACTED]"))
+        );
+        println!(
+            "sensitive_redaction=PASS redactions={} serialized_secret_present=false",
+            capture.snapshot.redactions.len()
+        );
     }
 
     #[test]
@@ -1314,7 +1386,7 @@ if [ "$1" = "devices" ]; then printf 'List of devices attached\nemulator-5554 de
 case "$*" in
   *ro.build.version.release*) echo 15 ;;
   *"wm size"*) echo 'Physical size: 1080x2400' ;;
-  *"dumpsys window windows"*) echo '{}' ;;
+  *"dumpsys window"*) echo '{}' ;;
   *"uiautomator dump"*) echo dumped ;;
   *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
   *"screencap -p"*) printf PNG ;;
@@ -1331,6 +1403,40 @@ esac
             .unwrap();
 
         assert_eq!(capture.session.device_id, "emulator-5554");
+        assert_eq!(capture.observation.package_name, "com.example.news");
+    }
+
+    #[test]
+    fn android_16_observation_uses_full_window_dump_for_focus() {
+        let fixture = TempDir::new().unwrap();
+        let sdk = fixture.path().join("sdk");
+        executable(
+            &sdk.join("platform-tools/adb"),
+            &format!(
+                r##"#!/bin/sh
+if [ "$1" = "version" ]; then echo adb-selected; exit 0; fi
+if [ "$1" = "devices" ]; then printf 'List of devices attached\nemulator-5554 device\n'; exit 0; fi
+case "$*" in
+  *ro.build.version.release*) echo 16 ;;
+  *"wm size"*) echo 'Physical size: 1080x2400' ;;
+  *"dumpsys window windows"*) exit 1 ;;
+  *"dumpsys window"*) echo '{}' ;;
+  *"uiautomator dump"*) echo dumped ;;
+  *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
+  *"screencap -p"*) printf PNG ;;
+  *) exit 1 ;;
+esac
+"##,
+                FOCUS, XML
+            ),
+        );
+        let host = MobileHost::new(None);
+
+        let capture = host
+            .observe_with_sdk(sdk.to_str(), &["com.example.news".into()])
+            .unwrap();
+
+        assert_eq!(capture.session.os_version, "16");
         assert_eq!(capture.observation.package_name, "com.example.news");
     }
 
@@ -1386,6 +1492,20 @@ esac
 
         assert_eq!(output, None);
         assert!(started.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn adb_command_drains_large_stdout_before_process_exit() {
+        let fixture = TempDir::new().unwrap();
+        let tool = fixture.path().join("large-output-tool");
+        executable(
+            &tool,
+            "#!/bin/sh\ndd if=/dev/zero bs=1024 count=256 2>/dev/null\n",
+        );
+
+        let output = run_command_bytes_with_timeout(&tool, &[], Duration::from_secs(1)).unwrap();
+
+        assert_eq!(output.len(), 256 * 1024);
     }
 
     fn lifecycle_fixture(adb_body: &str) -> (TempDir, AndroidEnvironmentDetector) {

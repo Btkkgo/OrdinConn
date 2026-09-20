@@ -156,6 +156,8 @@ async fn agent_turn_returns_immediately_and_completes_over_event_bus() {
                 asset: Some("BTC".into()),
                 signal_id: Some(signal.id.clone()),
                 evidence_ids: signal.evidence.iter().map(|item| item.id.clone()).collect(),
+                mobile_observation_id: None,
+                mobile_source_locator: None,
             },
         )
         .await

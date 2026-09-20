@@ -14,6 +14,8 @@ pub struct PageContext {
     pub asset: Option<String>,
     pub signal_id: Option<String>,
     pub evidence_ids: Vec<String>,
+    pub mobile_observation_id: Option<String>,
+    pub mobile_source_locator: Option<String>,
 }
 
 pub fn build_contextual_request(
@@ -33,6 +35,12 @@ pub fn build_contextual_request(
     }
     if !context.evidence_ids.is_empty() {
         values.insert("evidenceIds".into(), context.evidence_ids.join(","));
+    }
+    if let Some(observation_id) = &context.mobile_observation_id {
+        values.insert("mobileObservationId".into(), observation_id.clone());
+    }
+    if let Some(source_locator) = &context.mobile_source_locator {
+        values.insert("mobileSourceLocator".into(), source_locator.clone());
     }
     UnifiedModelRequest {
         model: "mock-model".into(),
@@ -205,11 +213,42 @@ mod tests {
             asset: Some("BTC".into()),
             signal_id: Some("signal-1".into()),
             evidence_ids: vec!["evidence-1".into()],
+            mobile_observation_id: None,
+            mobile_source_locator: None,
         };
         let request = build_contextual_request("Why this signal?", &context);
         assert_eq!(request.context.get("page").unwrap(), "signals");
         assert_eq!(request.context.get("asset").unwrap(), "BTC");
         assert_eq!(request.messages.last().unwrap().content, "Why this signal?");
+    }
+
+    #[test]
+    fn mobile_context_is_injected_as_traceable_observation_context() {
+        let context = PageContext {
+            page: "home".into(),
+            mobile_observation_id: Some("mobile-observation-1".into()),
+            mobile_source_locator: Some(
+                "android://com.example/.MainActivity?snapshot=snapshot-1".into(),
+            ),
+            ..PageContext::default()
+        };
+
+        let request = build_contextual_request("What is visible?", &context);
+
+        assert_eq!(
+            request
+                .context
+                .get("mobileObservationId")
+                .map(String::as_str),
+            Some("mobile-observation-1")
+        );
+        assert_eq!(
+            request
+                .context
+                .get("mobileSourceLocator")
+                .map(String::as_str),
+            Some("android://com.example/.MainActivity?snapshot=snapshot-1")
+        );
     }
 
     #[tokio::test]

@@ -2417,6 +2417,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mobile-runtime"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2",
+ "uuid",
+]
+
+[[package]]
 name = "model-gateway"
 version = "0.1.0"
 dependencies = [
@@ -2800,6 +2812,7 @@ dependencies = [
  "evidence-core",
  "execution-core",
  "market-core",
+ "mobile-runtime",
  "model-gateway",
  "rust_decimal",
  "serde",
@@ -2818,10 +2831,13 @@ name = "ordinconn-desktop"
 version = "0.1.0"
 dependencies = [
  "agent-runtime",
+ "chrono",
  "execution-core",
  "keyring",
+ "mobile-runtime",
  "model-gateway",
  "ordinconn-app",
+ "quick-xml 0.38.4",
  "serde",
  "serde_json",
  "tauri",
@@ -3189,6 +3205,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.38.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b66c2058c55a409d601666cffe35f04333cf1013010882cec174a7467cd4e21c"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

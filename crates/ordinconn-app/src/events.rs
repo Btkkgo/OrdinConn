@@ -15,6 +15,7 @@ pub enum EventFamily {
     Signal,
     Approval,
     Execution,
+    Mobile,
     System,
 }
 
@@ -102,6 +103,7 @@ fn family_for(event_type: &str) -> EventFamily {
         "signal" | "proposal" | "report" => EventFamily::Signal,
         "approval" => EventFamily::Approval,
         "execution" => EventFamily::Execution,
+        "mobile" => EventFamily::Mobile,
         _ => EventFamily::System,
     }
 }

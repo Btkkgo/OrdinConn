@@ -110,6 +110,10 @@ impl ToolRegistry {
             "create_watch",
             "open_url",
             "computer_observe",
+            "mobile_observe",
+            "mobile_read_ui_tree",
+            "mobile_read_frame",
+            "mobile_inspect_element",
         ] {
             registry
                 .register(ToolDefinition::new(id, RiskLevel::Read))
@@ -121,6 +125,18 @@ impl ToolRegistry {
         registry
             .register(ToolDefinition::new("computer_type", RiskLevel::High).unavailable())
             .expect("bounded unavailable tool");
+        for id in [
+            "mobile_tap",
+            "mobile_swipe",
+            "mobile_type",
+            "mobile_back",
+            "mobile_home",
+            "mobile_open_app",
+        ] {
+            registry
+                .register(ToolDefinition::new(id, RiskLevel::Medium).unavailable())
+                .expect("bounded unavailable mobile tool");
+        }
         registry
     }
 }
@@ -152,5 +168,35 @@ mod tests {
         let result =
             registry.register(ToolDefinition::new("read_private_key", RiskLevel::Critical));
         assert_eq!(result.unwrap_err(), ToolRegistryError::ProhibitedTool);
+    }
+
+    #[test]
+    fn mobile_tools_are_observe_only() {
+        let registry = ToolRegistry::v0_1();
+        for id in [
+            "mobile_observe",
+            "mobile_read_ui_tree",
+            "mobile_read_frame",
+            "mobile_inspect_element",
+        ] {
+            assert_eq!(
+                registry.get(id).unwrap().availability,
+                ToolAvailability::Available
+            );
+            assert_eq!(registry.get(id).unwrap().risk_level, RiskLevel::Read);
+        }
+        for id in [
+            "mobile_tap",
+            "mobile_swipe",
+            "mobile_type",
+            "mobile_back",
+            "mobile_home",
+            "mobile_open_app",
+        ] {
+            assert_eq!(
+                registry.get(id).unwrap().availability,
+                ToolAvailability::Unavailable
+            );
+        }
     }
 }

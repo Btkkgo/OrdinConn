@@ -47,6 +47,10 @@ async fn migrations_create_required_tables_and_sqlite_safety_pragmas() {
         "evidence_cluster_members",
         "demand_timelines",
         "intelligence_diagnostics",
+        "mobile_device_sessions",
+        "mobile_ui_snapshots",
+        "mobile_observations",
+        "warehouse_entries",
     ] {
         assert!(tables.contains(&required.to_owned()), "missing {required}");
     }

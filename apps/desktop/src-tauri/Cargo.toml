@@ -15,7 +15,10 @@ agent-runtime = { path = "../../../crates/agent-runtime" }
 execution-core = { path = "../../../crates/execution-core" }
 keyring = "3"
 model-gateway = { path = "../../../crates/model-gateway" }
+mobile-runtime = { path = "../../../crates/mobile-runtime" }
 ordinconn-app = { path = "../../../crates/ordinconn-app" }
+chrono.workspace = true
+quick-xml.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2", features = [] }

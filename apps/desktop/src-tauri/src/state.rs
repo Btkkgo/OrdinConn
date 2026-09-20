@@ -2,16 +2,24 @@ use crate::credential_store::CredentialStore;
 use ordinconn_app::AppRuntime;
 use std::sync::Arc;
 
+use crate::mobile::MobileHost;
+
 pub struct AppState {
     pub runtime: Arc<AppRuntime>,
     pub credentials: Arc<dyn CredentialStore>,
+    pub mobile_host: Arc<MobileHost>,
 }
 
 impl AppState {
-    pub fn new(runtime: Arc<AppRuntime>, credentials: Arc<dyn CredentialStore>) -> Self {
+    pub fn new(
+        runtime: Arc<AppRuntime>,
+        credentials: Arc<dyn CredentialStore>,
+        mobile_host: Arc<MobileHost>,
+    ) -> Self {
         Self {
             runtime,
             credentials,
+            mobile_host,
         }
     }
 }

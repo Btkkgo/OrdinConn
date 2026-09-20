@@ -4,7 +4,8 @@ use model_gateway::{
 };
 use ordinconn_app::{
     AgentItemView, AgentReportView, AgentTaskStarted, AppSnapshot, ApprovalView, ExecutionView,
-    ModelProviderConfig, ModelProviderView,
+    MobileResearchBudget, MobileResearchTaskView, MobileRuntimeSettings, MobileWorkspaceData,
+    ModelProviderConfig, ModelProviderView, WarehouseEntryView,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::to_value;
@@ -22,13 +23,116 @@ pub struct IpcError {
 }
 
 impl IpcError {
-    fn internal(error: impl std::fmt::Display) -> Self {
+    pub(crate) fn internal(error: impl std::fmt::Display) -> Self {
         Self {
             code: "internal_error".into(),
             message: redact_error(&error.to_string()),
             retryable: false,
         }
     }
+}
+
+#[tauri::command]
+pub async fn get_mobile_workspace(
+    state: State<'_, AppState>,
+) -> Result<MobileWorkspaceData, IpcError> {
+    let mut workspace = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    workspace.adb_status = if state.mobile_host.adb_available() {
+        "ready"
+    } else {
+        "missing"
+    }
+    .into();
+    Ok(workspace)
+}
+
+#[tauri::command]
+pub async fn observe_mobile_device(
+    state: State<'_, AppState>,
+) -> Result<MobileWorkspaceData, IpcError> {
+    let current = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    let capture = state
+        .mobile_host
+        .observe(&current.settings.allowed_apps)
+        .map_err(IpcError::internal)?;
+    state
+        .runtime
+        .record_mobile_capture(&capture)
+        .await
+        .map_err(IpcError::internal)?;
+    let mut workspace = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    workspace.runtime_status = "observing".into();
+    workspace.adb_status = "ready".into();
+    workspace.session = Some(capture.session);
+    workspace.ui_snapshot = Some(capture.snapshot);
+    workspace.frame = Some(capture.frame);
+    Ok(workspace)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn set_warehouse_entry(
+    item_id: String,
+    favorite: bool,
+    saved: bool,
+    tags: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<WarehouseEntryView, IpcError> {
+    state
+        .runtime
+        .set_warehouse_entry(&item_id, favorite, saved, tags)
+        .await
+        .map_err(IpcError::internal)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn create_mobile_research_task(
+    query: String,
+    allowed_apps: Vec<String>,
+    budget: MobileResearchBudget,
+    state: State<'_, AppState>,
+) -> Result<MobileResearchTaskView, IpcError> {
+    state
+        .runtime
+        .create_mobile_research_task(&query, allowed_apps, budget)
+        .await
+        .map_err(IpcError::internal)
+}
+
+#[tauri::command]
+pub async fn save_mobile_settings(
+    settings: MobileRuntimeSettings,
+    state: State<'_, AppState>,
+) -> Result<(), IpcError> {
+    state
+        .runtime
+        .save_mobile_settings(&settings)
+        .await
+        .map_err(IpcError::internal)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub async fn set_strategy_enabled(
+    strategy_id: String,
+    enabled: bool,
+    state: State<'_, AppState>,
+) -> Result<(), IpcError> {
+    state
+        .runtime
+        .set_strategy_enabled(&strategy_id, enabled)
+        .await
+        .map_err(IpcError::internal)
 }
 
 #[derive(Clone, Debug, Deserialize)]

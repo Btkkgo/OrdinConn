@@ -1,6 +1,7 @@
 mod commands;
 mod credential_store;
 mod events;
+mod mobile;
 mod state;
 
 use std::sync::Arc;
@@ -20,6 +21,7 @@ pub fn run() {
             app.manage(state::AppState::new(
                 runtime,
                 Arc::new(credential_store::SystemCredentialStore),
+                Arc::new(mobile::MobileHost::discover()),
             ));
             Ok(())
         })
@@ -34,6 +36,12 @@ pub fn run() {
             commands::approve_and_execute_paper,
             commands::save_model_provider,
             commands::test_model_provider,
+            commands::get_mobile_workspace,
+            commands::observe_mobile_device,
+            commands::set_warehouse_entry,
+            commands::create_mobile_research_task,
+            commands::save_mobile_settings,
+            commands::set_strategy_enabled,
         ]);
     let app = builder
         .build(tauri::generate_context!())

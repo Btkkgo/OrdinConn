@@ -13,6 +13,7 @@ connector-runtime = { path = "../connector-runtime" }
 evidence-core = { path = "../evidence-core" }
 execution-core = { path = "../execution-core" }
 market-core = { path = "../market-core" }
+mobile-runtime = { path = "../mobile-runtime" }
 model-gateway = { path = "../model-gateway" }
 rust_decimal.workspace = true
 serde.workspace = true

@@ -2,8 +2,8 @@
 
 - Date: 2026-09-20
 - Version: 0.1.0
-- Active branch before open-source initialization: `codex/mobile-intelligence-runtime`
-- Product source baseline: `144c87f`
+- Default public branch: `main`
+- Product source baseline: `c4f2d66`
 - Mobile stage: M1/M1.5 environment validation
 - Gate: **M1.5 NOT PASSED**
 - Next phase: **M2 NOT STARTED**
@@ -23,7 +23,7 @@ This document separates implementation, verification, partial work, blocked work
 
 ## Verified
 
-At product source baseline `144c87f`, the recorded full local verification was:
+At product source baseline `c4f2d66`, the recorded full local verification was:
 
 - 126 Rust tests passed.
 - 31 TypeScript tests passed.

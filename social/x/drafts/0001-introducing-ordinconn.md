@@ -3,7 +3,7 @@
 - Stage: Open-source initialization / Mobile Intelligence M1.5
 - GitHub Issue: https://github.com/Btkkgo/OrdinConn/issues/1
 - Public workflow Issue: https://github.com/Btkkgo/OrdinConn/issues/2
-- GitHub Commit: product baseline `144c87f`; open-source initialization commit to be selected after push
+- GitHub Commit: open-source documentation `3d9434d`; product baseline `c4f2d66`
 - Status: DRAFT — manual owner review required; M1.5 NOT PASSED
 - Repository Link: https://github.com/Btkkgo/OrdinConn
 

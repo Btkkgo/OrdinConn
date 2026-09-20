@@ -51,7 +51,7 @@
 - Modify: `docs/superpowers/plans/2026-09-20-mobile-intelligence-m1-5.md`
 
 **Interfaces:**
-- Consumes: repository audit at product commit `144c87f`, product baseline, current mobile acceptance record, and Git history.
+- Consumes: repository audit at product commit `c4f2d66`, product baseline, current mobile acceptance record, and Git history.
 - Produces: canonical public facts and the `Public Interaction Summary` schema consumed by Task 3 synchronization and Task 4 social content.
 
 - [ ] **Step 1: Write the audit-backed current-stage and architecture documents**
@@ -273,7 +273,7 @@ Do not inspect X authentication, open a browser, or publish. The project owner o
 
 - [ ] **Step 7: Request whole-branch review and fix Critical/Important findings once**
 
-Review the complete range from `fd4dcc8` through final HEAD against this plan and its spec. Use TDD for every accepted Critical/Important fix; ledger all rulings and deferred minors.
+Review the complete range from `6e108ee` through final HEAD against this plan and its spec. Use TDD for every accepted Critical/Important fix; ledger all rulings and deferred minors.
 
 - [ ] **Step 8: Commit final rollout record**
 

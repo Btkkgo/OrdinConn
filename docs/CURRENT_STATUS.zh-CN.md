@@ -2,8 +2,8 @@
 
 - 日期：2026-09-20
 - 版本：0.1.0
-- 开源初始化前活动分支：`codex/mobile-intelligence-runtime`
-- 产品源码基线：`144c87f`
+- 默认公开分支：`main`
+- 产品源码基线：`c4f2d66`
 - Mobile 阶段：M1/M1.5 环境验证
 - Gate：**M1.5 未通过**
 - 下一阶段：**M2 尚未开始**
@@ -23,7 +23,7 @@
 
 ## 已验证
 
-在产品源码基线 `144c87f` 上，最近一次完整记录为：126 个 Rust 测试通过、31 个 TypeScript 测试通过、Rust 格式与 Clippy 通过、TypeScript Typecheck 与 Vite Build 通过，并成功生成 macOS Tauri App Bundle。
+在产品源码基线 `c4f2d66` 上，最近一次完整记录为：126 个 Rust 测试通过、31 个 TypeScript 测试通过、Rust 格式与 Clippy 通过、TypeScript Typecheck 与 Vite Build 通过，并成功生成 macOS Tauri App Bundle。
 
 真实 Android Smoke 输出了完整的 10 项报告：3 项前置检查失败，7 项依赖检查受阻。这是经过验证的失败结果，不是 Mobile Integration 通过。
 

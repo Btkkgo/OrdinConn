@@ -46,7 +46,7 @@ Network success does not prove semantic compatibility.
 
 ### Failed Attempts
 
-The history contains a dedicated follow-up fix, `d605e15`, showing that schema drift required a stricter boundary after the initial collection pipeline.
+The history contains a dedicated follow-up fix, `c71ce1a`, showing that schema drift required a stricter boundary after the initial collection pipeline.
 
 ### Final Solution
 

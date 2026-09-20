@@ -14,7 +14,7 @@ This timeline is derived from the current Git history and repository documents. 
 
 **Goal:** Establish the local-first financial intelligence workflow.
 
-**Changes:** Commit `4a39696` rebuilt the foundation; `ff8ad31` finalized dashboard readability and interactions.
+**Changes:** Commit `3899f60` rebuilt the foundation; `3b30617` finalized dashboard readability and interactions.
 
 **Problems:** Financial intelligence required a strict boundary between model inference, Evidence, Signals, approvals, and execution.
 
@@ -32,7 +32,7 @@ This timeline is derived from the current Git history and repository documents. 
 
 **Goal:** Replace demo-only intelligence inputs with a public-data collection and strategy pipeline.
 
-**Changes:** `b44c74b` documented the architecture; `bdd6447` implemented collectors and orchestration; `d605e15` made feed schema drift fail closed; `2950e6b` defined the next continuous-intelligence phase.
+**Changes:** `da537a5` documented the architecture; `f1b90f5` implemented collectors and orchestration; `c71ce1a` made feed schema drift fail closed; `aa356e6` defined the next continuous-intelligence phase.
 
 **Problems:** Raw source formats drift, duplicate content can look like independent confirmation, and incomplete history can produce false confidence.
 
@@ -50,7 +50,7 @@ This timeline is derived from the current Git history and repository documents. 
 
 **Goal:** Add long-running scheduling, rolling baselines, public derivatives inputs, and persistent Evidence clusters.
 
-**Changes:** Commit `2904ac3` added bounded scheduler behavior, restart-restored buckets, Binance USD-M Futures normalization, derivatives strategies, and cluster persistence.
+**Changes:** Commit `71b5023` added bounded scheduler behavior, restart-restored buckets, Binance USD-M Futures normalization, derivatives strategies, and cluster persistence.
 
 **Problems:** Live inputs can arrive late, out of order, stale, or before a usable baseline exists.
 
@@ -68,7 +68,7 @@ This timeline is derived from the current Git history and repository documents. 
 
 **Goal:** Add a safe, observe-only Android collection surface and integrate it into Home, Warehouse, and Settings.
 
-**Changes:** `c354a0d` defined contracts; `f02a257` added the observe-only runtime; `513920d` integrated the workspace and UI.
+**Changes:** `9a1a62d` defined contracts; `3a32b4d` added the observe-only runtime; `1d51c93` integrated the workspace and UI.
 
 **Problems:** A phone screen is not useful market Evidence by itself, and raw UI trees may contain sensitive fields.
 
@@ -86,7 +86,7 @@ This timeline is derived from the current Git history and repository documents. 
 
 **Goal:** Prove the production path against a real Android Emulator before implementing navigation.
 
-**Changes:** `144c87f` added environment diagnostics, AVD lifecycle checks, bounded commands, persisted capture projection, and a ten-check real-runtime harness.
+**Changes:** `c4f2d66` added environment diagnostics, AVD lifecycle checks, bounded commands, persisted capture projection, and a ten-check real-runtime harness.
 
 **Problems:** The local machine had no Android SDK, ADB, Emulator, AVD, or online device. External tool calls also needed explicit time bounds and consistent SDK selection.
 

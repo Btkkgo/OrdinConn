@@ -3,7 +3,7 @@
 - Stage: Mobile Intelligence M1.5 real-environment acceptance
 - GitHub Issue: https://github.com/Btkkgo/OrdinConn/issues/1
 - Follow-up Issue: https://github.com/Btkkgo/OrdinConn/issues/4
-- GitHub Commit: https://github.com/Btkkgo/OrdinConn/commit/7c323b7f0efb239fce75701cff17f8b455a6c622
+- GitHub Commit: https://github.com/Btkkgo/OrdinConn/commit/f8705c5
 - Status: DRAFT — manual owner review required; M1.5 PASS; M2 NOT STARTED
 - Repository Link: https://github.com/Btkkgo/OrdinConn
 
@@ -53,4 +53,4 @@ OrdinConn Mobile Intelligence M1.5 已在真实 Android 16 ARM64 Emulator 上通
 
 ## Manual Publication Reminder
 
-Publication is owner-controlled. Review every claim against Issue #1 and commit `7c323b7`, select only public-safe screenshots, and publish manually. Repository automation must not log in to X or publish this draft.
+Publication is owner-controlled. Review every claim against Issue #1 and commit `f8705c5`, select only public-safe screenshots, and publish manually. Repository automation must not log in to X or publish this draft.

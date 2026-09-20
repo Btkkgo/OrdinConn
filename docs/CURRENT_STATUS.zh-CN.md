@@ -5,7 +5,7 @@
 - 正式仓库：https://github.com/Btkkgo/OrdinConn
 - 当前 Mobile Gate：https://github.com/Btkkgo/OrdinConn/issues/1
 - 默认公开分支：`main`
-- 产品源码基线：`7c323b7`
+- 产品源码基线：`f8705c5`
 - Mobile 阶段：M1.5 真实环境验收完成
 - Gate：**M1.5 通过**
 - 下一阶段：**M2 尚未开始**

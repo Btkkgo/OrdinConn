@@ -5,7 +5,7 @@
 - Official repository: https://github.com/Btkkgo/OrdinConn
 - Current Mobile gate: https://github.com/Btkkgo/OrdinConn/issues/1
 - Default public branch: `main`
-- Product source baseline: `7c323b7`
+- Product source baseline: `f8705c5`
 - Mobile stage: M1.5 real-environment validation complete
 - Gate: **M1.5 PASS**
 - Next phase: **M2 NOT STARTED**

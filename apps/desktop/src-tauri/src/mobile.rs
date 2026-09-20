@@ -46,6 +46,7 @@ struct AdbObservationOutput {
 
 pub struct MobileHost {
     adb_path: Option<PathBuf>,
+    session_id: String,
     frames: Mutex<ScreenFrameBuffer>,
 }
 
@@ -57,18 +58,30 @@ impl MobileHost {
     pub fn new(adb_path: Option<PathBuf>) -> Self {
         Self {
             adb_path,
+            session_id: format!("mobile_session_{}", Uuid::now_v7()),
             frames: Mutex::new(ScreenFrameBuffer::new(5)),
         }
     }
 
-    pub fn adb_available(&self) -> bool {
+    pub fn adb_available_with_sdk(&self, android_sdk: Option<&str>) -> bool {
         self.adb_path.is_some()
+            || android_sdk
+                .map(adb_from_sdk_path)
+                .is_some_and(|path| path.is_file())
     }
 
-    pub fn observe(&self, allowed_apps: &[String]) -> Result<MobileCapture, MobileHostError> {
+    pub fn observe_with_sdk(
+        &self,
+        android_sdk: Option<&str>,
+        allowed_apps: &[String],
+    ) -> Result<MobileCapture, MobileHostError> {
+        let configured_adb = android_sdk
+            .map(adb_from_sdk_path)
+            .filter(|path| path.is_file());
         let adb = self
             .adb_path
             .as_deref()
+            .or(configured_adb.as_deref())
             .ok_or(MobileHostError::AdbMissing)?;
         let devices = run_text(adb, &["devices"])?;
         let device_id = online_emulator_from_output(&devices)?;
@@ -103,23 +116,43 @@ impl MobileHost {
             &["-s", &device_id, "shell", "cat", "/sdcard/ordinconn-ui.xml"],
         )?;
         let png = run_bytes(adb, &["-s", &device_id, "exec-out", "screencap", "-p"])?;
-        let capture = capture_from_outputs(
-            &AdbObservationOutput {
-                device_id,
-                os_version: os_version.trim().into(),
-                size_output,
-                focus_output,
-                ui_xml,
-                png,
-            },
-            allowed_apps,
-        )?;
+        let capture = bind_capture_to_session(
+            capture_from_outputs(
+                &AdbObservationOutput {
+                    device_id,
+                    os_version: os_version.trim().into(),
+                    size_output,
+                    focus_output,
+                    ui_xml,
+                    png,
+                },
+                allowed_apps,
+            )?,
+            &self.session_id,
+        );
         self.frames
             .lock()
             .map_err(|_| MobileHostError::CommandFailed("frame buffer lock poisoned".into()))?
             .push(capture.frame.clone());
         Ok(capture)
     }
+}
+
+fn adb_from_sdk_path(value: &str) -> PathBuf {
+    let path = PathBuf::from(value);
+    if path.file_name().is_some_and(|name| name == "adb") {
+        path
+    } else {
+        path.join("platform-tools/adb")
+    }
+}
+
+fn bind_capture_to_session(mut capture: MobileCapture, session_id: &str) -> MobileCapture {
+    capture.session.session_id = session_id.into();
+    capture.snapshot.session_id = session_id.into();
+    capture.frame.session_id = session_id.into();
+    capture.observation.device_session_id = session_id.into();
+    capture
 }
 
 fn resolve_adb_path() -> Option<PathBuf> {
@@ -415,7 +448,9 @@ mod tests {
     #[test]
     fn missing_adb_and_no_emulator_are_truthful_errors() {
         assert_eq!(
-            MobileHost::new(None).observe(&[]).unwrap_err(),
+            MobileHost::new(None)
+                .observe_with_sdk(None, &[])
+                .unwrap_err(),
             MobileHostError::AdbMissing
         );
         assert_eq!(
@@ -436,7 +471,21 @@ mod tests {
             .filter(|value| !value.trim().is_empty())
             .map(str::to_owned)
             .collect::<Vec<_>>();
-        host.observe(&allowed)
+        host.observe_with_sdk(None, &allowed)
             .expect("real Android Emulator observation");
+    }
+
+    #[test]
+    fn sdk_configuration_and_session_identity_are_stable() {
+        assert_eq!(
+            adb_from_sdk_path("/opt/android"),
+            PathBuf::from("/opt/android/platform-tools/adb")
+        );
+        assert_eq!(
+            adb_from_sdk_path("/opt/android/platform-tools/adb"),
+            PathBuf::from("/opt/android/platform-tools/adb")
+        );
+        let host = MobileHost::new(None);
+        assert!(host.session_id.starts_with("mobile_session_"));
     }
 }

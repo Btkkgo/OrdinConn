@@ -1,4 +1,4 @@
-import type { AgentMessageDto, RuntimeEventEnvelope, SignalDto } from "@ordinconn/contracts";
+import type { AgentMessageDto, IntelligenceItemDto, MobileWorkspaceDto, RuntimeEventEnvelope, SignalDto } from "@ordinconn/contracts";
 
 export interface PageContext {
   page: string;
@@ -6,6 +6,8 @@ export interface PageContext {
   asset?: string;
   signalId?: string;
   evidenceIds: string[];
+  mobileObservationId?: string;
+  mobileSourceLocator?: string;
 }
 
 export interface RuntimeUiState {
@@ -17,13 +19,15 @@ export interface RuntimeUiState {
 
 export const initialRuntimeState: RuntimeUiState = { agentMessages: [] };
 
-export function createPageContext(page: string, signal?: SignalDto): PageContext {
+export function createPageContext(page: string, signal?: SignalDto, item?: IntelligenceItemDto): PageContext {
   return {
     page,
     market: signal?.market,
-    asset: signal?.asset,
+    asset: signal?.asset ?? item?.assets[0],
     signalId: signal?.id,
-    evidenceIds: signal?.evidence.map((item) => item.id) ?? [],
+    evidenceIds: signal?.evidence.map((evidence) => evidence.id) ?? item?.evidenceIds ?? [],
+    mobileObservationId: item?.mobileObservationId,
+    mobileSourceLocator: item?.sourceLocator,
   };
 }
 
@@ -56,4 +60,14 @@ export function reduceRuntimeEvent(state: RuntimeUiState, event: RuntimeEventEnv
     return { ...state, activeTurnId: undefined, lastError: event.type };
   }
   return state;
+}
+
+export function reduceMobileWorkspaceEvent(
+  workspace: MobileWorkspaceDto,
+  event: RuntimeEventEnvelope,
+): MobileWorkspaceDto {
+  if (event.family !== "mobile") return workspace;
+  if (event.type === "mobile.task_failed") return { ...workspace, runtimeStatus: "error" };
+  if (event.type === "mobile.task_complete") return { ...workspace, runtimeStatus: "paused" };
+  return { ...workspace, runtimeStatus: "observing" };
 }

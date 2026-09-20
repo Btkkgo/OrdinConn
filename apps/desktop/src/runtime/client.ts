@@ -7,9 +7,13 @@ import type {
   ApprovalRequestDto,
   ExecutionRecordDto,
   ModelProviderDto,
+  MobileResearchBudgetDto,
+  MobileRuntimeSettingsDto,
+  MobileWorkspaceDto,
   ProviderCapabilitiesDto,
   RuntimeEventEnvelope,
   TradeProposalDto,
+  WarehouseEntryDto,
 } from "@ordinconn/contracts";
 import { parseRuntimeEventEnvelope } from "@ordinconn/contracts";
 import type { PageContext } from "./state";
@@ -54,6 +58,16 @@ export const runtimeClient = {
     invoke<ModelProviderDto>("save_model_provider", { input }),
   testModelProvider: (input: ProviderInput) =>
     invoke<ConnectionTestResult>("test_model_provider", { input }),
+  getMobileWorkspace: () => invoke<MobileWorkspaceDto>("get_mobile_workspace"),
+  observeMobileDevice: () => invoke<MobileWorkspaceDto>("observe_mobile_device"),
+  setWarehouseEntry: (itemId: string, favorite: boolean, saved: boolean, tags: string[]) =>
+    invoke<WarehouseEntryDto>("set_warehouse_entry", { itemId, favorite, saved, tags }),
+  createMobileResearchTask: (query: string, allowedApps: string[], budget: MobileResearchBudgetDto) =>
+    invoke("create_mobile_research_task", { query, allowedApps, budget }),
+  saveMobileSettings: (settings: MobileRuntimeSettingsDto) =>
+    invoke<void>("save_mobile_settings", { settings }),
+  setStrategyEnabled: (strategyId: string, enabled: boolean) =>
+    invoke<void>("set_strategy_enabled", { strategyId, enabled }),
 };
 
 export async function subscribeRuntimeEvents(

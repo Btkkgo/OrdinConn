@@ -1,40 +1,12 @@
-import {
-  Activity,
-  Bitcoin,
-  Bot,
-  BrainCircuit,
-  CalendarClock,
-  CheckSquare,
-  Database,
-  Landmark,
-  LayoutDashboard,
-  Settings,
-} from "lucide-react";
+import { House, Library, Settings } from "lucide-react";
 import type { Translator } from "../i18n";
-import logoUrl from "../assets/ordinconn-logo-source.jpg";
+import iconUrl from "../assets/ordinconn-icon-source.png";
 
-export type PageId =
-  | "overview"
-  | "traditional"
-  | "crypto"
-  | "signals"
-  | "agent"
-  | "automations"
-  | "models"
-  | "dataSources"
-  | "approvals"
-  | "settings";
+export type PageId = "home" | "warehouse" | "settings";
 
 const navigation = [
-  ["overview", "nav.overview", LayoutDashboard],
-  ["traditional", "nav.traditional", Landmark],
-  ["crypto", "nav.crypto", Bitcoin],
-  ["signals", "nav.signals", Activity],
-  ["agent", "nav.agent", Bot],
-  ["automations", "nav.automations", CalendarClock],
-  ["models", "nav.models", BrainCircuit],
-  ["dataSources", "nav.dataSources", Database],
-  ["approvals", "nav.approvals", CheckSquare],
+  ["home", "nav.home", House],
+  ["warehouse", "nav.warehouse", Library],
   ["settings", "nav.settings", Settings],
 ] as const;
 
@@ -48,13 +20,9 @@ export function Navigation({ page, onNavigate, t }: NavigationProps) {
   return (
     <aside className="navigation">
       <div className="brand-block">
-        <div className="brand-mark" aria-hidden="true"><img src={logoUrl} alt="" /></div>
-        <div>
-          <strong>{t("app.name")}</strong>
-          <span>{t("app.version")}</span>
-        </div>
+        <div className="brand-mark" aria-hidden="true"><img src={iconUrl} alt="" /></div>
       </div>
-      <nav aria-label={t("app.name")}>
+      <nav aria-label="Primary">
         {navigation.map(([id, label, Icon]) => (
           <button
             className={page === id ? "nav-item active" : "nav-item"}
@@ -67,10 +35,6 @@ export function Navigation({ page, onNavigate, t }: NavigationProps) {
           </button>
         ))}
       </nav>
-      <div className="navigation-footer">
-        <span className="status-dot" />
-        <div><strong>{t("top.localRuntime")}</strong><small>{t("common.ready")}</small></div>
-      </div>
     </aside>
   );
 }

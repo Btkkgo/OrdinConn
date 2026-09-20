@@ -351,9 +351,9 @@ impl AppRuntime {
         feed.sort_by(|left, right| right.observed_at.cmp(&left.observed_at));
         Ok(MobileWorkspaceData {
             runtime_status: if observations.is_empty() {
-                "idle"
+                "disconnected"
             } else {
-                "connected"
+                "observing"
             }
             .into(),
             adb_status: "missing".into(),

@@ -3,7 +3,7 @@ import type {
   SignalCategory,
   SignalDto,
 } from "@ordinconn/contracts";
-import type { PageId } from "../components/Navigation";
+type LegacyWorkspacePage = "traditional" | "crypto" | "signals" | "agent" | "dataSources" | "approvals";
 
 const dashboardCategories: SignalCategory[] = [
   "trading",
@@ -37,7 +37,7 @@ export type OverviewTarget =
   | { kind: "category"; category: SignalCategory };
 
 export interface OverviewDestination {
-  page: PageId;
+  page: LegacyWorkspacePage;
   filter?: SignalFilter;
 }
 

@@ -41,7 +41,10 @@ pub async fn get_mobile_workspace(
         .mobile_workspace_data()
         .await
         .map_err(IpcError::internal)?;
-    workspace.adb_status = if state.mobile_host.adb_available() {
+    workspace.adb_status = if state
+        .mobile_host
+        .adb_available_with_sdk(workspace.settings.android_sdk.as_deref())
+    {
         "ready"
     } else {
         "missing"
@@ -61,7 +64,10 @@ pub async fn observe_mobile_device(
         .map_err(IpcError::internal)?;
     let capture = state
         .mobile_host
-        .observe(&current.settings.allowed_apps)
+        .observe_with_sdk(
+            current.settings.android_sdk.as_deref(),
+            &current.settings.allowed_apps,
+        )
         .map_err(IpcError::internal)?;
     state
         .runtime

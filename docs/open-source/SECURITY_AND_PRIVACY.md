@@ -1,5 +1,7 @@
 # Security and Privacy
 
+[English](SECURITY_AND_PRIVACY.md) | [简体中文](SECURITY_AND_PRIVACY.zh-CN.md)
+
 ## Public-repository rule
 
 The repository and its development log are treated as public. A value being present locally is not permission to publish it.

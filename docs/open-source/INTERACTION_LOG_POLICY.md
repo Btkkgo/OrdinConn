@@ -1,5 +1,7 @@
 # Public Interaction Log Policy
 
+[English](INTERACTION_LOG_POLICY.md) | [简体中文](INTERACTION_LOG_POLICY.zh-CN.md)
+
 ## Purpose
 
 Meaningful engineering work should leave a concise, auditable public summary. The source is the completed work and its verification evidence, never the raw private conversation.
@@ -27,7 +29,7 @@ Each `Public Interaction Summary` contains:
 
 `Private interaction -> Technical extraction -> Redaction -> Fact check -> Public summary -> DevLog`
 
-The summary is appended to `docs/devlog/YYYY-MM-DD.md` after an engineering-significant task. Typo checks, status questions, or other no-change interactions do not need an entry unless they discover a reusable issue.
+The English summary is appended to `docs/devlog/YYYY-MM-DD.md` and the synchronized Chinese summary to `docs/devlog/YYYY-MM-DD.zh-CN.md` after an engineering-significant task. Typo checks, status questions, or other no-change interactions do not need an entry unless they discover a reusable issue.
 
 ## Never record
 

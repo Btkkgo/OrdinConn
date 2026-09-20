@@ -14,6 +14,7 @@ tauri-build = { version = "2", features = [] }
 agent-runtime = { path = "../../../crates/agent-runtime" }
 execution-core = { path = "../../../crates/execution-core" }
 keyring = "3"
+libc.workspace = true
 model-gateway = { path = "../../../crates/model-gateway" }
 mobile-runtime = { path = "../../../crates/mobile-runtime" }
 ordinconn-app = { path = "../../../crates/ordinconn-app" }

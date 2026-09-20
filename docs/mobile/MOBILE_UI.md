@@ -1,5 +1,7 @@
 # Mobile Intelligence UI
 
+[English](MOBILE_UI.md) | [简体中文](MOBILE_UI.zh-CN.md)
+
 ## Navigation
 
 The left rail contains only the application icon and three destinations: Home, Warehouse, and Settings. The main surface is predominantly black with restrained purple ambience and yellow reserved for selection, status, and primary actions.

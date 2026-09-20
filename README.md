@@ -40,23 +40,24 @@ The current financial intelligence loop is:
 Data → Evidence → Signal → Agent Report → Trade Proposal → Approval → Paper Execution
 ```
 
-See the [architecture overview](docs/architecture/OVERVIEW.md) and [product baseline](docs/PRODUCT_BASELINE.md).
+See the [architecture overview](docs/architecture/OVERVIEW.md) ([中文](docs/architecture/OVERVIEW.zh-CN.md)) and [product baseline](docs/PRODUCT_BASELINE.md).
 
 ## Current Status
 
 - Version: `0.1.0`
-- Mobile stage: M1/M1.5 environment validation
-- M1.5 gate: **NOT PASSED**
+- Mobile stage: M1.5 real-environment validation complete
+- M1.5 gate: **PASS**
+- Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - M2: **NOT STARTED**
 - Real-money execution: not implemented; V0.1 is paper-only
 
-The most recent real Android gate found no usable Android SDK, ADB, Emulator, AVD, or online emulator. Three prerequisite checks failed and seven dependent checks were blocked. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.
+The real Android gate passed against an Android 16 ARM64 Emulator: environment readiness, frame capture, UI tree, snapshot parse, element references, `MobileObservation`, workspace projection, and session shutdown. A separate packaged-desktop smoke exercised the real Rust → Tauri command/event → React path for status, allowlist error, session start, observation, and stop. A real password-node test also verified that sensitive content does not enter the serialized capture. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.
 
 ## Mobile Intelligence
 
 Implemented M0/M1 foundations include device-session contracts, bounded screen frames, semantic UI snapshots, scoped element references, sensitive-node redaction policy, typed IPC projection, persistence, and `MobileObservation`.
 
-Real frame capture, UI-tree capture, redaction verification, observation generation, and shutdown remain blocked by the unavailable Android runtime. Fixture tests do not replace real-device evidence.
+Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are now verified against the dedicated `OrdinConn_M1_5` AVD. This does not authorize M2 actions; Mobile remains observe-only.
 
 ## Computer Runtime
 
@@ -74,7 +75,7 @@ Every model adapter is routed through Model Gateway. The repository currently in
 - Mobile access is application-allowlisted and sensitive UI nodes are redacted.
 - Public synchronization fails closed on suspected secrets, private paths, or prohibited files.
 
-Read [Safety and Approval](docs/SAFETY_AND_APPROVAL.md), [Mobile Security](docs/mobile/MOBILE_SECURITY.md), and [Security Policy](SECURITY.md).
+Read [Safety and Approval](docs/SAFETY_AND_APPROVAL.md), [Mobile Security](docs/mobile/MOBILE_SECURITY.md), and [Security Policy](SECURITY.md) ([中文](SECURITY.zh-CN.md)).
 
 ## Development Status
 
@@ -99,36 +100,35 @@ Environment-dependent checks are reported separately from fixture coverage.
 
 GitHub is OrdinConn's public engineering source of truth. Issues define meaningful work; DevLogs record decisions, failures, verification, and remaining risk. X drafts are manually curated from verified GitHub records and are never published automatically.
 
-- [Development log](docs/devlog/)
-- [Problems and Solutions](docs/PROBLEMS_AND_SOLUTIONS.md)
-- [Codex Field Notes](docs/codex/CODEX_FIELD_NOTES.md)
-- [Build in Public policy](docs/open-source/BUILD_IN_PUBLIC.md)
+- [Development log](docs/devlog/2026-09-20.md) · [中文](docs/devlog/2026-09-20.zh-CN.md)
+- [Problems and Solutions](docs/PROBLEMS_AND_SOLUTIONS.md) · [中文](docs/PROBLEMS_AND_SOLUTIONS.zh-CN.md)
+- [Codex Field Notes](docs/codex/CODEX_FIELD_NOTES.md) · [中文](docs/codex/CODEX_FIELD_NOTES.zh-CN.md)
+- [Build in Public policy](docs/open-source/BUILD_IN_PUBLIC.md) · [中文](docs/open-source/BUILD_IN_PUBLIC.zh-CN.md)
 
 ## Documentation
 
 - [Current Status](docs/CURRENT_STATUS.md) · [中文](docs/CURRENT_STATUS.zh-CN.md)
-- [Architecture](docs/architecture/OVERVIEW.md)
+- [Architecture](docs/architecture/OVERVIEW.md) · [中文](docs/architecture/OVERVIEW.zh-CN.md)
 - [Mobile Intelligence](docs/mobile/MOBILE_INTELLIGENCE.md)
 - [Model Gateway](docs/MODEL_GATEWAY.md)
 - [Connector and Source Registry](docs/SOURCE_REGISTRY.md)
-- [Architecture Decisions](docs/decisions/)
-- [Security and Privacy](docs/open-source/SECURITY_AND_PRIVACY.md)
+- [Architecture Decisions](docs/decisions/) · [中文](docs/decisions/README.zh-CN.md)
+- [Security and Privacy](docs/open-source/SECURITY_AND_PRIVACY.md) · [中文](docs/open-source/SECURITY_AND_PRIVACY.zh-CN.md)
 
 ## Roadmap
 
-The roadmap advances only on verified gates: complete M1.5 against a real emulator, then implement verified navigation in M2, production App Skills in M3, Evidence promotion in M4, and physical Android devices in M5. See the [public roadmap](docs/roadmap/README.md).
+The roadmap advances only on verified gates. M1.5 passed against a real emulator; M2 remains not started pending separate authorization, followed by production App Skills in M3, Evidence promotion in M4, and physical Android devices in M5. See the [public roadmap](docs/roadmap/README.md) ([中文](docs/roadmap/README.zh-CN.md)).
 
 ## Contributing
 
-Development is issue-first. Open or join a scoped issue before significant work, preserve the Evidence/inference boundary, and include relevant validation. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Development is issue-first. Open or join a scoped issue before significant work, preserve the Evidence/inference boundary, and include relevant validation. See [CONTRIBUTING.md](CONTRIBUTING.md) ([中文](CONTRIBUTING.zh-CN.md)).
 
 ## Known Limitations
 
-- The real Android M1.5 gate is blocked by missing runtime prerequisites.
 - Mobile navigation actions are not implemented.
 - Computer Runtime support is partial and permission-bounded.
 - The current financial execution adapter is paper-only.
-- Two one-second AVD lifecycle tests can time out under default parallel Rust test load; the same desktop library suite passes serially.
+- Process-fixture concurrency remains intermittently flaky: an initial desktop run failed 3 of 24 tests, and the first corrective workspace run reproduced two AVD lifecycle failures. The later default workspace rerun passed 125/125 and the desktop suite passed 28/28 serially, but that green rerun does not prove the flakiness is gone. Follow [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 
 ## License
 

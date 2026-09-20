@@ -40,23 +40,24 @@ Rust 核心保持与传输层无关；React 通过类型化 IPC 与 Tauri Host �
 Data → Evidence → Signal → Agent Report → Trade Proposal → Approval → Paper Execution
 ```
 
-参见[架构总览](docs/architecture/OVERVIEW.md)和[产品基线](docs/PRODUCT_BASELINE.md)。
+参见[架构总览](docs/architecture/OVERVIEW.zh-CN.md)（[English](docs/architecture/OVERVIEW.md)）和[产品基线](docs/PRODUCT_BASELINE.md)。
 
 ## 当前状态
 
 - 版本：`0.1.0`
-- Mobile 阶段：M1/M1.5 环境验证
-- M1.5 Gate：**未通过**
+- Mobile 阶段：M1.5 真实环境验收完成
+- M1.5 Gate：**通过**
+- 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - M2：**尚未开始**
 - 真实资金执行：未实现，V0.1 仅支持 Paper Execution
 
-最近一次真实 Android Gate 没有发现可用的 Android SDK、ADB、Emulator、AVD 或在线模拟器：3 项前置检查失败，7 项依赖检查被阻断。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
+真实 Android Gate 已在 Android 16 ARM64 Emulator 上通过环境、Frame、UI Tree、Snapshot Parse、Element Refs、`MobileObservation`、Workspace Projection 和 Session Shutdown。另一次打包桌面 Smoke 真实执行了 Rust → Tauri Command/Event → React 链路，覆盖状态、白名单错误、Session Start、Observation 和 Stop。独立的真实密码节点测试也确认敏感内容不会进入序列化 Capture。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
 
 ## Mobile Intelligence
 
 M0/M1 已实现设备会话契约、受限 Screen Frame、语义 UI Snapshot、作用域化 Element Ref、敏感节点脱敏策略、类型化 IPC 投影、持久化和 `MobileObservation`。
 
-真实 Frame Capture、UI Tree、敏感节点脱敏验证、Observation 生成和关闭链路仍被 Android 运行环境阻断。Fixture 测试不能替代真实设备证据。
+真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 仍未获授权，Mobile 继续保持 observe-only。
 
 ## Computer Runtime
 
@@ -74,7 +75,7 @@ OrdinConn 定义了受限的电脑感知与操作接口、权限门、审计事�
 - Mobile 访问受 Application Allowlist 约束，敏感 UI 节点必须脱敏。
 - 公开同步发现疑似 Secret、本机路径或禁止文件时一律 Fail Closed。
 
-参见[安全与批准](docs/SAFETY_AND_APPROVAL.md)、[Mobile Security](docs/mobile/MOBILE_SECURITY.md)和[安全报告规则](SECURITY.md)。
+参见[安全与批准](docs/SAFETY_AND_APPROVAL.md)、[Mobile Security](docs/mobile/MOBILE_SECURITY.md)和[安全报告规则](SECURITY.zh-CN.md)（[English](SECURITY.md)）。
 
 ## 开发与验证
 
@@ -94,36 +95,35 @@ npm run desktop:build
 
 GitHub 是 OrdinConn 唯一的公开工程事实来源。Issue 定义正式工作，DevLog 记录决策、失败、验证和剩余风险。X 只保留人工审核的草稿，Codex 不会自动发布。
 
-- [开发日志](docs/devlog/)
-- [Problems and Solutions](docs/PROBLEMS_AND_SOLUTIONS.md)
-- [Codex Field Notes](docs/codex/CODEX_FIELD_NOTES.md)
-- [公开开发规则](docs/open-source/BUILD_IN_PUBLIC.md)
+- [开发日志](docs/devlog/2026-09-20.zh-CN.md) · [English](docs/devlog/2026-09-20.md)
+- [问题与解决方案](docs/PROBLEMS_AND_SOLUTIONS.zh-CN.md) · [English](docs/PROBLEMS_AND_SOLUTIONS.md)
+- [Codex 现场笔记](docs/codex/CODEX_FIELD_NOTES.zh-CN.md) · [English](docs/codex/CODEX_FIELD_NOTES.md)
+- [公开开发规则](docs/open-source/BUILD_IN_PUBLIC.zh-CN.md) · [English](docs/open-source/BUILD_IN_PUBLIC.md)
 
 ## 文档
 
 - [当前状态](docs/CURRENT_STATUS.zh-CN.md) · [English](docs/CURRENT_STATUS.md)
-- [架构](docs/architecture/OVERVIEW.md)
+- [架构](docs/architecture/OVERVIEW.zh-CN.md) · [English](docs/architecture/OVERVIEW.md)
 - [Mobile Intelligence](docs/mobile/MOBILE_INTELLIGENCE.md)
 - [Model Gateway](docs/MODEL_GATEWAY.md)
 - [Connector 与 Source Registry](docs/SOURCE_REGISTRY.md)
-- [架构决策](docs/decisions/)
-- [安全与隐私](docs/open-source/SECURITY_AND_PRIVACY.md)
+- [架构决策](docs/decisions/README.zh-CN.md) · [English](docs/decisions/)
+- [安全与隐私](docs/open-source/SECURITY_AND_PRIVACY.zh-CN.md) · [English](docs/open-source/SECURITY_AND_PRIVACY.md)
 
 ## 路线图
 
-所有阶段必须通过真实 Gate 后才能前进：先在真实 Emulator 上完成 M1.5，再进入 M2 的验证式导航、M3 的生产级 App Skills、M4 的 Evidence 晋升，以及 M5 的物理 Android 设备。详见[公开路线图](docs/roadmap/README.md)。
+所有阶段必须通过真实 Gate 后才能前进。M1.5 已在真实 Emulator 上通过；M2 仍未开始并等待单独授权，之后依次是 M3 的生产级 App Skills、M4 的 Evidence 晋升，以及 M5 的物理 Android 设备。详见[公开路线图](docs/roadmap/README.zh-CN.md)（[English](docs/roadmap/README.md)）。
 
 ## 贡献
 
-项目采用 Issue-first 开发。重要工作开始前应创建或关联范围明确的 Issue，并保留 Evidence 与模型推断的边界，提交相关验证结果。参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+项目采用 Issue-first 开发。重要工作开始前应创建或关联范围明确的 Issue，并保留 Evidence 与模型推断的边界，提交相关验证结果。参见[贡献指南](CONTRIBUTING.zh-CN.md)（[English](CONTRIBUTING.md)）。
 
 ## 已知限制
 
-- 真实 Android M1.5 Gate 因缺少运行环境而被阻断。
 - Mobile Navigation Actions 尚未实现。
 - Computer Runtime 仍是受权限约束的部分实现。
 - 当前金融执行适配器仅支持 Paper Execution。
-- 默认并行 Rust 测试负载下，两项 1 秒 AVD 生命周期测试可能超时；同一 Desktop Library Suite 串行运行时通过。
+- Process Fixture 并发仍存在间歇性 Flaky：最初 Desktop Run 有 3/24 失败，第一次修正 Workspace Run 又复现 2 个 AVD Lifecycle Failure。之后 Default Workspace 重跑 125/125 通过，Desktop Suite 串行 28/28 通过，但一次绿色重跑不能证明 Flakiness 已消失。见 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 
 ## License
 

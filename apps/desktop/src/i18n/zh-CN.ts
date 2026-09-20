@@ -53,6 +53,7 @@ export const zhCN = {
   "mobile.selectObservation": "请选择一条观察数据。",
   "mobile.openDetail": "打开数据详情",
   "mobile.observeNow": "立即观察",
+  "mobile.stopSession": "停止会话",
   "mobile.inspectElements": "检查 UI 元素",
   "mobile.adbUnavailable": "ADB 不可用",
   "mobile.noLiveFrame": "暂无实时画面",

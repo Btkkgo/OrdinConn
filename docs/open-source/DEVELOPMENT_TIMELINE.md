@@ -1,5 +1,25 @@
 # Development Timeline
 
+[English](DEVELOPMENT_TIMELINE.md) | [简体中文](DEVELOPMENT_TIMELINE.zh-CN.md)
+
+## 2026-09-20 — Mobile Intelligence M1.5 real validation
+
+**Goal:** Complete the production Android capture gate and separately prove the packaged Rust → Tauri → React path without entering M2.
+
+**Changes:** Established one dedicated Android 16 ARM64 AVD, fixed subprocess pipe handling, Android 16 focus detection, malformed-node safety, and added an explicit typed stop command.
+
+**Problems:** Real integration exposed pipe backpressure, version-specific window diagnostics, malformed platform bounds, and an acceptance label that overstated helper-level projection as GUI IPC.
+
+**Solution:** Drain output within bounded process execution, read the full window dump, fail closed for malformed sensitive/financial nodes, name helper evidence `WORKSPACE_PROJECTION`, and verify packaged GUI IPC separately.
+
+**Result:** The ten-check production capture gate and the separate packaged-desktop acceptance passed. Sensitive-node redaction passed. M1.5 is **PASS**; M2 is **NOT STARTED**. Intermittent process-fixture concurrency timeouts remain tracked in Issue #4.
+
+**Tests:** Final verification recorded 125 passing Rust workspace tests, 28 passing serial desktop tests, 31 passing TypeScript tests, typecheck, Vite build, Tauri bundle, rustfmt, Clippy, real Emulator capture, real password-node redaction, and packaged GUI acceptance.
+
+**Decision:** Close Issue #1 as verified, keep Issue #4 open, and require separate owner authorization before M2.
+
+**Codex Notes:** Lower-level serialization and real GUI IPC are different evidence boundaries; both are now named and tested separately.
+
 ## 2026-09-20 — Open-source initialization
 
 **Goal:** Establish GitHub as the public engineering source of truth without exposing secrets, private paths, commit emails, or unverified completion claims.
@@ -99,3 +119,5 @@ This timeline is derived from the current Git history and repository documents. 
 **Decision:** No M2 code until all ten real checks pass.
 
 **Codex Notes:** Independent review found command-timeout, SDK-selection, IPC, and shutdown gaps; regression tests were observed failing before the fixes passed.
+
+This entry preserves the first blocked checkpoint. It is superseded by the real-validation entry above and must not be read as the current M1.5 status.

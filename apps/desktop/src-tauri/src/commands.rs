@@ -51,6 +51,12 @@ pub async fn get_mobile_workspace(
     .await
     .map_err(IpcError::internal)?;
     workspace.adb_status = workspace.android_environment.adb_status.clone();
+    workspace.runtime_status = if state.mobile_host.is_session_active() {
+        "observing"
+    } else {
+        "disconnected"
+    }
+    .into();
     Ok(workspace)
 }
 
@@ -96,6 +102,50 @@ pub(crate) async fn record_mobile_capture_workspace(
     workspace.session = Some(capture.session);
     workspace.ui_snapshot = Some(capture.snapshot);
     workspace.frame = Some(capture.frame);
+    Ok(workspace)
+}
+
+pub(crate) async fn stop_mobile_workspace(
+    runtime: &AppRuntime,
+    mobile_host: &crate::mobile::MobileHost,
+) -> Result<MobileWorkspaceData, IpcError> {
+    if mobile_host.stop_session() {
+        runtime
+            .end_mobile_session(mobile_host.session_id())
+            .await
+            .map_err(IpcError::internal)?;
+    }
+    let mut workspace = runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    workspace.runtime_status = "disconnected".into();
+    workspace.session = None;
+    workspace.ui_snapshot = None;
+    workspace.frame = None;
+    Ok(workspace)
+}
+
+#[tauri::command]
+pub async fn stop_mobile_session(
+    state: State<'_, AppState>,
+) -> Result<MobileWorkspaceData, IpcError> {
+    let configured_sdk = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?
+        .settings
+        .android_sdk;
+    let mut workspace =
+        stop_mobile_workspace(state.runtime.as_ref(), state.mobile_host.as_ref()).await?;
+    let mobile_host = Arc::clone(&state.mobile_host);
+    workspace.android_environment = tauri::async_runtime::spawn_blocking(move || {
+        mobile_host.environment_diagnostics(configured_sdk.as_deref())
+    })
+    .await
+    .map_err(IpcError::internal)?;
+    workspace.adb_status = workspace.android_environment.adb_status.clone();
     Ok(workspace)
 }
 

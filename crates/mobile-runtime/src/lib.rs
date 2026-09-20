@@ -168,6 +168,21 @@ pub struct RawMobileElement {
     pub password: bool,
 }
 
+impl RawMobileElement {
+    pub fn requires_redaction(&self) -> bool {
+        let combined = format!(
+            "{} {} {}",
+            self.text.as_deref().unwrap_or_default(),
+            self.content_description.as_deref().unwrap_or_default(),
+            self.resource_id.as_deref().unwrap_or_default()
+        )
+        .to_ascii_lowercase();
+        self.password
+            || contains_any(&combined, SENSITIVE_TERMS)
+            || contains_any(&combined, FINANCIAL_TERMS)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MobileElement {
@@ -604,6 +619,13 @@ mod tests {
             first.sensitive_state,
             Some(VerificationResult::FinancialActionBlocked)
         );
+    }
+
+    #[test]
+    fn raw_element_marks_financial_actions_for_redaction() {
+        let element = raw("Transfer", "android.widget.Button", false);
+
+        assert!(element.requires_redaction());
     }
 
     #[test]

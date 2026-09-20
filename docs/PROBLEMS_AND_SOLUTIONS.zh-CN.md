@@ -1,0 +1,209 @@
+# 问题与解决方案
+
+[English](PROBLEMS_AND_SOLUTIONS.md) | [简体中文](PROBLEMS_AND_SOLUTIONS.zh-CN.md)
+
+## 问题 001 — 推断可能看起来像来源证据
+
+### 背景
+
+Agent 可以在没有事实来源的情况下生成很有说服力的解释。
+
+### 症状
+
+生成的解读可能错误地通过本应只接收外部事实依据的信息发布路径。
+
+### 根因
+
+Inference 与 Evidence 不能安全地作为可互换输入。
+
+### 失败尝试
+
+仓库中没有记录被放弃的实现；该风险从一开始就作为基础领域约束处理。
+
+### 最终方案
+
+Evidence Record 携带 Factual Level 与 Source Lineage。Signal Publication 至少需要关联一个不是 `MODEL_INFERENCE` 的 Evidence Item。
+
+### 验证
+
+Evidence 与 Signal Test Suite 会拒绝仅含推断的 Candidate，并保留冲突 Evidence。
+
+### 可复用经验
+
+生成式置信度不等于 Provenance。应通过 Type 与 Gate 编码这种差异，而不是依赖 Prompt 措辞。
+
+## 问题 002 — Source Schema 会漂移
+
+### 背景
+
+公开 Feed 和交易所 Payload 可能在没有预告时改变结构。
+
+### 症状
+
+过于宽松的 Parser 可能接受不完整或被误解的数据，并将其送入 Strategy。
+
+### 根因
+
+网络请求成功不代表语义兼容。
+
+### 失败尝试
+
+历史中有专门的后续修复 `c71ce1a`，说明首次 Collection Pipeline 之后仍需更严格的 Schema Drift 边界。
+
+### 最终方案
+
+Collector 对 Shape 建立 Fingerprint，校验必需字段与 Timestamp，更新 Source Health，并在真实路径不使用 Mock Fallback 的前提下 Fail Closed。
+
+### 验证
+
+Collector Test 覆盖非法或缺失 Timestamp、Schema Drift 与 Normalization Error。
+
+### 可复用经验
+
+即使 Provider 没有发布版本，也要把 External Schema 当成带版本的 Contract。
+
+## 问题 003 — Baseline 未就绪时 Strategy 可能运行
+
+### 背景
+
+Rolling Metric 需要足够的新鲜历史，而 Live Data 可能迟到或乱序。
+
+### 症状
+
+用默认值代替缺失历史，可能触发错误的高置信 Signal。
+
+### 根因
+
+Computation Availability 与 Decision Readiness 是不同状态。
+
+### 失败尝试
+
+没有记录被放弃的 Algorithm；Phase 2 Design 在扩大 Live Collection 前先显式定义了 Readiness。
+
+### 最终方案
+
+`WARMING_UP`、`MISSING_INPUT`、`STALE_INPUT`、`SCHEMA_ERROR` 与 `INSUFFICIENT_HISTORY` 都是可审计结果，不会产生普通 Candidate。
+
+### 验证
+
+Rolling-history 与 Derivatives Test 覆盖 Capacity、Ordering Tolerance、Stale Data、Missing Metric、Restored Bucket 与 Readiness Failure。
+
+### 可复用经验
+
+让“尚未就绪”成为一等结果，而不是 Exception 或填零 Input。
+
+## 问题 004 — 本地无法证明 Android Integration
+
+### 背景
+
+M1.5 需要真实 Android SDK、ADB、Emulator、AVD 和 Online Device。
+
+### 症状
+
+显式 Smoke 首次报告 3 个前置条件失败和 7 个下游检查受阻。
+
+### 根因
+
+机器缺少所需 Android 环境。
+
+### 失败尝试
+
+第一次 Acceptance Run 有意 Fail Closed，没有伪造 Device Evidence。之后在授权下只安装必要的官方 Command-line Component、稳定 ARM64 Image 与一个专用 AVD。
+
+### 最终方案
+
+安装 OpenJDK 21 和官方 Android Command-line Tools，再以 Android 36 Google APIs ARM64 Image 创建 `OrdinConn_M1_5`。保留有序 Environment Discovery、有界 Boot Readiness，以及区分 `FAIL` 与 `BLOCKED` 的 Capture Report；真实 GUI IPC 另行验证。
+
+### 验证
+
+AVD 冷启动后在 `adb` 中在线，且 `sys.boot_completed=1`。Production Capture Gate 通过真实 Frame/UI Capture、Snapshot Parse、Ref、Observation、Persistence、Audit Event、Workspace Projection 与 Session Shutdown。打包 Desktop 另行通过真实 Typed IPC 与 Frontend Acceptance。独立的真实 Password-node Test 也通过。
+
+### 可复用经验
+
+保留第一次受阻结果，只能通过明确命名的真实环境重跑替代它。安装 Dependency 不等于验收；完整 Production Path 仍必须通过。
+
+## 问题 005 — 外部 Mobile Command 可能挂起或发生分歧
+
+### 背景
+
+ADB 与 Emulator 是从多个可能 SDK Location 中选择的 External Process。
+
+### 症状
+
+无响应工具可能阻塞 Desktop Host；Diagnostics 与 Observation 可能选中不同 ADB；大 PNG 也可能在 Child Process 退出前填满 Pipe。
+
+### 根因
+
+初始 Process Execution 没有 Hard Deadline，Environment Selection 被重复实现。第一版有界实现也在读取 stdout 前等待 Child Exit，真实 Screencap 超过 Pipe Buffer 后形成 Deadlock。
+
+### 失败尝试
+
+首次 M1.5 Implementation 的 Independent Review 在发布前识别了这些缺口。
+
+### 最终方案
+
+Diagnostics 与 Observation 使用同一 Ordered Resolver；Process Work 放到 Blocking Pool；执行 Total Deadline；通过 Nonblocking Pipe 持续读取 stdout/stderr；每个受控 Command 放入独立 Process Group。Timeout 时只终止该 Group；Direct Child 退出后，不等待无关 Descendant 继承的 Pipe。
+
+### 验证
+
+Regression Test 覆盖独立 ADB Path、Configured-SDK Consistency、刻意挂起的 Fixture、成功或 Timeout 后仍持有继承 Output Pipe 的 Descendant，以及 256 KiB stdout Payload。之后约 190 KiB 的真实 PNG Frame 也通过相同 Helper。
+
+### 可复用经验
+
+Subprocess Timeout 必须约束 Process 本身，而不只是等待结果的 Caller。Producer 被阻塞前必须持续排空 Piped Output。
+
+## 问题 006 — Android 16 改变真实 Window 与 UI-tree 行为
+
+### 背景
+
+Production Capture Path 最初使用受控 ADB Fixture 验证，当时真实 Android 16 Emulator 尚不可用。
+
+### 症状
+
+真实 Observation 无法从 `dumpsys window windows` 识别前台 Application，随后因两个 Platform Node 的下方 y 坐标小于上方坐标而让整个 UI Tree 失败。
+
+### 根因
+
+Android 16 在完整 `dumpsys window` 输出中提供 `mCurrentFocus`，但在更窄的 `windows` Section 中没有。UIAutomator 也可能输出 Lower Y 小于 Upper Y 的离屏 Platform Node。
+
+### 失败尝试
+
+保持 Fixture 兼容的原 Command 通过 Unit Test，却在真实 API 36 Image 上失败。重复同样 Capture 不会改变这两种 Output Shape。
+
+### 最终方案
+
+读取完整 Window Dump 以检测 Focus。丢弃非法的非敏感 Platform Node，同时保留 Snapshot 其余部分；若非法 Node 属于 Sensitive 或 Financial，则让整个 Parse Fail Closed，避免屏幕被误判为普通内容。
+
+### 验证
+
+Regression Test 在修复前确实失败，修复后通过，覆盖非法 Password Node 与 Financial-action Classifier。真实 Settings Snapshot 生成 70 个有效脱敏 Element，并排除 2 个 Bounds 反转的非敏感 Platform Node；完整 Gate 通过。
+
+### 可复用经验
+
+把 Operating-system Diagnostic 当成带版本的 External Schema。Identity 缺失时 Fail Closed；对于非敏感的可选非法 Node，只隔离该 Node，而不是丢弃其他有效 Observation。
+
+## 问题 007 — Workspace Serialization 不能证明 Tauri IPC
+
+### 背景
+
+M1.5 要求真实 Rust Mobile Runtime → Tauri Command/Event → React Frontend 链路，包括 Status、Error、Start、Observation 与 Stop。
+
+### 症状
+
+第一版 Real-smoke Harness 直接调用 Persistence/Projection Helper，却把结果标记为 `TAURI_IPC`，没有真实 Frontend Invocation，也没有执行 Stop Command。
+
+### 根因
+
+一个有价值的 Lower-level Integration Test 被赋予了超出真实边界的 Acceptance Label，而且产品当时有 Observation，却没有显式 Frontend Stop Control。
+
+### 最终方案
+
+把 Automated Gate 重命名为 `WORKSPACE_PROJECTION`；新增并注册 `stop_mobile_session` Tauri Command 和本地化 React Control；由 Host 投影 Active/Disconnected Status；Real-desktop Check 继续作为独立 GUI Acceptance。
+
+### 验证
+
+打包应用首先显示预期的 Empty-allowlist Error。允许 `com.android.settings` 后，它显示真实 Emulator、Package、已验证 Observation、Frame 与 70 个 UI Element。Stop 让 UI 回到 `Disconnected`；SQLite 为同一 Session 记录 `mobile.session_started`、`mobile.snapshot`、`mobile.observation` 与 `mobile.session_ended`；ADB 仍报告 Emulator Online。
+
+### 可复用经验
+
+Command Helper 边界上的 Serialization 不能证明 UI 调用了 Tauri Command。准确命名 Lower-level Gate，并在真实 Desktop Application 中验证 GUI-only Acceptance。

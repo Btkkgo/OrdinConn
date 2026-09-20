@@ -31,6 +31,20 @@
 - Run the public-log sanitizer before any public commit, GitHub push, or X publication. Any suspected secret fails closed; do not print the suspected value or continue publication.
 - Generate X material only for a meaningful stage, reusable engineering failure, or weekly summary. X publication is always manual and user-owned. Never authenticate to X, read an X browser session, call an X API, or publish automatically. Move a draft to `published/` only after the owner records its timestamp, URL, source commit, and content hash.
 
+## BUILD IN PUBLIC LANGUAGE POLICY
+
+- Codex communicates with the user in Chinese by default for requirements, execution updates, analysis, test results, acceptance reports, and next-step recommendations. Use English only when the user explicitly requests it. Engineering terms and report headings may remain in English when that improves precision.
+- Code, schemas, identifiers, and commit messages use English. Do not use bilingual or mixed-language commit subjects.
+- GitHub public documentation is bilingual: English is the primary/default version and Simplified Chinese is the secondary version. Important documents use `<NAME>.md` and `<NAME>.zh-CN.md`, with reciprocal `English | 简体中文` links at the top.
+- Keep `README`, `CURRENT_STATUS`, architecture, roadmap, changelog, security, contributing, Problems and Solutions, Codex Field Notes, Build in Public policy, and other core public records synchronized in both languages. When either language changes, update or create its counterpart in the same task.
+- English and Chinese status documents must report identical stage, status, tests, `PASS` / `FAIL` / `BLOCKED` outcomes, Issues, commits, risks, and next steps. If they disagree, resolve the truth from code, real tests, GitHub Issues, Current Status, DevLog, then X, and update both documents.
+- Core architecture documentation is bilingual. Short ADRs may contain `## English` and `## 中文` sections in one file; long ADRs use paired `.md` and `.zh-CN.md` files. English remains the primary version.
+- DevLogs use `docs/devlog/YYYY-MM-DD.md` for English and `docs/devlog/YYYY-MM-DD.zh-CN.md` for Chinese. Both files describe the same sanitized facts and must be updated together for meaningful engineering work.
+- GitHub Issue titles use English. Issue bodies and important milestone comments put `# English` first and `# 中文` second, with Goal, Scope, Current State, Acceptance Criteria, Result, and Validation represented consistently in both languages. Very short mechanical status comments may be English-only.
+- Pull Request titles use English. Pull Request bodies put English first and Chinese second.
+- X drafts remain manual and owner-published. Each draft contains `## English — Publication Version` for the intended English post and `## 中文 — 参考版本` for the complete corresponding Chinese thread. Derive both naturally from the same sanitized engineering facts; do not mechanically translate private conversation.
+- Final Codex execution reports to the user are in Chinese by default. Never let GitHub's English-first policy change the actual collaboration language.
+
 ## ORDINCONN PUBLIC DEVELOPMENT RULES
 
 - Official GitHub repository: `https://github.com/Btkkgo/OrdinConn`. Never create another OrdinConn repository, an `OrdinConn-v2`, or a substitute repository. Continue all public development in this repository.

@@ -1,5 +1,7 @@
 # Mobile App Skills
 
+[English](APP_SKILLS.md) | [简体中文](APP_SKILLS.zh-CN.md)
+
 `MobileAppSkill` is a versioned, declarative contract containing a package matcher, known screens, recognizers, navigation rules, extractors, allowed and blocked actions, sensitive states, verification rules, and stop conditions.
 
 M1 provides only `GenericAndroidSkill`, which recognizes a sanitized UI snapshot and extracts visible facts without navigation. Later phases add one application at a time in this order:

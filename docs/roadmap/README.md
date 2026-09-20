@@ -1,12 +1,14 @@
 # Public Roadmap
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Roadmap entries are directions, not completion claims.
 
 ## Current gate
 
-Provide a real Android SDK, ADB, Emulator, and one safe existing AVD. Run the production ten-check M1.5 smoke and require every check to pass.
+M1.5 passed against the dedicated `OrdinConn_M1_5` Android 16 ARM64 AVD. The production capture gate and the separate packaged-desktop Rust → Tauri → React acceptance both passed. M2 remains **NOT STARTED** and requires a separate explicit instruction.
 
-Tracked in [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1).
+The completed gate is recorded in [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1). Intermittent process-fixture concurrency timeouts remain tracked separately in [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 
 ## M2 — Verified navigation
 

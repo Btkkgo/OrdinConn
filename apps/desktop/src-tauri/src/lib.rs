@@ -38,6 +38,7 @@ pub fn run() {
             commands::test_model_provider,
             commands::get_mobile_workspace,
             commands::observe_mobile_device,
+            commands::stop_mobile_session,
             commands::start_mobile_avd,
             commands::set_warehouse_entry,
             commands::create_mobile_research_task,

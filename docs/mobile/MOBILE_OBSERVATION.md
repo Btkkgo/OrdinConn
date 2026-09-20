@@ -1,5 +1,7 @@
 # Mobile Observation
 
+[English](MOBILE_OBSERVATION.md) | [简体中文](MOBILE_OBSERVATION.zh-CN.md)
+
 `MobileObservation` is the normalized result of one authorized mobile observation. It includes task and session identity, application/package/activity, semantic screen state, timestamps, frame and UI-tree hashes, source locator, visible facts, extracted entities, optional author and publication time, extraction method and confidence, redactions, privacy class, verification status, and metadata.
 
 A screenshot is not a market fact. Agent summaries are not source evidence. `MobileObservation` therefore remains distinct from Evidence.

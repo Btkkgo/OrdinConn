@@ -1,5 +1,7 @@
 # Device Runtime
 
+[English](DEVICE_RUNTIME.md) | [简体中文](DEVICE_RUNTIME.zh-CN.md)
+
 ## M1 device contract
 
 `MobileDeviceSession` records session and device identity, platform, device type, OS version, screen size, connection time, current application/activity, status, and the latest observation time.
@@ -35,4 +37,12 @@ Starting an existing AVD uses the discovered emulator executable, then waits for
 
 Environment probes have a five-second total deadline, and individual observation commands have a ten-second deadline. Tauri runs these blocking host operations on its blocking worker pool so a hung Android tool cannot indefinitely occupy the async command executor. The 120-second AVD deadline includes discovery and boot polling rather than starting after discovery.
 
+ADB stdout and stderr are drained while the child process runs. This is required for real PNG capture because waiting for process exit before reading a pipe can deadlock once a frame exceeds the operating-system pipe buffer. Foreground detection uses the full `dumpsys window` output because Android 16 no longer includes `mCurrentFocus` in the narrower `dumpsys window windows` output.
+
+UIAutomator nodes with malformed or reversed rectangles are discarded while the remaining valid tree is preserved. A platform-generated off-screen node must not invalidate an otherwise usable real snapshot, and no invalid rectangle becomes an element reference.
+
 Logical shutdown is also persisted: the session row transitions to `ended` and a redacted `mobile.session_ended` event is appended. OrdinConn still does not kill the emulator process.
+
+## Verified environment
+
+M1.5 passed on macOS arm64 with OpenJDK 21, Android API 36 Google APIs ARM64, Emulator 37.1.11, ADB 37.0.1, and the dedicated `OrdinConn_M1_5` Pixel 8 AVD. The packaged desktop path also verified status, a controlled allowlist error, observation, and logical stop without terminating the AVD. This evidence covers observation only; it does not authorize M2 actions.

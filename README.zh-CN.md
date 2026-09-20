@@ -40,7 +40,7 @@ Rust 核心保持与传输层无关；React 通过类型化 IPC 与 Tauri Host �
 Data → Evidence → Signal → Agent Report → Trade Proposal → Approval → Paper Execution
 ```
 
-参见[架构总览](docs/architecture/OVERVIEW.md)和[产品基线](docs/PRODUCT_BASELINE.md)。
+参见[架构总览](docs/architecture/OVERVIEW.zh-CN.md)（[English](docs/architecture/OVERVIEW.md)）和[产品基线](docs/PRODUCT_BASELINE.md)。
 
 ## 当前状态
 
@@ -74,7 +74,7 @@ OrdinConn 定义了受限的电脑感知与操作接口、权限门、审计事�
 - Mobile 访问受 Application Allowlist 约束，敏感 UI 节点必须脱敏。
 - 公开同步发现疑似 Secret、本机路径或禁止文件时一律 Fail Closed。
 
-参见[安全与批准](docs/SAFETY_AND_APPROVAL.md)、[Mobile Security](docs/mobile/MOBILE_SECURITY.md)和[安全报告规则](SECURITY.md)。
+参见[安全与批准](docs/SAFETY_AND_APPROVAL.md)、[Mobile Security](docs/mobile/MOBILE_SECURITY.md)和[安全报告规则](SECURITY.zh-CN.md)（[English](SECURITY.md)）。
 
 ## 开发与验证
 
@@ -94,28 +94,28 @@ npm run desktop:build
 
 GitHub 是 OrdinConn 唯一的公开工程事实来源。Issue 定义正式工作，DevLog 记录决策、失败、验证和剩余风险。X 只保留人工审核的草稿，Codex 不会自动发布。
 
-- [开发日志](docs/devlog/)
-- [Problems and Solutions](docs/PROBLEMS_AND_SOLUTIONS.md)
-- [Codex Field Notes](docs/codex/CODEX_FIELD_NOTES.md)
-- [公开开发规则](docs/open-source/BUILD_IN_PUBLIC.md)
+- [开发日志](docs/devlog/2026-09-20.zh-CN.md) · [English](docs/devlog/2026-09-20.md)
+- [问题与解决方案](docs/PROBLEMS_AND_SOLUTIONS.zh-CN.md) · [English](docs/PROBLEMS_AND_SOLUTIONS.md)
+- [Codex 现场笔记](docs/codex/CODEX_FIELD_NOTES.zh-CN.md) · [English](docs/codex/CODEX_FIELD_NOTES.md)
+- [公开开发规则](docs/open-source/BUILD_IN_PUBLIC.zh-CN.md) · [English](docs/open-source/BUILD_IN_PUBLIC.md)
 
 ## 文档
 
 - [当前状态](docs/CURRENT_STATUS.zh-CN.md) · [English](docs/CURRENT_STATUS.md)
-- [架构](docs/architecture/OVERVIEW.md)
+- [架构](docs/architecture/OVERVIEW.zh-CN.md) · [English](docs/architecture/OVERVIEW.md)
 - [Mobile Intelligence](docs/mobile/MOBILE_INTELLIGENCE.md)
 - [Model Gateway](docs/MODEL_GATEWAY.md)
 - [Connector 与 Source Registry](docs/SOURCE_REGISTRY.md)
-- [架构决策](docs/decisions/)
-- [安全与隐私](docs/open-source/SECURITY_AND_PRIVACY.md)
+- [架构决策](docs/decisions/README.zh-CN.md) · [English](docs/decisions/)
+- [安全与隐私](docs/open-source/SECURITY_AND_PRIVACY.zh-CN.md) · [English](docs/open-source/SECURITY_AND_PRIVACY.md)
 
 ## 路线图
 
-所有阶段必须通过真实 Gate 后才能前进：先在真实 Emulator 上完成 M1.5，再进入 M2 的验证式导航、M3 的生产级 App Skills、M4 的 Evidence 晋升，以及 M5 的物理 Android 设备。详见[公开路线图](docs/roadmap/README.md)。
+所有阶段必须通过真实 Gate 后才能前进。M1.5 已在真实 Emulator 上通过；M2 仍未开始并等待单独授权，之后依次是 M3 的生产级 App Skills、M4 的 Evidence 晋升，以及 M5 的物理 Android 设备。详见[公开路线图](docs/roadmap/README.zh-CN.md)（[English](docs/roadmap/README.md)）。
 
 ## 贡献
 
-项目采用 Issue-first 开发。重要工作开始前应创建或关联范围明确的 Issue，并保留 Evidence 与模型推断的边界，提交相关验证结果。参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+项目采用 Issue-first 开发。重要工作开始前应创建或关联范围明确的 Issue，并保留 Evidence 与模型推断的边界，提交相关验证结果。参见[贡献指南](CONTRIBUTING.zh-CN.md)（[English](CONTRIBUTING.md)）。
 
 ## 已知限制
 

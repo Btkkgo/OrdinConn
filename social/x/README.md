@@ -1,5 +1,7 @@
 # OrdinConn on X
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Stage-level Build in Public material moves through two states:
 
 - `drafts/`: sanitized content waiting for manual owner review and publication.
@@ -15,6 +17,7 @@ Templates live in `templates/`. Ordinary code changes belong in the daily DevLog
 - Require a verified GitHub project reference for stage threads.
 - Never read browser cookies or sessions, request a password, or store authentication in Git.
 - Publication is performed manually by the project owner. Repository automation does not log in to X, read browser state, or call the X API.
+- Every draft contains `## English` for the intended public post and `## 中文参考` for owner review. Both sections must express the same sanitized facts naturally rather than mechanically translating private conversation.
 
 ## Manual workflow
 

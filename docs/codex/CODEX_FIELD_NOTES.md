@@ -1,5 +1,7 @@
 # Codex Field Notes
 
+[English](CODEX_FIELD_NOTES.md) | [简体中文](CODEX_FIELD_NOTES.zh-CN.md)
+
 These notes describe observed engineering workflow, not a product endorsement.
 
 ## Current stage — Mobile Intelligence M0 to M1.5

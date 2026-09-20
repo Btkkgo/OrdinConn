@@ -1,5 +1,7 @@
 # Current Status
 
+[English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
+
 - Date: 2026-09-20
 - Version: 0.1.0
 - Official repository: https://github.com/Btkkgo/OrdinConn

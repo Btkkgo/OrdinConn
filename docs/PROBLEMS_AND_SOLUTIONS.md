@@ -1,5 +1,7 @@
 # Problems and Solutions
 
+[English](PROBLEMS_AND_SOLUTIONS.md) | [简体中文](PROBLEMS_AND_SOLUTIONS.zh-CN.md)
+
 ## Problem 001 — Inference can look like source evidence
 
 ### Context

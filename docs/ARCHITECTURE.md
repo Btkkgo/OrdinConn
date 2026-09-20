@@ -1,5 +1,7 @@
 # Architecture
 
+[English](ARCHITECTURE.md) | [简体中文](ARCHITECTURE.zh-CN.md)
+
 OrdinConn V0.1 uses a single-process embedded Tauri runtime with strict layers:
 
 `Core crates -> Application services -> Tauri adapter -> Typed IPC contracts -> React UI`

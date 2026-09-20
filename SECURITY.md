@@ -1,5 +1,7 @@
 # Security Policy
 
+[English](SECURITY.md) | [简体中文](SECURITY.zh-CN.md)
+
 ## Reporting a vulnerability
 
 Do not disclose exploitable details, credentials, customer data, private account information, or reproduction secrets in a public GitHub Issue.

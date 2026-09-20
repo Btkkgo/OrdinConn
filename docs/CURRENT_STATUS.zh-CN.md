@@ -1,5 +1,7 @@
 # 当前状态
 
+[English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
+
 - 日期：2026-09-20
 - 版本：0.1.0
 - 正式仓库：https://github.com/Btkkgo/OrdinConn

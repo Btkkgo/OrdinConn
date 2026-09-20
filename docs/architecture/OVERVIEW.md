@@ -1,5 +1,7 @@
 # Public Architecture
 
+[English](OVERVIEW.md) | [简体中文](OVERVIEW.zh-CN.md)
+
 ## Product boundary
 
 OrdinConn is an open-source, model-agnostic Agent Runtime direction. V0.1 applies that runtime to an AI Financial Intelligence and Execution Agent; the current product is not yet a general-purpose computer-control platform.

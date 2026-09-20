@@ -4,14 +4,16 @@
 - GitHub Issue: https://github.com/Btkkgo/OrdinConn/issues/1
 - Public workflow Issue: https://github.com/Btkkgo/OrdinConn/issues/2
 - GitHub Commit: open-source documentation `3d9434d`; product baseline `c4f2d66`
-- Status: DRAFT — manual owner review required; M1.5 NOT PASSED
+- Status: SUPERSEDED DRAFT — historical blocked checkpoint; do not publish as current status
 - Repository Link: https://github.com/Btkkgo/OrdinConn
 
-## Suggested Post
+## English
+
+### Suggested Post
 
 I’m building OrdinConn: an open-source, model-agnostic runtime for AI agents to perceive, understand, and operate computers and mobile environments—with explicit permissions, evidence provenance, and post-action verification. Development is public on GitHub.
 
-## Suggested Thread
+### Suggested Thread
 
 ### 1/5
 
@@ -33,7 +35,7 @@ The first real M1.5 gate failed honestly: Android SDK, ADB, and Emulator were un
 
 Codex lesson: fixture tests prove parsers and policy—not a real integration. A useful gate names prerequisites, blocks dependent claims, and preserves failure as engineering evidence. Source and DevLogs: github.com/Btkkgo/OrdinConn
 
-## Suggested Screenshots
+### Suggested Screenshots
 
 1. OrdinConn architecture: `AI Model → OrdinConn Runtime → Computer / Android / Apps`.
 2. Real M1.5 terminal result showing Android SDK missing, ADB FAIL, Emulator FAIL, and AVD FAIL.
@@ -41,15 +43,15 @@ Codex lesson: fixture tests prove parsers and policy—not a real integration. A
 
 Do not fabricate screenshots. Remove any private app content, account identity, or local home path before manual publication.
 
-## Technical Lesson
+### Technical Lesson
 
 Real-environment acceptance and fixture coverage are separate evidence classes. A downstream stage must remain blocked when its external prerequisites are absent.
 
-## Codex Lesson
+### Codex Lesson
 
 Codex was most useful when the workflow forced explicit scope, named gates, independent review, and evidence-backed completion language. It could not turn a missing Android runtime into a verified integration.
 
-## Chinese Reference
+## 中文参考
 
 ### 项目介绍
 
@@ -57,8 +59,8 @@ OrdinConn 是一个开源、模型无关的 AI Agent Runtime，目标是让不�
 
 ### 当前 Mobile Intelligence 状态
 
-当前方向是 `Emulator → Frame → UI Tree → Element Refs → MobileObservation`。真实 M1.5 Gate 没有检测到 Android SDK、ADB 与 Emulator，因此结果是 3 FAIL、7 BLOCKED，M2 没有开始。
+本草稿保留 2026-09-20 的首次受阻检查点：当时真实 M1.5 Gate 没有检测到 Android SDK、ADB 与 Emulator，因此结果是 3 FAIL、7 BLOCKED，M2 没有开始。该状态后来已被真实验证取代；当前 M1.5 状态必须以 Issue #1 和 Draft 0002 为准。本草稿不得作为当前状态发布。
 
 ### 人工发布提醒
 
-请在发布前人工检查英文措辞、选择真实且安全的截图，并确认 GitHub Issue 与仓库链接。Codex 不会自动发布 X。
+本文件只保留历史工程过程，不应再作为当前发布稿。Codex 不会自动发布 X。

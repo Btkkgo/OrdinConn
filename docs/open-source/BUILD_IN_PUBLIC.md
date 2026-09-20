@@ -1,5 +1,7 @@
 # Build in Public
 
+[English](BUILD_IN_PUBLIC.md) | [简体中文](BUILD_IN_PUBLIC.zh-CN.md)
+
 OrdinConn publishes engineering progress to make architecture, failure modes, and AI-assisted development practices inspectable.
 
 ## What is published
@@ -30,6 +32,12 @@ On first installation, macOS may ask whether `OrdinConn GitHub Sync` may access 
 Product-code delivery is separate. It requires the relevant test and build gate and uses a product commit, not the scheduled documentation-only commit.
 
 Meaningful work is issue-first. The Issue defines scope and acceptance, receives the execution result, and remains open when validation is blocked. Commits use `Refs #N` until the complete acceptance criteria justify `Fixes #N`.
+
+## Language policy
+
+English is the primary/default language for public GitHub records; Simplified Chinese is maintained as the synchronized secondary edition. Core documents use paired `.md` and `.zh-CN.md` files with reciprocal language links. Issue titles and commit messages use English; Issue bodies, important Issue comments, and Pull Request bodies use English first and Chinese second. Codex communicates with the owner in Chinese by default.
+
+DevLogs use `YYYY-MM-DD.md` and `YYYY-MM-DD.zh-CN.md`. X drafts contain `## English` and `## 中文参考`, remain owner-reviewed, and are never published automatically. The two languages must report the same stage, tests, outcome, risks, and next step.
 
 ## Publication states
 

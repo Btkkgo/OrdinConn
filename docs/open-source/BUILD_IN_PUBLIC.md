@@ -21,7 +21,11 @@ OrdinConn publishes engineering progress to make architecture, failure modes, an
 
 ## Cadence
 
-Ordinary engineering work updates the daily DevLog and waits for the two-hour documentation sync. The active local scheduler is a Codex heartbeat because macOS denied a standalone LaunchAgent access to this checkout under `Documents`; the failed LaunchAgent was removed. A meaningful stage close also updates Current Status, Problems and Solutions, Codex Field Notes, and an X draft.
+Ordinary engineering work updates the daily DevLog and waits for the two-hour documentation sync. The primary local scheduler is the macOS LaunchAgent `com.ordinconn.github-sync`; it runs at login and every 7,200 seconds without requiring Codex or ChatGPT. A Codex heartbeat may remain paused as a recovery fallback, but it is not the primary scheduler. A meaningful stage close also updates Current Status, Problems and Solutions, Codex Field Notes, and an X draft.
+
+The LaunchAgent starts a dedicated, ad-hoc-signed `OrdinConn GitHub Sync` launcher from `~/Library/Application Support/OrdinConn/automation/`. That launcher is the narrow macOS privacy identity responsible for reading this repository under `Documents`; the job does not grant Files and Folders or Full Disk Access to a general-purpose shell. The launcher invokes `github-sync-runner.sh`, which sets an explicit tool path, calls the repository-owned fail-closed sync script, and writes structured records to `~/Library/Logs/OrdinConn/github-sync.log`. The log rotates at 5 MiB and never records credentials.
+
+On first installation, macOS may ask whether `OrdinConn GitHub Sync` may access the Documents folder. Allow that specific application only. To revoke it later, open **System Settings → Privacy & Security → Files & Folders**, locate **OrdinConn GitHub Sync**, and disable Documents Folder access. If macOS presents it under **Full Disk Access** instead, remove or disable only that same named application. Then run `scripts/github/uninstall-sync-launchagent.sh` to unload the job and remove its local runner and launcher.
 
 Product-code delivery is separate. It requires the relevant test and build gate and uses a product commit, not the scheduled documentation-only commit.
 

@@ -22,6 +22,7 @@
 - Mobile M0/M1 的设备会话、Screen Frame、语义 UI Snapshot、Element Ref、隐私分类和 `MobileObservation` 契约。
 - Android observe-only 代码路径：工具发现、已有 AVD 检查、在线 Emulator 发现、受限 Frame Capture、UI Tree Dump、敏感节点脱敏、持久化、事件和 Workspace 投影。
 - 公开工程文档、Issue Template、人工 X Draft 和 Fail-closed 公共仓库安全门。
+- 独立于 Codex/ChatGPT 的 macOS 两小时 GitHub 同步 LaunchAgent；它通过专用 TCC 身份和 Application Support runner 工作。
 
 ## 已验证
 
@@ -31,11 +32,12 @@
 
 开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。最新默认并行 Desktop Rust Unit Run 有两项 1 秒 AVD 生命周期测试超时；同一组 20 个测试串行运行全部通过。
 
+独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
+
 ## 部分完成
 
 - Computer Runtime 已有接口和权限概念，但尚未形成广泛的生产级电脑操作能力。
 - Mobile Observation 已有生产代码路径和 Fixture，但没有真实 Emulator 验收。
-- Build in Public 同步能力已建立；由于 macOS `Documents` 隐私控制拒绝独立 LaunchAgent 访问当前目录，实际两小时触发由 Codex heartbeat 承担。
 
 ## 受阻
 

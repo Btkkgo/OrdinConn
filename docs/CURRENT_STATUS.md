@@ -22,6 +22,7 @@ This document separates implementation, verification, partial work, blocked work
 - Mobile M0/M1 domain contracts for device sessions, frames, semantic UI snapshots, element references, privacy classification, and `MobileObservation`.
 - Observe-only Android adapter code for tool discovery, existing-AVD inspection, online-emulator discovery, bounded frame capture, UI-tree dump, sensitive-node redaction, persistence, events, and workspace projection.
 - Public engineering documentation, issue templates, manual X drafts, and a fail-closed public repository gate.
+- A two-hour macOS LaunchAgent for public GitHub synchronization, using a dedicated TCC identity and an Application Support runner without requiring Codex or ChatGPT to be open.
 
 ## Verified
 
@@ -37,11 +38,12 @@ The explicit real Android smoke returned a complete 10-check report: three prere
 
 For the open-source initialization, public-log sanitizer, allowlisted Git sync, scheduler rendering, document validation, plist lint, TypeScript tests/typecheck, Vite build, and Tauri bundle passed. A fresh default-parallel desktop Rust unit run exposed two one-second AVD lifecycle timeouts; all 20 desktop library tests passed serially.
 
+The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
+
 ## Partial
 
 - Computer Runtime interfaces and permission concepts exist, but broad production computer operation is not implemented.
 - Mobile observation has production code paths and fixtures, but lacks real-emulator acceptance.
-- Build in Public automation can prepare and synchronize public records, but the standalone LaunchAgent cannot access this checkout under macOS `Documents` privacy controls; a Codex heartbeat provides the active two-hour trigger.
 
 ## Blocked
 

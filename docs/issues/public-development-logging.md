@@ -24,5 +24,6 @@ Establish GitHub as OrdinConn's public engineering source of truth with issue-fi
 - Security gate passes for the working tree, Git history, tracked paths, and commit metadata.
 - Public documents and templates validate.
 - Scheduled sync cannot stage product code.
+- The primary two-hour scheduler runs through macOS `launchd` without Codex or ChatGPT and passes a real change/push plus no-change acceptance.
 - First manual X draft links to verified GitHub records.
 - The Issue receives a final comment with commands, validation, results, and remaining risks.

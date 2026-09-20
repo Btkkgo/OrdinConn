@@ -2,6 +2,8 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+[GitHub 仓库](https://github.com/Btkkgo/OrdinConn) · [当前 Mobile Gate](https://github.com/Btkkgo/OrdinConn/issues/1)
+
 **开源、模型无关的 AI Agent Runtime。**
 
 OrdinConn 的目标，是为 AI 模型提供一层能够感知、理解并操作电脑与移动设备环境的运行时。当前 V0.1 应用首先把这套运行时用于传统金融与加密市场的可追溯情报处理。

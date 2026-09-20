@@ -2,6 +2,8 @@
 
 - 日期：2026-09-20
 - 版本：0.1.0
+- 正式仓库：https://github.com/Btkkgo/OrdinConn
+- 当前 Mobile Gate：https://github.com/Btkkgo/OrdinConn/issues/1
 - 默认公开分支：`main`
 - 产品源码基线：`c4f2d66`
 - Mobile 阶段：M1/M1.5 环境验证

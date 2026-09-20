@@ -2,6 +2,8 @@
 
 - Date: 2026-09-20
 - Version: 0.1.0
+- Official repository: https://github.com/Btkkgo/OrdinConn
+- Current Mobile gate: https://github.com/Btkkgo/OrdinConn/issues/1
 - Default public branch: `main`
 - Product source baseline: `c4f2d66`
 - Mobile stage: M1/M1.5 environment validation

@@ -2,6 +2,8 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+[GitHub Repository](https://github.com/Btkkgo/OrdinConn) · [Current Mobile Gate](https://github.com/Btkkgo/OrdinConn/issues/1)
+
 **Open-source model-agnostic AI Agent runtime.**
 
 OrdinConn aims to provide AI models with a runtime layer for perceiving, understanding, and operating computers and mobile environments. Its current V0.1 application applies that runtime to evidence-backed financial intelligence across traditional finance and crypto.

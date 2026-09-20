@@ -60,6 +60,7 @@ export const runtimeClient = {
     invoke<ConnectionTestResult>("test_model_provider", { input }),
   getMobileWorkspace: () => invoke<MobileWorkspaceDto>("get_mobile_workspace"),
   observeMobileDevice: () => invoke<MobileWorkspaceDto>("observe_mobile_device"),
+  startMobileAvd: (name: string) => invoke<MobileWorkspaceDto>("start_mobile_avd", { name }),
   setWarehouseEntry: (itemId: string, favorite: boolean, saved: boolean, tags: string[]) =>
     invoke<WarehouseEntryDto>("set_warehouse_entry", { itemId, favorite, saved, tags }),
   createMobileResearchTask: (query: string, allowedApps: string[], budget: MobileResearchBudgetDto) =>

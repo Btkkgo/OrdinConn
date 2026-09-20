@@ -1,18 +1,576 @@
 use chrono::Utc;
 use mobile_runtime::{
-    MobileBounds, MobileCapture, MobileDeviceSession, MobileDeviceType, MobileFrame,
-    MobileObservation, MobilePlatform, MobileSessionStatus, MobileUiSnapshot, PrivacyClass,
-    RawMobileElement, ScreenFrameBuffer,
+    AndroidAvdInfo, AndroidDeviceInfo, AndroidEnvironmentDiagnostics, MobileBounds, MobileCapture,
+    MobileDeviceSession, MobileDeviceType, MobileFrame, MobileObservation, MobilePlatform,
+    MobileSessionStatus, MobileUiSnapshot, PrivacyClass, RawMobileElement, ScreenFrameBuffer,
 };
 use quick_xml::{Reader, events::Event};
+#[cfg(test)]
+use serde::Serialize;
 use std::{
-    env,
+    env, fs,
     path::{Path, PathBuf},
-    process::Command,
-    sync::Mutex,
+    process::{Command, Stdio},
+    sync::{
+        Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
+    time::{Duration, Instant},
 };
 use thiserror::Error;
 use uuid::Uuid;
+
+#[cfg(test)]
+const M1_5_CAPTURE_GATES: [&str; 7] = [
+    "FRAME_CAPTURE",
+    "UI_TREE_CAPTURE",
+    "SNAPSHOT_PARSE",
+    "ELEMENT_REFS",
+    "MOBILE_OBSERVATION",
+    "TAURI_IPC",
+    "SESSION_SHUTDOWN",
+];
+
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum MobileGateStatus {
+    Pass,
+    Fail,
+    Blocked,
+}
+
+#[cfg(test)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MobileGateCheck {
+    pub name: String,
+    pub status: MobileGateStatus,
+    pub detail: String,
+}
+
+#[cfg(test)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MobileM15GateReport {
+    pub passed: bool,
+    pub checks: Vec<MobileGateCheck>,
+}
+
+#[cfg(test)]
+impl MobileM15GateReport {
+    pub fn status(&self, name: &str) -> Option<MobileGateStatus> {
+        self.checks
+            .iter()
+            .find(|check| check.name == name)
+            .map(|check| check.status)
+    }
+}
+
+#[cfg(test)]
+fn gate_check(name: &str, passed: bool, detail: impl Into<String>) -> MobileGateCheck {
+    MobileGateCheck {
+        name: name.into(),
+        status: if passed {
+            MobileGateStatus::Pass
+        } else {
+            MobileGateStatus::Fail
+        },
+        detail: detail.into(),
+    }
+}
+
+#[cfg(test)]
+fn m1_5_environment_gate(diagnostics: &AndroidEnvironmentDiagnostics) -> MobileM15GateReport {
+    let mut checks = vec![
+        gate_check(
+            "ADB_READY",
+            diagnostics.adb_status == "ready",
+            diagnostics
+                .adb_path
+                .clone()
+                .unwrap_or_else(|| "ADB executable not detected".into()),
+        ),
+        gate_check(
+            "EMULATOR_READY",
+            diagnostics.emulator_status == "ready",
+            diagnostics
+                .emulator_path
+                .clone()
+                .unwrap_or_else(|| "emulator executable not detected".into()),
+        ),
+        gate_check(
+            "DEVICE_ONLINE",
+            !diagnostics.online_devices.is_empty(),
+            if diagnostics.online_devices.is_empty() {
+                "no online Android Emulator detected".into()
+            } else {
+                diagnostics
+                    .online_devices
+                    .iter()
+                    .map(|device| device.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            },
+        ),
+    ];
+    checks.extend(M1_5_CAPTURE_GATES.map(|name| MobileGateCheck {
+        name: name.into(),
+        status: MobileGateStatus::Blocked,
+        detail: "blocked until Android environment prerequisites pass".into(),
+    }));
+    MobileM15GateReport {
+        passed: false,
+        checks,
+    }
+}
+
+#[cfg(test)]
+fn m1_5_capture_gate(
+    diagnostics: &AndroidEnvironmentDiagnostics,
+    capture: &MobileCapture,
+    ipc_serializable: bool,
+    session_shutdown: bool,
+) -> MobileM15GateReport {
+    let mut checks = m1_5_environment_gate(diagnostics).checks;
+    checks.truncate(3);
+    checks.extend([
+        gate_check(
+            "FRAME_CAPTURE",
+            !capture.frame.png_bytes.is_empty() && !capture.frame.frame_hash.is_empty(),
+            format!(
+                "{} bytes, {}",
+                capture.frame.png_bytes.len(),
+                capture.frame.frame_hash
+            ),
+        ),
+        gate_check(
+            "UI_TREE_CAPTURE",
+            !capture.snapshot.elements.is_empty(),
+            format!("{} sanitized UI elements", capture.snapshot.elements.len()),
+        ),
+        gate_check(
+            "SNAPSHOT_PARSE",
+            !capture.snapshot.snapshot_id.is_empty()
+                && !capture.snapshot.package_name.is_empty()
+                && !capture.snapshot.activity.is_empty(),
+            capture.snapshot.snapshot_id.clone(),
+        ),
+        gate_check(
+            "ELEMENT_REFS",
+            !capture.snapshot.elements.is_empty()
+                && capture
+                    .snapshot
+                    .elements
+                    .iter()
+                    .all(|element| element.element_ref.starts_with("@e")),
+            format!("{} snapshot-bound refs", capture.snapshot.elements.len()),
+        ),
+        gate_check(
+            "MOBILE_OBSERVATION",
+            !capture.observation.id.is_empty()
+                && capture.observation.frame_hash == capture.frame.frame_hash,
+            capture.observation.id.clone(),
+        ),
+        gate_check(
+            "TAURI_IPC",
+            ipc_serializable,
+            "production capture persisted, audited, projected, and serialized through the typed Tauri workspace boundary",
+        ),
+        gate_check(
+            "SESSION_SHUTDOWN",
+            session_shutdown,
+            "OrdinConn logical device session ended without terminating the user AVD",
+        ),
+    ]);
+    MobileM15GateReport {
+        passed: checks
+            .iter()
+            .all(|check| check.status == MobileGateStatus::Pass),
+        checks,
+    }
+}
+
+#[cfg(test)]
+fn m1_5_capture_failure_gate(
+    diagnostics: &AndroidEnvironmentDiagnostics,
+    detail: impl Into<String>,
+) -> MobileM15GateReport {
+    let mut report = m1_5_environment_gate(diagnostics);
+    report.checks[3] = MobileGateCheck {
+        name: "FRAME_CAPTURE".into(),
+        status: MobileGateStatus::Fail,
+        detail: detail.into(),
+    };
+    report
+}
+
+#[derive(Clone, Debug)]
+pub struct AndroidEnvironmentDetector {
+    candidate_roots: Vec<PathBuf>,
+    path_dirs: Vec<PathBuf>,
+    avd_home: Option<PathBuf>,
+}
+
+impl AndroidEnvironmentDetector {
+    pub fn production(configured_sdk: Option<&str>) -> Self {
+        let mut candidate_roots = Vec::new();
+        if let Some(configured) = configured_sdk.filter(|value| !value.trim().is_empty()) {
+            candidate_roots.push(PathBuf::from(configured));
+        }
+        for key in ["ANDROID_SDK_ROOT", "ANDROID_HOME"] {
+            if let Ok(value) = env::var(key)
+                && !value.trim().is_empty()
+            {
+                candidate_roots.push(PathBuf::from(value));
+            }
+        }
+        let user_home = env::var_os("HOME").map(PathBuf::from);
+        if let Some(home) = &user_home {
+            candidate_roots.push(home.join("Library/Android/sdk"));
+        }
+        let path_dirs = env::var_os("PATH")
+            .map(|paths| env::split_paths(&paths).collect())
+            .unwrap_or_default();
+        Self::new(
+            candidate_roots,
+            path_dirs,
+            user_home.map(|home| home.join(".android/avd")),
+        )
+    }
+
+    pub fn new(
+        candidate_roots: Vec<PathBuf>,
+        path_dirs: Vec<PathBuf>,
+        avd_home: Option<PathBuf>,
+    ) -> Self {
+        Self {
+            candidate_roots,
+            path_dirs,
+            avd_home,
+        }
+    }
+
+    pub fn detect(&self) -> AndroidEnvironmentDiagnostics {
+        self.detect_until(Instant::now() + Duration::from_secs(5))
+    }
+
+    fn detect_until(&self, deadline: Instant) -> AndroidEnvironmentDiagnostics {
+        let sdk_roots = self
+            .candidate_roots
+            .iter()
+            .filter_map(|candidate| normalize_sdk_root(candidate))
+            .collect::<Vec<_>>();
+        let adb_path = discover_adb(&self.candidate_roots, &self.path_dirs);
+        let emulator_path =
+            discover_tool(&sdk_roots, &self.path_dirs, "emulator/emulator", "emulator");
+        let sdkmanager_path = discover_sdk_manager(&sdk_roots, &self.path_dirs, "sdkmanager");
+        let avdmanager_path = discover_sdk_manager(&sdk_roots, &self.path_dirs, "avdmanager");
+        let sdk_root = sdk_roots
+            .iter()
+            .find(|root| {
+                [
+                    root.join("platform-tools/adb"),
+                    root.join("emulator/emulator"),
+                    root.join("cmdline-tools/latest/bin/sdkmanager"),
+                    root.join("tools/bin/sdkmanager"),
+                ]
+                .iter()
+                .any(|candidate| candidate.is_file())
+            })
+            .cloned()
+            .or_else(|| adb_path.as_deref().and_then(infer_sdk_root));
+        let adb_version = adb_path
+            .as_deref()
+            .and_then(|adb| run_command_text_until(adb, &["version"], deadline))
+            .and_then(|value| value.lines().next().map(str::to_owned));
+        let online_devices = adb_path
+            .as_deref()
+            .and_then(|adb| run_command_text_until(adb, &["devices", "-l"], deadline))
+            .map(|output| parse_online_android_emulators(&output, adb_path.as_deref(), deadline))
+            .unwrap_or_default();
+        let running_names = online_devices
+            .iter()
+            .filter_map(|device| device.avd_name.as_deref())
+            .collect::<Vec<_>>();
+        let emulator_avds_output = emulator_path
+            .as_deref()
+            .and_then(|emulator| run_command_text_until(emulator, &["-list-avds"], deadline));
+        let available_avds = emulator_avds_output
+            .as_deref()
+            .map(|output| {
+                output
+                    .lines()
+                    .map(str::trim)
+                    .filter(|name| !name.is_empty())
+                    .map(|name| self.avd_info(name, running_names.contains(&name)))
+                    .collect()
+            })
+            .unwrap_or_default();
+        AndroidEnvironmentDiagnostics {
+            sdk_status: if sdk_root.is_some() {
+                "detected"
+            } else {
+                "missing"
+            }
+            .into(),
+            adb_status: match (&adb_path, &adb_version) {
+                (None, _) => "missing",
+                (Some(_), Some(_)) => "ready",
+                (Some(_), None) => "error",
+            }
+            .into(),
+            emulator_status: match (&emulator_path, &emulator_avds_output) {
+                (None, _) => "missing",
+                (Some(_), Some(_)) => "ready",
+                (Some(_), None) => "error",
+            }
+            .into(),
+            sdk_root: path_string(sdk_root.as_deref()),
+            adb_path: path_string(adb_path.as_deref()),
+            emulator_path: path_string(emulator_path.as_deref()),
+            sdkmanager_path: path_string(sdkmanager_path.as_deref()),
+            avdmanager_path: path_string(avdmanager_path.as_deref()),
+            adb_version,
+            available_avds,
+            online_devices,
+        }
+    }
+
+    fn avd_info(&self, name: &str, running: bool) -> AndroidAvdInfo {
+        let values = self
+            .avd_home
+            .as_ref()
+            .map(|home| home.join(format!("{name}.avd/config.ini")))
+            .and_then(|path| fs::read_to_string(path).ok())
+            .map(|contents| parse_properties(&contents))
+            .unwrap_or_default();
+        AndroidAvdInfo {
+            name: name.into(),
+            status: if running { "running" } else { "stopped" }.into(),
+            device_profile: values.get("hw.device.name").cloned(),
+            architecture: values
+                .get("abi.type")
+                .or_else(|| values.get("hw.cpu.arch"))
+                .cloned(),
+            running,
+        }
+    }
+}
+
+fn normalize_sdk_root(candidate: &Path) -> Option<PathBuf> {
+    if candidate.file_name().is_some_and(|name| name == "adb") && candidate.is_file() {
+        return candidate
+            .parent()
+            .filter(|parent| {
+                parent
+                    .file_name()
+                    .is_some_and(|name| name == "platform-tools")
+            })
+            .and_then(Path::parent)
+            .map(Path::to_path_buf);
+    }
+    candidate.is_dir().then(|| candidate.to_path_buf())
+}
+
+fn discover_tool(
+    sdk_roots: &[PathBuf],
+    path_dirs: &[PathBuf],
+    relative: &str,
+    binary: &str,
+) -> Option<PathBuf> {
+    sdk_roots
+        .iter()
+        .map(|root| root.join(relative))
+        .find(|candidate| candidate.is_file())
+        .or_else(|| {
+            path_dirs
+                .iter()
+                .map(|directory| directory.join(binary))
+                .find(|candidate| candidate.is_file())
+        })
+}
+
+fn discover_adb(candidates: &[PathBuf], path_dirs: &[PathBuf]) -> Option<PathBuf> {
+    candidates
+        .iter()
+        .find_map(|candidate| {
+            if candidate.file_name().is_some_and(|name| name == "adb") && candidate.is_file() {
+                Some(candidate.clone())
+            } else if candidate.is_dir() {
+                let adb = candidate.join("platform-tools/adb");
+                adb.is_file().then_some(adb)
+            } else {
+                None
+            }
+        })
+        .or_else(|| {
+            path_dirs
+                .iter()
+                .map(|directory| directory.join("adb"))
+                .find(|candidate| candidate.is_file())
+        })
+}
+
+fn discover_sdk_manager(
+    sdk_roots: &[PathBuf],
+    path_dirs: &[PathBuf],
+    binary: &str,
+) -> Option<PathBuf> {
+    sdk_roots
+        .iter()
+        .flat_map(|root| {
+            [
+                root.join(format!("cmdline-tools/latest/bin/{binary}")),
+                root.join(format!("tools/bin/{binary}")),
+            ]
+        })
+        .find(|candidate| candidate.is_file())
+        .or_else(|| {
+            path_dirs
+                .iter()
+                .map(|directory| directory.join(binary))
+                .find(|candidate| candidate.is_file())
+        })
+}
+
+fn infer_sdk_root(tool: &Path) -> Option<PathBuf> {
+    let parent = tool.parent()?;
+    match parent.file_name()?.to_str()? {
+        "platform-tools" | "emulator" => parent.parent().map(Path::to_path_buf),
+        _ => None,
+    }
+}
+
+fn run_command_text_with_timeout(
+    program: &Path,
+    args: &[&str],
+    timeout: Duration,
+) -> Option<String> {
+    let mut child = Command::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    let deadline = Instant::now() + timeout;
+    loop {
+        if let Some(status) = child.try_wait().ok()? {
+            let output = child.wait_with_output().ok()?;
+            return status
+                .success()
+                .then(|| String::from_utf8_lossy(&output.stdout).into_owned());
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn run_command_text_until(program: &Path, args: &[&str], deadline: Instant) -> Option<String> {
+    let remaining = deadline.checked_duration_since(Instant::now())?;
+    run_command_text_with_timeout(program, args, remaining)
+}
+
+fn run_command_bytes_with_timeout(
+    program: &Path,
+    args: &[&str],
+    timeout: Duration,
+) -> Result<Vec<u8>, MobileHostError> {
+    let mut child = Command::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
+    let deadline = Instant::now() + timeout;
+    loop {
+        if let Some(status) = child
+            .try_wait()
+            .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?
+        {
+            let output = child
+                .wait_with_output()
+                .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
+            if status.success() {
+                return Ok(output.stdout);
+            }
+            return Err(MobileHostError::CommandFailed(
+                String::from_utf8_lossy(&output.stderr)
+                    .chars()
+                    .take(240)
+                    .collect(),
+            ));
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(MobileHostError::CommandFailed(format!(
+                "command timed out after {} ms",
+                timeout.as_millis()
+            )));
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn parse_online_android_emulators(
+    output: &str,
+    adb: Option<&Path>,
+    deadline: Instant,
+) -> Vec<AndroidDeviceInfo> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            let id = fields.next()?;
+            let status = fields.next()?;
+            if !id.starts_with("emulator-") || status != "device" {
+                return None;
+            }
+            let model = fields
+                .find_map(|field| field.strip_prefix("model:"))
+                .map(str::to_owned);
+            let avd_name = adb
+                .and_then(|path| {
+                    run_command_text_until(path, &["-s", id, "emu", "avd", "name"], deadline)
+                })
+                .and_then(|value| {
+                    value
+                        .lines()
+                        .map(str::trim)
+                        .find(|line| !line.is_empty() && *line != "OK")
+                        .map(str::to_owned)
+                });
+            Some(AndroidDeviceInfo {
+                id: id.into(),
+                status: status.into(),
+                model,
+                avd_name,
+            })
+        })
+        .collect()
+}
+
+fn parse_properties(contents: &str) -> HashMap<String, String> {
+    contents
+        .lines()
+        .filter_map(|line| {
+            let (key, value) = line.split_once('=')?;
+            Some((key.trim().into(), value.trim().into()))
+        })
+        .collect()
+}
+
+fn path_string(path: Option<&Path>) -> Option<String> {
+    path.map(|value| value.to_string_lossy().into_owned())
+}
 
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum MobileHostError {
@@ -20,6 +578,12 @@ pub enum MobileHostError {
     AdbMissing,
     #[error("no online Android Emulator was found")]
     NoOnlineEmulator,
+    #[error("Android Emulator was not found")]
+    EmulatorMissing,
+    #[error("Android AVD was not found: {0}")]
+    AvdNotFound(String),
+    #[error("Android AVD did not finish booting before timeout: {0}")]
+    AvdBootTimeout(String),
     #[error("the foreground application could not be identified")]
     FocusUnavailable,
     #[error("the device screen size could not be parsed")]
@@ -45,29 +609,150 @@ struct AdbObservationOutput {
 }
 
 pub struct MobileHost {
-    adb_path: Option<PathBuf>,
+    detector: Option<AndroidEnvironmentDetector>,
     session_id: String,
+    session_active: AtomicBool,
     frames: Mutex<ScreenFrameBuffer>,
 }
 
 impl MobileHost {
     pub fn discover() -> Self {
-        Self::new(resolve_adb_path())
-    }
-
-    pub fn new(adb_path: Option<PathBuf>) -> Self {
         Self {
-            adb_path,
+            detector: None,
             session_id: format!("mobile_session_{}", Uuid::now_v7()),
+            session_active: AtomicBool::new(false),
             frames: Mutex::new(ScreenFrameBuffer::new(5)),
         }
     }
 
-    pub fn adb_available_with_sdk(&self, android_sdk: Option<&str>) -> bool {
-        self.adb_path.is_some()
-            || android_sdk
-                .map(adb_from_sdk_path)
-                .is_some_and(|path| path.is_file())
+    #[cfg(test)]
+    pub fn new(adb_path: Option<PathBuf>) -> Self {
+        Self {
+            detector: Some(AndroidEnvironmentDetector::new(
+                adb_path.into_iter().collect(),
+                Vec::new(),
+                None,
+            )),
+            session_id: format!("mobile_session_{}", Uuid::now_v7()),
+            session_active: AtomicBool::new(false),
+            frames: Mutex::new(ScreenFrameBuffer::new(5)),
+        }
+    }
+
+    #[cfg(test)]
+    fn with_detector(detector: AndroidEnvironmentDetector) -> Self {
+        Self {
+            detector: Some(detector),
+            session_id: format!("mobile_session_{}", Uuid::now_v7()),
+            session_active: AtomicBool::new(false),
+            frames: Mutex::new(ScreenFrameBuffer::new(5)),
+        }
+    }
+
+    pub fn environment_diagnostics(
+        &self,
+        configured_sdk: Option<&str>,
+    ) -> AndroidEnvironmentDiagnostics {
+        if configured_sdk.is_some() {
+            AndroidEnvironmentDetector::production(configured_sdk).detect()
+        } else {
+            self.detector
+                .clone()
+                .unwrap_or_else(|| AndroidEnvironmentDetector::production(None))
+                .detect()
+        }
+    }
+
+    pub fn start_avd(
+        &self,
+        configured_sdk: Option<&str>,
+        name: &str,
+        timeout: Duration,
+    ) -> Result<AndroidDeviceInfo, MobileHostError> {
+        let detector = self
+            .detector
+            .clone()
+            .unwrap_or_else(|| AndroidEnvironmentDetector::production(configured_sdk));
+        self.start_avd_with_detector(&detector, name, timeout)
+    }
+
+    #[cfg(test)]
+    fn start_avd_with_timeout(
+        &self,
+        name: &str,
+        timeout: Duration,
+    ) -> Result<AndroidDeviceInfo, MobileHostError> {
+        let detector = self
+            .detector
+            .as_ref()
+            .expect("test host must contain a detector");
+        self.start_avd_with_detector(detector, name, timeout)
+    }
+
+    fn start_avd_with_detector(
+        &self,
+        detector: &AndroidEnvironmentDetector,
+        name: &str,
+        timeout: Duration,
+    ) -> Result<AndroidDeviceInfo, MobileHostError> {
+        let deadline = Instant::now() + timeout;
+        let initial = detector.detect_until(deadline);
+        if Instant::now() >= deadline {
+            return Err(MobileHostError::AvdBootTimeout(name.into()));
+        }
+        let avd = initial
+            .available_avds
+            .iter()
+            .find(|avd| avd.name == name)
+            .ok_or_else(|| MobileHostError::AvdNotFound(name.into()))?;
+        let adb = initial
+            .adb_path
+            .as_deref()
+            .map(PathBuf::from)
+            .ok_or(MobileHostError::AdbMissing)?;
+        if !avd.running {
+            let emulator = initial
+                .emulator_path
+                .as_deref()
+                .ok_or(MobileHostError::EmulatorMissing)?;
+            Command::new(emulator)
+                .args(["-avd", name])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
+        }
+        loop {
+            let diagnostics = detector.detect_until(deadline);
+            if let Some(device) = diagnostics
+                .online_devices
+                .into_iter()
+                .find(|device| device.avd_name.as_deref() == Some(name))
+                && run_command_text_until(
+                    &adb,
+                    &["-s", &device.id, "shell", "getprop", "sys.boot_completed"],
+                    deadline,
+                )
+                .is_some_and(|value| value.trim() == "1")
+            {
+                self.session_active.store(true, Ordering::Release);
+                return Ok(device);
+            }
+            let now = Instant::now();
+            if now >= deadline {
+                return Err(MobileHostError::AvdBootTimeout(name.into()));
+            }
+            thread::sleep(Duration::from_millis(250).min(deadline - now));
+        }
+    }
+
+    pub fn stop_session(&self) -> bool {
+        self.session_active.swap(false, Ordering::AcqRel)
+    }
+
+    pub fn session_id(&self) -> &str {
+        &self.session_id
     }
 
     pub fn observe_with_sdk(
@@ -75,13 +760,12 @@ impl MobileHost {
         android_sdk: Option<&str>,
         allowed_apps: &[String],
     ) -> Result<MobileCapture, MobileHostError> {
-        let configured_adb = android_sdk
-            .map(adb_from_sdk_path)
-            .filter(|path| path.is_file());
-        let adb = self
+        let diagnostics = self.environment_diagnostics(android_sdk);
+        let adb = diagnostics
             .adb_path
             .as_deref()
-            .or(configured_adb.as_deref())
+            .map(Path::new)
+            .filter(|_| diagnostics.adb_status == "ready")
             .ok_or(MobileHostError::AdbMissing)?;
         let devices = run_text(adb, &["devices"])?;
         let device_id = online_emulator_from_output(&devices)?;
@@ -134,16 +818,8 @@ impl MobileHost {
             .lock()
             .map_err(|_| MobileHostError::CommandFailed("frame buffer lock poisoned".into()))?
             .push(capture.frame.clone());
+        self.session_active.store(true, Ordering::Release);
         Ok(capture)
-    }
-}
-
-fn adb_from_sdk_path(value: &str) -> PathBuf {
-    let path = PathBuf::from(value);
-    if path.file_name().is_some_and(|name| name == "adb") {
-        path
-    } else {
-        path.join("platform-tools/adb")
     }
 }
 
@@ -155,58 +831,13 @@ fn bind_capture_to_session(mut capture: MobileCapture, session_id: &str) -> Mobi
     capture
 }
 
-fn resolve_adb_path() -> Option<PathBuf> {
-    for key in ["ANDROID_SDK_ROOT", "ANDROID_HOME"] {
-        if let Ok(root) = env::var(key) {
-            let candidate = PathBuf::from(root).join("platform-tools/adb");
-            if candidate.is_file() {
-                return Some(candidate);
-            }
-        }
-    }
-    if let Ok(user_home) = env::var("HOME") {
-        let candidate = PathBuf::from(user_home).join("Library/Android/sdk/platform-tools/adb");
-        if candidate.is_file() {
-            return Some(candidate);
-        }
-    }
-    env::var_os("PATH").and_then(|paths| {
-        env::split_paths(&paths)
-            .map(|path| path.join("adb"))
-            .find(|candidate| candidate.is_file())
-    })
-}
-
 fn run_text(adb: &Path, args: &[&str]) -> Result<String, MobileHostError> {
-    let output = Command::new(adb)
-        .args(args)
-        .output()
-        .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
-    if !output.status.success() {
-        return Err(MobileHostError::CommandFailed(
-            String::from_utf8_lossy(&output.stderr)
-                .chars()
-                .take(240)
-                .collect(),
-        ));
-    }
-    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    run_command_bytes_with_timeout(adb, args, Duration::from_secs(10))
+        .map(|output| String::from_utf8_lossy(&output).into_owned())
 }
 
 fn run_bytes(adb: &Path, args: &[&str]) -> Result<Vec<u8>, MobileHostError> {
-    let output = Command::new(adb)
-        .args(args)
-        .output()
-        .map_err(|error| MobileHostError::CommandFailed(error.to_string()))?;
-    if !output.status.success() {
-        return Err(MobileHostError::CommandFailed(
-            String::from_utf8_lossy(&output.stderr)
-                .chars()
-                .take(240)
-                .collect(),
-        ));
-    }
-    Ok(output.stdout)
+    run_command_bytes_with_timeout(adb, args, Duration::from_secs(10))
 }
 
 fn parse_online_emulators(output: &str) -> Vec<String> {
@@ -381,6 +1012,8 @@ fn capture_from_outputs(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{fs, os::unix::fs::PermissionsExt};
+    use tempfile::TempDir;
 
     const DEVICES: &str = "List of devices attached\nemulator-5554\tdevice\nemulator-5556\toffline\nR58M123\tdevice\n";
     const FOCUS: &str =
@@ -465,27 +1098,459 @@ mod tests {
             return;
         }
         let host = MobileHost::discover();
+        let mut diagnostics = host.environment_diagnostics(None);
+        if diagnostics.online_devices.is_empty()
+            && let Some(avd) = diagnostics.available_avds.first()
+        {
+            if let Err(error) = host.start_avd(None, &avd.name, Duration::from_secs(120)) {
+                let report = m1_5_environment_gate(&host.environment_diagnostics(None));
+                println!("{}", serde_json::to_string_pretty(&report).unwrap());
+                panic!("M1.5 AVD startup failed: {error}; M2 is forbidden");
+            }
+            diagnostics = host.environment_diagnostics(None);
+        }
+        let environment_report = m1_5_environment_gate(&diagnostics);
+        if environment_report.checks[..3]
+            .iter()
+            .any(|check| check.status != MobileGateStatus::Pass)
+        {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&environment_report).unwrap()
+            );
+            panic!("M1.5 environment gate failed; M2 is forbidden");
+        }
         let allowed = std::env::var("ORDINCONN_MOBILE_ALLOWED_APPS")
             .unwrap_or_default()
             .split(',')
             .filter(|value| !value.trim().is_empty())
             .map(str::to_owned)
             .collect::<Vec<_>>();
-        host.observe_with_sdk(None, &allowed)
-            .expect("real Android Emulator observation");
+        let capture = match host.observe_with_sdk(None, &allowed) {
+            Ok(capture) => capture,
+            Err(error) => {
+                let report = m1_5_capture_failure_gate(&diagnostics, error.to_string());
+                println!("{}", serde_json::to_string_pretty(&report).unwrap());
+                panic!("M1.5 capture failed; M2 is forbidden");
+            }
+        };
+        let directory = TempDir::new().unwrap();
+        let async_runtime = tokio::runtime::Runtime::new().unwrap();
+        let app_runtime = async_runtime
+            .block_on(ordinconn_app::AppRuntime::initialize(
+                &directory.path().join("real-mobile-smoke.sqlite3"),
+            ))
+            .unwrap();
+        let mut events = app_runtime.subscribe();
+        let workspace = async_runtime
+            .block_on(crate::commands::record_mobile_capture_workspace(
+                app_runtime.as_ref(),
+                diagnostics.clone(),
+                capture.clone(),
+            ))
+            .expect("real capture must persist and project through the production workspace path");
+        let event_types = (0..3)
+            .map(|_| events.try_recv().map(|event| event.event_type))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap_or_default();
+        let ipc_serializable = serde_json::to_value(&workspace).is_ok()
+            && workspace
+                .observations
+                .iter()
+                .any(|item| item.id == capture.observation.id)
+            && event_types
+                == vec![
+                    "mobile.session_started",
+                    "mobile.snapshot",
+                    "mobile.observation",
+                ];
+        let session_shutdown = host.stop_session()
+            && async_runtime
+                .block_on(app_runtime.end_mobile_session(&capture.session.session_id))
+                .unwrap_or(false);
+        let report = m1_5_capture_gate(&diagnostics, &capture, ipc_serializable, session_shutdown);
+        println!("{}", serde_json::to_string_pretty(&report).unwrap());
+        assert!(report.passed, "M1.5 gate failed; M2 is forbidden");
     }
 
     #[test]
     fn sdk_configuration_and_session_identity_are_stable() {
-        assert_eq!(
-            adb_from_sdk_path("/opt/android"),
-            PathBuf::from("/opt/android/platform-tools/adb")
-        );
-        assert_eq!(
-            adb_from_sdk_path("/opt/android/platform-tools/adb"),
-            PathBuf::from("/opt/android/platform-tools/adb")
-        );
         let host = MobileHost::new(None);
         assert!(host.session_id.starts_with("mobile_session_"));
+    }
+
+    fn executable(path: &Path, body: &str) {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        fs::write(path, body).unwrap();
+        let mut permissions = fs::metadata(path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(path, permissions).unwrap();
+    }
+
+    #[test]
+    fn android_environment_detects_tools_avds_and_only_online_emulators() {
+        let fixture = TempDir::new().unwrap();
+        let sdk = fixture.path().join("sdk");
+        let avd_home = fixture.path().join(".android/avd");
+        executable(
+            &sdk.join("platform-tools/adb"),
+            r##"#!/bin/sh
+if [ "$1" = "version" ]; then echo "Android Debug Bridge version 1.0.41"; exit 0; fi
+if [ "$1" = "devices" ]; then
+  printf 'List of devices attached\nemulator-5554 device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64\nemulator-5556 offline\nR58M123 device product:phone\nemulator-5558 unauthorized\n'
+  exit 0
+fi
+if [ "$3" = "emu" ] && [ "$4" = "avd" ]; then echo "Pixel_9_API_36"; echo "OK"; exit 0; fi
+exit 1
+"##,
+        );
+        executable(
+            &sdk.join("emulator/emulator"),
+            "#!/bin/sh\nif [ \"$1\" = \"-list-avds\" ]; then echo Pixel_9_API_36; fi\n",
+        );
+        executable(
+            &sdk.join("cmdline-tools/latest/bin/sdkmanager"),
+            "#!/bin/sh\nexit 0\n",
+        );
+        executable(
+            &sdk.join("cmdline-tools/latest/bin/avdmanager"),
+            "#!/bin/sh\nexit 0\n",
+        );
+        fs::create_dir_all(avd_home.join("Pixel_9_API_36.avd")).unwrap();
+        fs::write(
+            avd_home.join("Pixel_9_API_36.avd/config.ini"),
+            "hw.device.name=pixel_9\nabi.type=arm64-v8a\n",
+        )
+        .unwrap();
+
+        let diagnostics =
+            AndroidEnvironmentDetector::new(vec![sdk.clone()], Vec::new(), Some(avd_home)).detect();
+
+        assert_eq!(diagnostics.sdk_root.as_deref(), sdk.to_str());
+        assert_eq!(
+            diagnostics.adb_path.as_deref(),
+            sdk.join("platform-tools/adb").to_str()
+        );
+        assert_eq!(
+            diagnostics.adb_version.as_deref(),
+            Some("Android Debug Bridge version 1.0.41")
+        );
+        assert_eq!(diagnostics.online_devices.len(), 1);
+        assert_eq!(diagnostics.online_devices[0].id, "emulator-5554");
+        assert_eq!(
+            diagnostics.online_devices[0].avd_name.as_deref(),
+            Some("Pixel_9_API_36")
+        );
+        assert_eq!(diagnostics.available_avds.len(), 1);
+        assert_eq!(
+            diagnostics.available_avds[0].device_profile.as_deref(),
+            Some("pixel_9")
+        );
+        assert_eq!(
+            diagnostics.available_avds[0].architecture.as_deref(),
+            Some("arm64-v8a")
+        );
+        assert!(diagnostics.available_avds[0].running);
+        assert!(diagnostics.sdkmanager_path.is_some());
+        assert!(diagnostics.avdmanager_path.is_some());
+    }
+
+    #[test]
+    fn android_environment_normalizes_direct_adb_and_reports_missing_siblings() {
+        let fixture = TempDir::new().unwrap();
+        let sdk = fixture.path().join("sdk");
+        let adb = sdk.join("platform-tools/adb");
+        executable(
+            &adb,
+            "#!/bin/sh\nif [ \"$1\" = \"version\" ]; then echo adb-test; exit 0; fi\nif [ \"$1\" = \"devices\" ]; then echo 'List of devices attached'; exit 0; fi\nexit 1\n",
+        );
+
+        let diagnostics = AndroidEnvironmentDetector::new(
+            vec![adb.clone()],
+            Vec::new(),
+            Some(fixture.path().join("empty-avd-home")),
+        )
+        .detect();
+
+        assert_eq!(diagnostics.sdk_root.as_deref(), sdk.to_str());
+        assert_eq!(diagnostics.adb_path.as_deref(), adb.to_str());
+        assert!(diagnostics.emulator_path.is_none());
+        assert!(diagnostics.available_avds.is_empty());
+        assert!(diagnostics.online_devices.is_empty());
+    }
+
+    #[test]
+    fn android_environment_preserves_standalone_configured_adb() {
+        let fixture = TempDir::new().unwrap();
+        let adb = fixture.path().join("custom/bin/adb");
+        executable(
+            &adb,
+            "#!/bin/sh\nif [ \"$1\" = \"version\" ]; then echo adb-custom; exit 0; fi\nif [ \"$1\" = \"devices\" ]; then echo 'List of devices attached'; exit 0; fi\nexit 1\n",
+        );
+
+        let diagnostics =
+            AndroidEnvironmentDetector::new(vec![adb.clone()], Vec::new(), None).detect();
+
+        assert_eq!(diagnostics.sdk_root, None);
+        assert_eq!(diagnostics.adb_path.as_deref(), adb.to_str());
+        assert_eq!(diagnostics.adb_status, "ready");
+        assert_eq!(diagnostics.adb_version.as_deref(), Some("adb-custom"));
+    }
+
+    #[test]
+    fn configured_sdk_drives_diagnostics_and_observation_consistently() {
+        let fixture = TempDir::new().unwrap();
+        let stale_adb = fixture.path().join("stale/adb");
+        executable(&stale_adb, "#!/bin/sh\nexit 1\n");
+        let sdk = fixture.path().join("selected-sdk");
+        executable(
+            &sdk.join("platform-tools/adb"),
+            &format!(
+                r##"#!/bin/sh
+if [ "$1" = "version" ]; then echo adb-selected; exit 0; fi
+if [ "$1" = "devices" ]; then printf 'List of devices attached\nemulator-5554 device\n'; exit 0; fi
+case "$*" in
+  *ro.build.version.release*) echo 15 ;;
+  *"wm size"*) echo 'Physical size: 1080x2400' ;;
+  *"dumpsys window windows"*) echo '{}' ;;
+  *"uiautomator dump"*) echo dumped ;;
+  *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
+  *"screencap -p"*) printf PNG ;;
+  *) exit 1 ;;
+esac
+"##,
+                FOCUS, XML
+            ),
+        );
+        let host = MobileHost::new(Some(stale_adb));
+
+        let capture = host
+            .observe_with_sdk(sdk.to_str(), &["com.example.news".into()])
+            .unwrap();
+
+        assert_eq!(capture.session.device_id, "emulator-5554");
+        assert_eq!(capture.observation.package_name, "com.example.news");
+    }
+
+    #[test]
+    fn android_environment_skips_incomplete_configured_root_for_later_sdk() {
+        let fixture = TempDir::new().unwrap();
+        let incomplete = fixture.path().join("configured-but-empty");
+        let standard = fixture.path().join("standard-sdk");
+        fs::create_dir_all(&incomplete).unwrap();
+        executable(
+            &standard.join("platform-tools/adb"),
+            "#!/bin/sh\nif [ \"$1\" = \"version\" ]; then echo adb-standard; exit 0; fi\nif [ \"$1\" = \"devices\" ]; then echo 'List of devices attached'; exit 0; fi\nexit 1\n",
+        );
+        executable(
+            &standard.join("emulator/emulator"),
+            "#!/bin/sh\nif [ \"$1\" = \"-list-avds\" ]; then exit 0; fi\nexit 1\n",
+        );
+
+        let diagnostics =
+            AndroidEnvironmentDetector::new(vec![incomplete, standard.clone()], Vec::new(), None)
+                .detect();
+
+        assert_eq!(diagnostics.sdk_root.as_deref(), standard.to_str());
+        assert_eq!(diagnostics.adb_version.as_deref(), Some("adb-standard"));
+        assert_eq!(diagnostics.emulator_status, "ready");
+    }
+
+    #[test]
+    fn android_environment_marks_present_but_unusable_tools_as_error() {
+        let fixture = TempDir::new().unwrap();
+        let sdk = fixture.path().join("sdk");
+        fs::create_dir_all(sdk.join("platform-tools")).unwrap();
+        fs::write(sdk.join("platform-tools/adb"), "not executable").unwrap();
+        executable(&sdk.join("emulator/emulator"), "#!/bin/sh\nexit 1\n");
+
+        let diagnostics = AndroidEnvironmentDetector::new(vec![sdk], Vec::new(), None).detect();
+
+        assert_eq!(diagnostics.sdk_status, "detected");
+        assert_eq!(diagnostics.adb_status, "error");
+        assert_eq!(diagnostics.emulator_status, "error");
+        assert!(diagnostics.adb_version.is_none());
+        assert!(diagnostics.available_avds.is_empty());
+    }
+
+    #[test]
+    fn android_environment_command_timeout_kills_a_hung_tool() {
+        let fixture = TempDir::new().unwrap();
+        let tool = fixture.path().join("hung-tool");
+        executable(&tool, "#!/bin/sh\nwhile :; do :; done\n");
+        let started = Instant::now();
+
+        let output = run_command_text_with_timeout(&tool, &[], Duration::from_millis(30));
+
+        assert_eq!(output, None);
+        assert!(started.elapsed() < Duration::from_secs(1));
+    }
+
+    fn lifecycle_fixture(adb_body: &str) -> (TempDir, AndroidEnvironmentDetector) {
+        let fixture = TempDir::new().unwrap();
+        let sdk = fixture.path().join("sdk");
+        executable(&sdk.join("platform-tools/adb"), adb_body);
+        executable(
+            &sdk.join("emulator/emulator"),
+            "#!/bin/sh\nif [ \"$1\" = \"-list-avds\" ]; then echo Pixel_9_API_36; exit 0; fi\nexit 0\n",
+        );
+        let detector = AndroidEnvironmentDetector::new(
+            vec![sdk],
+            Vec::new(),
+            Some(fixture.path().join(".android/avd")),
+        );
+        (fixture, detector)
+    }
+
+    #[test]
+    fn avd_lifecycle_rejects_unknown_avd_and_times_out_without_boot() {
+        let (_fixture, detector) = lifecycle_fixture(
+            "#!/bin/sh\nif [ \"$1\" = \"version\" ]; then echo adb-test; exit 0; fi\nif [ \"$1\" = \"devices\" ]; then echo 'List of devices attached'; exit 0; fi\nexit 1\n",
+        );
+        let host = MobileHost::with_detector(detector);
+        assert_eq!(
+            host.start_avd_with_timeout("Missing_AVD", std::time::Duration::from_secs(1))
+                .unwrap_err(),
+            MobileHostError::AvdNotFound("Missing_AVD".into())
+        );
+        assert_eq!(
+            host.start_avd_with_timeout("Pixel_9_API_36", std::time::Duration::from_millis(50),)
+                .unwrap_err(),
+            MobileHostError::AvdBootTimeout("Pixel_9_API_36".into())
+        );
+        assert!(!host.stop_session());
+    }
+
+    #[test]
+    fn avd_lifecycle_waits_for_online_boot_and_shutdown_is_idempotent() {
+        let (_fixture, detector) = lifecycle_fixture(
+            r##"#!/bin/sh
+if [ "$1" = "version" ]; then echo adb-test; exit 0; fi
+if [ "$1" = "devices" ]; then printf 'List of devices attached\nemulator-5554 device model:sdk_gphone64_arm64\n'; exit 0; fi
+if [ "$3" = "emu" ] && [ "$4" = "avd" ]; then echo Pixel_9_API_36; echo OK; exit 0; fi
+if [ "$3" = "shell" ] && [ "$4" = "getprop" ]; then echo 1; exit 0; fi
+exit 1
+"##,
+        );
+        let host = MobileHost::with_detector(detector);
+
+        let device = host
+            .start_avd_with_timeout("Pixel_9_API_36", std::time::Duration::from_secs(1))
+            .unwrap();
+
+        assert_eq!(device.id, "emulator-5554");
+        assert!(host.stop_session());
+        assert!(!host.stop_session());
+    }
+
+    #[test]
+    fn m1_5_gate_fails_missing_environment_and_blocks_capture_checks() {
+        let report = m1_5_environment_gate(&AndroidEnvironmentDiagnostics::default());
+
+        assert!(!report.passed);
+        assert_eq!(report.status("ADB_READY"), Some(MobileGateStatus::Fail));
+        assert_eq!(
+            report.status("EMULATOR_READY"),
+            Some(MobileGateStatus::Fail)
+        );
+        assert_eq!(report.status("DEVICE_ONLINE"), Some(MobileGateStatus::Fail));
+        for name in [
+            "FRAME_CAPTURE",
+            "UI_TREE_CAPTURE",
+            "SNAPSHOT_PARSE",
+            "ELEMENT_REFS",
+            "MOBILE_OBSERVATION",
+            "TAURI_IPC",
+            "SESSION_SHUTDOWN",
+        ] {
+            assert_eq!(report.status(name), Some(MobileGateStatus::Blocked));
+        }
+    }
+
+    #[test]
+    fn m1_5_gate_reports_capture_failure_without_aborting_the_report() {
+        let diagnostics = AndroidEnvironmentDiagnostics {
+            sdk_status: "detected".into(),
+            adb_status: "ready".into(),
+            emulator_status: "ready".into(),
+            adb_path: Some("/sdk/platform-tools/adb".into()),
+            emulator_path: Some("/sdk/emulator/emulator".into()),
+            online_devices: vec![AndroidDeviceInfo {
+                id: "emulator-5554".into(),
+                status: "device".into(),
+                model: None,
+                avd_name: Some("Pixel_9_API_36".into()),
+            }],
+            ..AndroidEnvironmentDiagnostics::default()
+        };
+
+        let report = m1_5_capture_failure_gate(&diagnostics, "uiautomator failed");
+
+        assert_eq!(report.checks.len(), 10);
+        assert_eq!(report.status("ADB_READY"), Some(MobileGateStatus::Pass));
+        assert_eq!(report.status("DEVICE_ONLINE"), Some(MobileGateStatus::Pass));
+        assert_eq!(report.status("FRAME_CAPTURE"), Some(MobileGateStatus::Fail));
+        assert_eq!(report.status("TAURI_IPC"), Some(MobileGateStatus::Blocked));
+    }
+
+    #[test]
+    fn mobile_ipc_projection_persists_capture_events_and_workspace_contract() {
+        let directory = TempDir::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let app_runtime = runtime
+            .block_on(ordinconn_app::AppRuntime::initialize(
+                &directory.path().join("ipc.sqlite3"),
+            ))
+            .unwrap();
+        let capture = capture_from_outputs(
+            &AdbObservationOutput {
+                device_id: "emulator-5554".into(),
+                os_version: "15".into(),
+                size_output: "Physical size: 1080x2400".into(),
+                focus_output: FOCUS.into(),
+                ui_xml: XML.into(),
+                png: vec![1, 2, 3],
+            },
+            &["com.example.news".into()],
+        )
+        .unwrap();
+        let observation_id = capture.observation.id.clone();
+        let host = MobileHost::new(None);
+        let mut events = app_runtime.subscribe();
+
+        let workspace = runtime
+            .block_on(crate::commands::record_mobile_capture_workspace(
+                app_runtime.as_ref(),
+                host.environment_diagnostics(None),
+                capture,
+            ))
+            .unwrap();
+
+        assert!(
+            workspace
+                .observations
+                .iter()
+                .any(|item| item.id == observation_id)
+        );
+        assert!(
+            workspace
+                .feed
+                .iter()
+                .any(|item| { item.id == observation_id && item.source_method == "MOBILE" })
+        );
+        assert!(serde_json::to_value(&workspace).is_ok());
+        let event_types = (0..3)
+            .map(|_| events.try_recv().unwrap().event_type)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            event_types,
+            vec![
+                "mobile.session_started",
+                "mobile.snapshot",
+                "mobile.observation"
+            ]
+        );
     }
 }

@@ -395,9 +395,39 @@ export interface MobileRuntimeSettingsDto {
   textScale: 90 | 100 | 110 | 120;
 }
 
+export interface AndroidDeviceInfoDto {
+  id: string;
+  status: string;
+  model?: string;
+  avdName?: string;
+}
+
+export interface AndroidAvdInfoDto {
+  name: string;
+  status: string;
+  deviceProfile?: string;
+  architecture?: string;
+  running: boolean;
+}
+
+export interface AndroidEnvironmentDiagnosticsDto {
+  sdkStatus: "detected" | "missing";
+  adbStatus: "ready" | "missing" | "error";
+  emulatorStatus: "ready" | "missing" | "error";
+  sdkRoot?: string;
+  adbPath?: string;
+  emulatorPath?: string;
+  sdkmanagerPath?: string;
+  avdmanagerPath?: string;
+  adbVersion?: string;
+  availableAvds: AndroidAvdInfoDto[];
+  onlineDevices: AndroidDeviceInfoDto[];
+}
+
 export interface MobileWorkspaceDto {
   runtimeStatus: MobileRuntimeStatus;
   adbStatus: "ready" | "missing" | "offline" | "error";
+  androidEnvironment: AndroidEnvironmentDiagnosticsDto;
   session?: MobileDeviceSessionDto;
   uiSnapshot?: MobileUiSnapshotDto;
   frame?: MobileFrameDto;

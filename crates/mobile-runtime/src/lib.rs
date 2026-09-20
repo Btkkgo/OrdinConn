@@ -6,6 +6,59 @@ use sha2::{Digest, Sha256};
 use std::collections::{HashSet, VecDeque};
 use uuid::Uuid;
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidDeviceInfo {
+    pub id: String,
+    pub status: String,
+    pub model: Option<String>,
+    pub avd_name: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidAvdInfo {
+    pub name: String,
+    pub status: String,
+    pub device_profile: Option<String>,
+    pub architecture: Option<String>,
+    pub running: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidEnvironmentDiagnostics {
+    pub sdk_status: String,
+    pub adb_status: String,
+    pub emulator_status: String,
+    pub sdk_root: Option<String>,
+    pub adb_path: Option<String>,
+    pub emulator_path: Option<String>,
+    pub sdkmanager_path: Option<String>,
+    pub avdmanager_path: Option<String>,
+    pub adb_version: Option<String>,
+    pub available_avds: Vec<AndroidAvdInfo>,
+    pub online_devices: Vec<AndroidDeviceInfo>,
+}
+
+impl Default for AndroidEnvironmentDiagnostics {
+    fn default() -> Self {
+        Self {
+            sdk_status: "missing".into(),
+            adb_status: "missing".into(),
+            emulator_status: "missing".into(),
+            sdk_root: None,
+            adb_path: None,
+            emulator_path: None,
+            sdkmanager_path: None,
+            avdmanager_path: None,
+            adb_version: None,
+            available_avds: Vec::new(),
+            online_devices: Vec::new(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MobilePlatform {

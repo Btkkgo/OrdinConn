@@ -221,3 +221,37 @@ async fn mobile_audit_payloads_contain_metadata_not_screen_content() {
             .any(|payload| payload.contains("elementCount"))
     );
 }
+
+#[tokio::test]
+async fn mobile_session_shutdown_is_persisted_and_audited_once() {
+    let directory = tempfile::tempdir().unwrap();
+    let runtime = AppRuntime::initialize(&directory.path().join("shutdown.sqlite3"))
+        .await
+        .unwrap();
+    let capture = fixture_capture();
+    let session_id = capture.session.session_id.clone();
+    runtime.record_mobile_capture(&capture).await.unwrap();
+
+    assert!(runtime.end_mobile_session(&session_id).await.unwrap());
+    assert!(!runtime.end_mobile_session(&session_id).await.unwrap());
+
+    let row = sqlx::query("SELECT status,domain_json FROM mobile_device_sessions WHERE id=?")
+        .bind(&session_id)
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    assert_eq!(row.get::<String, _>("status"), "ended");
+    let stored: MobileDeviceSession =
+        serde_json::from_str(&row.get::<String, _>("domain_json")).unwrap();
+    assert_eq!(stored.status, MobileSessionStatus::Ended);
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM runtime_events WHERE event_type='mobile.session_ended' AND aggregate_id=?",
+        )
+        .bind(&session_id)
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap(),
+        1
+    );
+}

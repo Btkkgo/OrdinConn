@@ -5,7 +5,7 @@ import { createTranslator } from "../i18n";
 import { MobileHomePage } from "./MobileHomePage";
 
 const workspace: MobileWorkspaceDto = {
-  runtimeStatus: "unavailable", adbStatus: "missing", observations: [], warehouse: [], strategies: [],
+  runtimeStatus: "unavailable", adbStatus: "missing", androidEnvironment: { sdkStatus: "missing", adbStatus: "missing", emulatorStatus: "missing", availableAvds: [], onlineDevices: [] }, observations: [], warehouse: [], strategies: [],
   settings: { allowedApps: [], screenshotRetention: "memory_only", textScale: 100, researchBudget: { maxDurationSeconds: 300, maxSteps: 40, maxScrolls: 12, maxPages: 20, maxObservations: 50, maxModelCalls: 10 } },
   feed: [{
     id: "mobile-1", sourceMethod: "MOBILE", sourceApp: "X", title: "BTC mobile observation", summary: "ETF flow",

@@ -1,6 +1,7 @@
 use chrono::Utc;
 use mobile_runtime::{
-    MobileCapture, MobileDeviceSession, MobileFrame, MobileObservation, MobileUiSnapshot,
+    AndroidEnvironmentDiagnostics, MobileCapture, MobileDeviceSession, MobileFrame,
+    MobileObservation, MobileSessionStatus, MobileUiSnapshot,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -125,6 +126,7 @@ pub struct MobileResearchTaskView {
 pub struct MobileWorkspaceData {
     pub runtime_status: String,
     pub adb_status: String,
+    pub android_environment: AndroidEnvironmentDiagnostics,
     pub session: Option<MobileDeviceSession>,
     pub ui_snapshot: Option<MobileUiSnapshot>,
     pub frame: Option<MobileFrame>,
@@ -219,6 +221,41 @@ impl AppRuntime {
             self.event_bus.publish(event);
         }
         Ok(())
+    }
+
+    pub async fn end_mobile_session(&self, session_id: &str) -> Result<bool, AppError> {
+        let mut transaction = self.pool().begin().await?;
+        let row = sqlx::query("SELECT status,domain_json FROM mobile_device_sessions WHERE id=?")
+            .bind(session_id)
+            .fetch_optional(&mut *transaction)
+            .await?
+            .ok_or(AppError::NotFound("mobile session"))?;
+        if row.get::<String, _>("status") == "ended" {
+            transaction.commit().await?;
+            return Ok(false);
+        }
+        let mut session: MobileDeviceSession =
+            serde_json::from_str(&row.get::<String, _>("domain_json"))?;
+        session.status = MobileSessionStatus::Ended;
+        sqlx::query("UPDATE mobile_device_sessions SET status='ended',domain_json=? WHERE id=?")
+            .bind(serde_json::to_string(&session)?)
+            .bind(session_id)
+            .execute(&mut *transaction)
+            .await?;
+        let event = append_event(
+            &mut transaction,
+            "mobile.session_ended",
+            "mobile_session",
+            session_id,
+            None,
+            None,
+            Some(session_id),
+            &json!({"sessionId": session_id}),
+        )
+        .await?;
+        transaction.commit().await?;
+        self.event_bus.publish(event);
+        Ok(true)
     }
 
     pub async fn set_warehouse_entry(
@@ -357,6 +394,7 @@ impl AppRuntime {
             }
             .into(),
             adb_status: "missing".into(),
+            android_environment: AndroidEnvironmentDiagnostics::default(),
             session: None,
             ui_snapshot: None,
             frame: None,

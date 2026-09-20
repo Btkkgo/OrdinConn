@@ -1,14 +1,16 @@
 use agent_runtime::PageContext;
+use mobile_runtime::{AndroidEnvironmentDiagnostics, MobileCapture};
 use model_gateway::{
     ModelProviderAdapter, OpenAiCompatibleChatAdapter, ProviderCapabilities, UnifiedModelRequest,
 };
 use ordinconn_app::{
-    AgentItemView, AgentReportView, AgentTaskStarted, AppSnapshot, ApprovalView, ExecutionView,
-    MobileResearchBudget, MobileResearchTaskView, MobileRuntimeSettings, MobileWorkspaceData,
-    ModelProviderConfig, ModelProviderView, WarehouseEntryView,
+    AgentItemView, AgentReportView, AgentTaskStarted, AppRuntime, AppSnapshot, ApprovalView,
+    ExecutionView, MobileResearchBudget, MobileResearchTaskView, MobileRuntimeSettings,
+    MobileWorkspaceData, ModelProviderConfig, ModelProviderView, WarehouseEntryView,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::to_value;
+use std::{sync::Arc, time::Duration};
 use tauri::State;
 use uuid::Uuid;
 
@@ -41,15 +43,14 @@ pub async fn get_mobile_workspace(
         .mobile_workspace_data()
         .await
         .map_err(IpcError::internal)?;
-    workspace.adb_status = if state
-        .mobile_host
-        .adb_available_with_sdk(workspace.settings.android_sdk.as_deref())
-    {
-        "ready"
-    } else {
-        "missing"
-    }
-    .into();
+    let mobile_host = Arc::clone(&state.mobile_host);
+    let configured_sdk = workspace.settings.android_sdk.clone();
+    workspace.android_environment = tauri::async_runtime::spawn_blocking(move || {
+        mobile_host.environment_diagnostics(configured_sdk.as_deref())
+    })
+    .await
+    .map_err(IpcError::internal)?;
+    workspace.adb_status = workspace.android_environment.adb_status.clone();
     Ok(workspace)
 }
 
@@ -62,29 +63,61 @@ pub async fn observe_mobile_device(
         .mobile_workspace_data()
         .await
         .map_err(IpcError::internal)?;
-    let capture = state
-        .mobile_host
-        .observe_with_sdk(
-            current.settings.android_sdk.as_deref(),
-            &current.settings.allowed_apps,
-        )
-        .map_err(IpcError::internal)?;
-    state
-        .runtime
+    let mobile_host = Arc::clone(&state.mobile_host);
+    let configured_sdk = current.settings.android_sdk.clone();
+    let allowed_apps = current.settings.allowed_apps.clone();
+    let (capture, environment) = tauri::async_runtime::spawn_blocking(move || {
+        let capture = mobile_host.observe_with_sdk(configured_sdk.as_deref(), &allowed_apps)?;
+        let environment = mobile_host.environment_diagnostics(configured_sdk.as_deref());
+        Ok::<_, crate::mobile::MobileHostError>((capture, environment))
+    })
+    .await
+    .map_err(IpcError::internal)?
+    .map_err(IpcError::internal)?;
+    record_mobile_capture_workspace(state.runtime.as_ref(), environment, capture).await
+}
+
+pub(crate) async fn record_mobile_capture_workspace(
+    runtime: &AppRuntime,
+    environment: AndroidEnvironmentDiagnostics,
+    capture: MobileCapture,
+) -> Result<MobileWorkspaceData, IpcError> {
+    runtime
         .record_mobile_capture(&capture)
         .await
         .map_err(IpcError::internal)?;
-    let mut workspace = state
-        .runtime
+    let mut workspace = runtime
         .mobile_workspace_data()
         .await
         .map_err(IpcError::internal)?;
     workspace.runtime_status = "observing".into();
-    workspace.adb_status = "ready".into();
+    workspace.adb_status = environment.adb_status.clone();
+    workspace.android_environment = environment;
     workspace.session = Some(capture.session);
     workspace.ui_snapshot = Some(capture.snapshot);
     workspace.frame = Some(capture.frame);
     Ok(workspace)
+}
+
+#[tauri::command]
+pub async fn start_mobile_avd(
+    name: String,
+    state: State<'_, AppState>,
+) -> Result<MobileWorkspaceData, IpcError> {
+    let current = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    let mobile_host = Arc::clone(&state.mobile_host);
+    let configured_sdk = current.settings.android_sdk.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        mobile_host.start_avd(configured_sdk.as_deref(), &name, Duration::from_secs(120))
+    })
+    .await
+    .map_err(IpcError::internal)?
+    .map_err(IpcError::internal)?;
+    get_mobile_workspace(state).await
 }
 
 #[tauri::command(rename_all = "camelCase")]

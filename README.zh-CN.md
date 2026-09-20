@@ -45,18 +45,18 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 ## 当前状态
 
 - 版本：`0.1.0`
-- Mobile 阶段：M1/M1.5 环境验证
-- M1.5 Gate：**未通过**
+- Mobile 阶段：M1.5 真实环境验收完成
+- M1.5 Gate：**通过**
 - M2：**尚未开始**
 - 真实资金执行：未实现，V0.1 仅支持 Paper Execution
 
-最近一次真实 Android Gate 没有发现可用的 Android SDK、ADB、Emulator、AVD 或在线模拟器：3 项前置检查失败，7 项依赖检查被阻断。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
+真实 Android Gate 已在 Android 16 ARM64 Emulator 上通过全部 10 项生产链路检查：环境、Frame、UI Tree、Snapshot Parse、Element Refs、`MobileObservation`、Tauri IPC 和 Session Shutdown。独立的真实密码节点测试也确认敏感内容不会进入序列化 Capture。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
 
 ## Mobile Intelligence
 
 M0/M1 已实现设备会话契约、受限 Screen Frame、语义 UI Snapshot、作用域化 Element Ref、敏感节点脱敏策略、类型化 IPC 投影、持久化和 `MobileObservation`。
 
-真实 Frame Capture、UI Tree、敏感节点脱敏验证、Observation 生成和关闭链路仍被 Android 运行环境阻断。Fixture 测试不能替代真实设备证据。
+真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 仍未获授权，Mobile 继续保持 observe-only。
 
 ## Computer Runtime
 
@@ -119,11 +119,10 @@ GitHub 是 OrdinConn 唯一的公开工程事实来源。Issue 定义正式工�
 
 ## 已知限制
 
-- 真实 Android M1.5 Gate 因缺少运行环境而被阻断。
 - Mobile Navigation Actions 尚未实现。
 - Computer Runtime 仍是受权限约束的部分实现。
 - 当前金融执行适配器仅支持 Paper Execution。
-- 默认并行 Rust 测试负载下，两项 1 秒 AVD 生命周期测试可能超时；同一 Desktop Library Suite 串行运行时通过。
+- 默认并行 Rust 测试负载下，三项进程 Fixture 测试可能超时；同一组 24 个 Desktop Library 测试串行运行时通过。见 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 
 ## License
 

@@ -5,9 +5,9 @@
 - Official repository: https://github.com/Btkkgo/OrdinConn
 - Current Mobile gate: https://github.com/Btkkgo/OrdinConn/issues/1
 - Default public branch: `main`
-- Product source baseline: `c4f2d66`
-- Mobile stage: M1/M1.5 environment validation
-- Gate: **M1.5 NOT PASSED**
+- Product source baseline: `7c323b7`
+- Mobile stage: M1.5 real-environment validation complete
+- Gate: **M1.5 PASS**
 - Next phase: **M2 NOT STARTED**
 
 This document separates implementation, verification, partial work, blocked work, design, plans, and work that has not started. Written intent is never counted as runtime evidence.
@@ -34,28 +34,24 @@ At product source baseline `c4f2d66`, the recorded full local verification was:
 - TypeScript typecheck and the Vite production build passed.
 - The macOS Tauri application bundle was produced.
 
-The explicit real Android smoke returned a complete 10-check report: three prerequisite checks failed and seven dependent checks were blocked. That is verified failure evidence, not a passing mobile integration.
+At current product source baseline `7c323b7`, the full default-parallel Rust workspace run passed 130 Rust tests. All 31 TypeScript tests, TypeScript typecheck, Vite build, macOS Tauri bundle, rustfmt, and Clippy with warnings denied also passed.
 
-For the open-source initialization, public-log sanitizer, allowlisted Git sync, scheduler rendering, document validation, plist lint, TypeScript tests/typecheck, Vite build, and Tauri bundle passed. A fresh default-parallel desktop Rust unit run exposed two one-second AVD lifecycle timeouts; all 20 desktop library tests passed serially.
+The explicit real Android smoke passed all ten checks against `OrdinConn_M1_5`, a Pixel 8 profile using the Android 36 Google APIs ARM64 image. The online device reported Android 16 / API 36 at 1080×2400 and 420 dpi. The final production rerun captured a 189,961-byte PNG, parsed 70 sanitized UI elements, generated 70 snapshot-bound references and a `MobileObservation`, traversed persisted/audited typed Tauri IPC, and closed the logical session.
+
+A separate temporary local test application exposed one real `password=true` node. UIAutomator did not emit the test plaintext, OrdinConn recorded one redaction, and serialized capture data did not contain the test value. The app and temporary artifacts were removed after validation.
+
+For the open-source initialization, public-log sanitizer, allowlisted Git sync, scheduler rendering, document validation, plist lint, TypeScript tests/typecheck, Vite build, and Tauri bundle passed. The first post-change default-parallel desktop package run exposed three process-fixture timeouts (21/24 passed); all 24 passed serially, and a subsequent default-parallel workspace run passed. The nondeterminism remains tracked in Issue #4 rather than being erased by the green rerun.
 
 The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
 
 ## Partial
 
 - Computer Runtime interfaces and permission concepts exist, but broad production computer operation is not implemented.
-- Mobile observation has production code paths and fixtures, but lacks real-emulator acceptance.
 
 ## Blocked
 
-- Android SDK actual path: **NOT DETECTED** after checking the standard macOS locations.
-- ADB executable: **FAIL**.
-- Emulator executable: **FAIL**.
-- Existing AVD enumeration/start: **FAIL**.
-- Online Android Emulator: **NONE**.
-- Real frame capture: **BLOCKED**.
-- Real UIAutomator dump, UI-tree parse, and sensitive-node redaction verification: **BLOCKED**.
-- Real `MobileObservation`: **BLOCKED**.
-- Real Snapshot Parse, Element Refs, Tauri IPC, and Session Shutdown acceptance: **BLOCKED** by the missing runtime prerequisites.
+- No M1.5 product gate remains blocked.
+- No product acceptance item is blocked. Issue #4 remains open because the desktop process-fixture tests showed intermittent timeout failures under default concurrency even though the final workspace rerun passed.
 
 ## Designed
 
@@ -70,9 +66,7 @@ Designed items are not current product capabilities.
 
 ## Planned
 
-- Establish a real Android SDK, ADB, Emulator, and safe AVD environment.
-- Rerun the unchanged M1.5 gate against the real environment.
-- Resolve the concurrent AVD test timeout without weakening the real acceptance gate.
+- Resolve the concurrent process-fixture timeouts in Issue #4 without weakening production command deadlines or the real acceptance gate.
 - Continue issue-first public engineering records in GitHub.
 
 ## Not Started
@@ -89,4 +83,4 @@ M1.5 can pass only after Android SDK, ADB, Emulator, AVD, online device, real sm
 
 ## Next
 
-Establish the real Android Emulator environment and complete every M1.5 acceptance item before starting M2.
+Complete owner review of the M1.5 evidence; do not start M2 until a new explicit instruction authorizes it.

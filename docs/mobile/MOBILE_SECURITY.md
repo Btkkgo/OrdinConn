@@ -20,3 +20,7 @@ Frames are not persisted by default. Only sanitized semantic snapshots and struc
 Environment discovery is read-only. OrdinConn may start an already-existing AVD after resolving its exact name, but it does not create, edit, reset, delete, or automatically terminate AVDs. It does not install Android Studio, command-line tools, system images, applications, or permissions.
 
 The M1.5 gate fails closed. Missing tools or an offline device block every downstream frame, UI tree, observation, IPC, and shutdown acceptance claim. Test fixtures prove parser behavior only and are never presented as real-device evidence.
+
+## Real redaction acceptance
+
+The M1.5 validation used a temporary local application containing one password input and a non-personal ephemeral test value. UIAutomator marked the node as a password and did not expose the plaintext. OrdinConn recorded the redaction, marked the snapshot `SensitiveFieldBlocked`, replaced the element text with `[REDACTED]`, and kept the supplied value out of serialized capture data. The test application and temporary artifacts were removed after the check, and the repository scan returned zero matches for the test value.

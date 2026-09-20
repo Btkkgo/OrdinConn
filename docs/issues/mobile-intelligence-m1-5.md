@@ -2,22 +2,25 @@
 
 Establish a real Android Emulator environment and complete M1.5 validation.
 
-## Current Result
+## Final Result — 2026-09-20
 
-- Android SDK: FAIL
-- ADB: FAIL
-- Emulator: FAIL
-- AVD: FAIL
-- Online Android Emulator: NONE
-- Frame Capture: BLOCKED
-- UI Tree: BLOCKED
-- MobileObservation: BLOCKED
-- M1.5 Gate: NOT PASSED
+- Android SDK: PASS
+- ADB: PASS
+- Emulator: PASS
+- AVD: PASS — `OrdinConn_M1_5`
+- Online Android Emulator: PASS
+- Frame Capture: PASS
+- UI Tree: PASS
+- Sensitive Redaction: PASS
+- Snapshot Parse / Element Refs: PASS
+- MobileObservation: PASS
+- Tauri IPC / Session Shutdown: PASS
+- M1.5 Gate: PASS
 - M2: NOT STARTED
 
-The standard macOS SDK locations were checked and no usable Android runtime was detected. The latest real gate reported 3 failed prerequisites and 7 blocked dependent checks.
+The real Android 16 / API 36 ARM64 gate passed all ten production checks. The temporary sensitive-node test app and artifacts were removed after validation. Intermittent default-concurrency process-fixture timeouts remain separately tracked in Issue #4.
 
-## Required Work
+## Completed Work
 
 - Install or locate Android SDK.
 - Verify the ADB executable.
@@ -31,11 +34,11 @@ The standard macOS SDK locations were checked and no usable Android runtime was 
 - Validate sensitive-node redaction.
 - Generate a real `MobileObservation`.
 - Verify Snapshot Parse, Element Refs, Tauri IPC, and Session Shutdown.
-- Resolve or correctly budget the two AVD lifecycle tests that time out under default suite concurrency.
+- Budget the intermittent process-fixture concurrency failure in Issue #4 without weakening the production gate.
 
 ## Acceptance Criteria
 
-Every item above must run against the real production path. Mock or fixture output cannot substitute for real acceptance. Only then may M1.5 be marked passed and M2 begin.
+Every mandatory M1.5 item ran against the real production path. Mock or fixture output was not used as a substitute. M1.5 may be marked passed; M2 still requires a separate explicit owner instruction.
 
 ## Current Boundary
 

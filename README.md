@@ -45,18 +45,18 @@ See the [architecture overview](docs/architecture/OVERVIEW.md) and [product base
 ## Current Status
 
 - Version: `0.1.0`
-- Mobile stage: M1/M1.5 environment validation
-- M1.5 gate: **NOT PASSED**
+- Mobile stage: M1.5 real-environment validation complete
+- M1.5 gate: **PASS**
 - M2: **NOT STARTED**
 - Real-money execution: not implemented; V0.1 is paper-only
 
-The most recent real Android gate found no usable Android SDK, ADB, Emulator, AVD, or online emulator. Three prerequisite checks failed and seven dependent checks were blocked. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.
+The real Android gate passed all ten production checks against an Android 16 ARM64 Emulator: environment readiness, frame capture, UI tree, snapshot parse, element references, `MobileObservation`, typed Tauri IPC, and session shutdown. A separate real password-node test also verified that sensitive content does not enter the serialized capture. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.
 
 ## Mobile Intelligence
 
 Implemented M0/M1 foundations include device-session contracts, bounded screen frames, semantic UI snapshots, scoped element references, sensitive-node redaction policy, typed IPC projection, persistence, and `MobileObservation`.
 
-Real frame capture, UI-tree capture, redaction verification, observation generation, and shutdown remain blocked by the unavailable Android runtime. Fixture tests do not replace real-device evidence.
+Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are now verified against the dedicated `OrdinConn_M1_5` AVD. This does not authorize M2 actions; Mobile remains observe-only.
 
 ## Computer Runtime
 
@@ -124,11 +124,10 @@ Development is issue-first. Open or join a scoped issue before significant work,
 
 ## Known Limitations
 
-- The real Android M1.5 gate is blocked by missing runtime prerequisites.
 - Mobile navigation actions are not implemented.
 - Computer Runtime support is partial and permission-bounded.
 - The current financial execution adapter is paper-only.
-- Two one-second AVD lifecycle tests can time out under default parallel Rust test load; the same desktop library suite passes serially.
+- Three process-fixture tests can time out under default parallel Rust test load; the same 24-test desktop library suite passes serially. Follow [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 
 ## License
 

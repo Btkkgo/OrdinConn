@@ -5,9 +5,9 @@
 - 正式仓库：https://github.com/Btkkgo/OrdinConn
 - 当前 Mobile Gate：https://github.com/Btkkgo/OrdinConn/issues/1
 - 默认公开分支：`main`
-- 产品源码基线：`c4f2d66`
-- Mobile 阶段：M1/M1.5 环境验证
-- Gate：**M1.5 未通过**
+- 产品源码基线：`7c323b7`
+- Mobile 阶段：M1.5 真实环境验收完成
+- Gate：**M1.5 通过**
 - 下一阶段：**M2 尚未开始**
 
 本文严格区分已实现、已验证、部分完成、受阻、已设计、已计划和尚未开始。设计文档不能替代运行证据。
@@ -28,25 +28,24 @@
 
 在产品源码基线 `c4f2d66` 上，最近一次完整记录为：126 个 Rust 测试通过、31 个 TypeScript 测试通过、Rust 格式与 Clippy 通过、TypeScript Typecheck 与 Vite Build 通过，并成功生成 macOS Tauri App Bundle。
 
-真实 Android Smoke 输出了完整的 10 项报告：3 项前置检查失败，7 项依赖检查受阻。这是经过验证的失败结果，不是 Mobile Integration 通过。
+在当前产品源码基线 `7c323b7` 上，完整默认并行 Rust Workspace Run 通过 130 个测试；31 个 TypeScript 测试、TypeScript Typecheck、Vite Build、macOS Tauri Bundle、rustfmt 以及禁止 Warning 的 Clippy 也全部通过。
 
-开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。最新默认并行 Desktop Rust Unit Run 有两项 1 秒 AVD 生命周期测试超时；同一组 20 个测试串行运行全部通过。
+真实 Android Smoke 已在专用 `OrdinConn_M1_5` AVD 上通过全部 10 项检查。该 AVD 使用 Pixel 8 设备配置和 Android 36 Google APIs ARM64 镜像；在线设备报告 Android 16 / API 36、1080×2400、420 dpi。最终生产重跑捕获了 189,961 bytes PNG，解析出 70 个已脱敏 UI 元素和 70 个 Snapshot Ref，生成 `MobileObservation`，通过持久化、审计和类型化 Tauri IPC，并完成逻辑 Session Shutdown。
+
+独立的临时本地测试 App 产生了 1 个真实 `password=true` 节点。UIAutomator 没有输出测试明文，OrdinConn 记录了 1 次 Redaction，序列化 Capture 不含测试值。验收后已卸载 App 并清理临时产物。
+
+开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。首次变更后默认并行 Desktop Package Run 有 3 项进程 Fixture 测试超时（21/24 通过）；24 项串行测试全部通过，随后默认并行 Workspace Run 也通过。该不确定性仍记录在 Issue #4，不能因后续重跑变绿而删除。
 
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 
 ## 部分完成
 
 - Computer Runtime 已有接口和权限概念，但尚未形成广泛的生产级电脑操作能力。
-- Mobile Observation 已有生产代码路径和 Fixture，但没有真实 Emulator 验收。
 
 ## 受阻
 
-- Android SDK 实际路径：**未检测到**。
-- ADB：**失败**。
-- Emulator：**失败**。
-- AVD 枚举与启动：**失败**。
-- 在线 Android Emulator：**无**。
-- 真实 Frame Capture、UIAutomator Dump、UI Tree Parse、敏感节点脱敏验证、`MobileObservation`、Snapshot Parse、Element Refs、Tauri IPC 和 Session Shutdown：**受阻**。
+- M1.5 产品 Gate 已无受阻项。
+- 产品验收项已无受阻。Issue #4 仍保持 OPEN，因为 Desktop 进程 Fixture 在默认并发下曾出现间歇性超时，即使最终 Workspace 重跑已通过。
 
 ## 已设计
 
@@ -59,9 +58,7 @@
 
 ## 已计划
 
-- 建立真实 Android SDK、ADB、Emulator 和安全 AVD 环境。
-- 在真实环境上原样重跑 M1.5 Gate。
-- 在不削弱真实 Gate 的前提下解决并行 AVD Test Timeout。
+- 在不削弱生产命令时限或真实 Gate 的前提下，通过 Issue #4 解决并行进程 Fixture Timeout。
 - 持续使用 GitHub Issue-first 工程记录。
 
 ## 尚未开始
@@ -78,4 +75,4 @@
 
 ## 下一步
 
-建立真实 Android Emulator 环境并完成 M1.5 的全部验收项；在此之前不进入 M2。
+由项目所有者人工验收 M1.5 证据；在新的明确指令授权前不进入 M2。

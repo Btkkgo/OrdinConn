@@ -44,8 +44,8 @@ for heading in (
     "## Next",
 ):
     require(heading in stage, f"CURRENT_STATUS missing {heading}")
-require("M1.5 NOT PASSED" in stage and "M2 NOT STARTED" in stage, "M1.5 gate status is unclear")
-require("126 Rust tests" in stage and "31 TypeScript tests" in stage, "verified counts missing")
+require("- Gate: **M1.5 PASS**" in stage and "- Next phase: **M2 NOT STARTED**" in stage, "M1.5 gate status is unclear")
+require("130 Rust tests" in stage and "31 TypeScript tests" in stage, "verified counts missing")
 
 policy = (OPEN / "INTERACTION_LOG_POLICY.md").read_text(encoding="utf-8")
 for field in (

@@ -49,14 +49,31 @@ Every check must be `PASS`. Missing prerequisites make dependent checks `BLOCKED
 
 `TAURI_IPC` passes only after the real capture has traversed the same production helper used by `observe_mobile_device`: SQLite capture persistence, the three allowed mobile audit events, `MobileWorkspaceData` projection containing the observation/feed item, and JSON serialization must all succeed. `SESSION_SHUTDOWN` additionally requires both logical host shutdown and the persisted `ended` session transition.
 
+Sensitive-node acceptance uses a temporary local application with a password input and an ephemeral test value. The app is allowlisted only for the test. Run the separately gated check without placing the test value in source control:
+
+```bash
+ORDINCONN_MOBILE_SENSITIVE_SMOKE=1 \
+ORDINCONN_MOBILE_TEST_SECRET=<local-test-value> \
+cargo test -p ordinconn-desktop real_sensitive_redaction_smoke -- --nocapture
+```
+
+The check requires at least one recorded redaction, `SensitiveFieldBlocked`, a `[REDACTED]` element, and no occurrence of the supplied value in serialized capture data.
+
 ## Observed local result — 2026-09-20
 
-- Android SDK: missing. Neither `ANDROID_SDK_ROOT` nor `ANDROID_HOME` was configured, and `~/Library/Android/sdk` did not exist.
-- ADB: missing from all configured, standard, and PATH candidates.
-- Emulator: missing from all configured, standard, and PATH candidates.
-- AVDs: none discoverable because no emulator executable was available.
-- Online devices: none.
-- `ADB_READY`, `EMULATOR_READY`, `DEVICE_ONLINE`: `FAIL`.
-- The remaining seven checks: `BLOCKED`.
+- Host: macOS arm64 / Apple Silicon.
+- Java: OpenJDK 21.0.12.1.
+- SDK root: `~/Library/Android/sdk`.
+- ADB: 37.0.1.
+- Emulator: 37.1.11 with Hypervisor.Framework acceleration.
+- System image: `system-images;android-36;google_apis;arm64-v8a` revision 7.
+- AVD: `OrdinConn_M1_5`, Pixel 8 profile.
+- Online device: `emulator-5554`, Android 16 / API 36, 1080×2400 at 420 dpi.
+- Final rerun frame: 189,961-byte PNG with a non-empty SHA-256 hash.
+- UI tree: 70 valid sanitized elements; two Android-generated nodes with reversed bounds were ignored as invalid rectangles.
+- Snapshot/refs/observation/IPC/shutdown: `PASS` through the production persistence, audit, projection, serialization, and logical-session path.
+- Sensitive-node check: one real password node, one OrdinConn redaction, and no test value in serialized capture data.
 
-Result: **M1.5 FAIL — M2 was not entered.** No mobile navigation actions were implemented or enabled.
+Result: **M1.5 PASS — M2 remains NOT STARTED.** No mobile navigation actions were implemented or enabled.
+
+The first post-change default-parallel desktop package run failed three process-fixture tests at 21/24. The same 24 tests passed serially, and the later default-parallel workspace run passed. This intermittent behavior remains tracked in Issue #4 and is not hidden by either the passing real gate or the green rerun.

@@ -106,19 +106,19 @@ The required Android environment was absent from the machine.
 
 ### Failed Attempts
 
-The project did not install tools or fabricate a device because the phase specification prohibited both.
+The first acceptance run intentionally failed closed rather than fabricating device evidence. A later authorized run installed only the required official command-line components, stable ARM64 image, and one dedicated AVD.
 
 ### Final Solution
 
-Add ordered environment discovery, actual tool-path reporting, existing-AVD lifecycle checks, bounded boot readiness, and a ten-check report that distinguishes `FAIL` from `BLOCKED`.
+Install OpenJDK 21 and the official Android command-line tools, then create `OrdinConn_M1_5` from the Android 36 Google APIs ARM64 image. Keep ordered environment discovery, bounded boot readiness, and the ten-check report that distinguishes `FAIL` from `BLOCKED`.
 
 ### Verification
 
-Controlled fixtures pass for discovery, filtering, parsing, timeouts, allowlisting, persistence, and shutdown. The real smoke remains failed, which is the truthful outcome.
+The AVD cold-booted to `adb` online and `sys.boot_completed=1`. The production gate passed all ten checks, including real frame/UI capture, snapshot parse, refs, observation, typed IPC, persistence, audit events, and session shutdown. A separate real password-node test also passed.
 
 ### Reusable Lesson
 
-An integration test that cannot reach its dependency must say “blocked,” not quietly become a unit test.
+Preserve the first blocked result, then replace it only with a named real-environment rerun. Installing a dependency is not acceptance; the full production path still has to pass.
 
 ## Problem 005 — External mobile commands can hang or diverge
 
@@ -128,11 +128,11 @@ ADB and Emulator are external processes selected from several possible SDK locat
 
 ### Symptom
 
-An unresponsive tool could block the desktop host, and diagnostics could select a different ADB than observation.
+An unresponsive tool could block the desktop host, diagnostics could select a different ADB than observation, and a large PNG could fill a child-process pipe before exit.
 
 ### Root Cause
 
-Initial process execution lacked a hard deadline and environment selection was duplicated.
+Initial process execution lacked a hard deadline and environment selection was duplicated. The first bounded implementation also waited for child exit before draining stdout, which deadlocked once the real screencap exceeded the pipe buffer.
 
 ### Failed Attempts
 
@@ -140,12 +140,42 @@ Independent review of the first M1.5 implementation identified both gaps before 
 
 ### Final Solution
 
-Use one ordered resolver for diagnostics and observation, put process work on a blocking pool, enforce total deadlines, and terminate timed-out children.
+Use one ordered resolver for diagnostics and observation, put process work on a blocking pool, enforce total deadlines, drain stdout/stderr concurrently, and terminate timed-out children.
 
 ### Verification
 
-Regression tests covered standalone ADB paths, configured-SDK consistency, and a deliberately hung fixture before the full product suite passed.
+Regression tests covered standalone ADB paths, configured-SDK consistency, a deliberately hung fixture, and a 256 KiB stdout payload. Real approximately 190 KiB PNG frames then traversed the same helper successfully.
 
 ### Reusable Lesson
 
-Subprocess timeouts must bound the process itself, not only the caller waiting for its result.
+Subprocess timeouts must bound the process itself, not only the caller waiting for its result. Piped output must be drained before the producer can block.
+
+## Problem 006 — Android 16 changed real window and UI-tree behavior
+
+### Context
+
+The production capture path was originally validated with controlled ADB fixtures before an Android 16 Emulator was available.
+
+### Symptom
+
+The real observation could not identify the foreground application from `dumpsys window windows`, and then failed the whole UI tree because two platform nodes reported reversed bounds.
+
+### Root Cause
+
+Android 16 exposes `mCurrentFocus` in the full `dumpsys window` output but not in the narrower `windows` section. UIAutomator can also emit off-screen platform nodes whose lower y coordinate is smaller than the upper y coordinate.
+
+### Failed Attempts
+
+The unchanged fixture-compatible commands passed unit tests but failed against the real API 36 image. Retrying the same capture did not change either output shape.
+
+### Final Solution
+
+Read the full window dump for focus detection. Reject only nodes whose bounds cannot form a valid non-negative rectangle while preserving the remainder of the snapshot.
+
+### Verification
+
+Regression tests were observed failing before the fixes and passing afterward. The real Settings snapshot produced 70 valid sanitized elements while two reversed-bound platform nodes were excluded; the full ten-check gate passed.
+
+### Reusable Lesson
+
+Treat operating-system diagnostics as versioned external schemas. Fail closed on missing identity, but isolate malformed optional nodes instead of discarding an otherwise valid observation.

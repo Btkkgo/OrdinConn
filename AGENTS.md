@@ -64,3 +64,11 @@
 - Use `status:in-progress` when work starts, `status:blocked` for a named unmet prerequisite, `status:needs-validation` when code exists without adequate real acceptance, and `status:verified` only after the Issue acceptance criteria pass. Close an Issue only when its complete acceptance criteria pass.
 - Use `main` as the default branch. Significant runtime work should normally use `issue/<number>-<short-name>`; small documentation changes may use `main`. Avoid complex Git Flow.
 - At the end of a meaningful task, update the Issue and DevLog, run the security/diff/test gates, commit, and push promptly. A failed or blocked test may still be recorded with an honest `wip:`, `docs:`, `test:`, or `investigation:` commit; never describe it as a completed feature.
+
+## PUBLIC MERGE IDENTITY SAFETY
+
+- Repository-local `user.name` and `user.email` must be set before commit, merge, or push; the email must match `*@users.noreply.github.com`. Run `scripts/security/check-git-identity.sh` before every PR merge. Never print a detected private email value.
+- Until GitHub web merge identity behavior has been independently revalidated, OrdinConn PRs must not be merged using the GitHub-generated merge commit path. Use a local controlled merge with repository-local noreply identity after CI, review, and required tests pass. An existing GitHub-recognized signing setup may be used; otherwise an unsigned local merge is allowed.
+- Before pushing `main`, run `scripts/security/check-public-history-identity.sh` against the proposed merge commit. Push normally, then immediately run the public-history identity scan and `scripts/security/check-public-repo.sh` on the updated `main`. Any identity or security failure blocks Stage Close, Issue verification, X milestone claims, and the next phase.
+- Install the versioned pre-push hook with `scripts/git/install-hooks.sh` where compatible. The hook checks repository-local identity on every push and reachable public history for pushes targeting `main`. The hook supplements the mandatory manual and post-push gates.
+- Force-push remains prohibited. A future privacy history repair requires a new, explicitly scoped one-time authorization; the M2 repair authorization is exhausted.

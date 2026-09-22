@@ -26,6 +26,12 @@
 
 工作尚未完整完成时使用 `Refs #N`；只有全部验收标准满足后才使用 `Fixes #N`。
 
+## 安全合并 PR
+
+维护者合并前必须使用仓库本地 GitHub noreply 身份，并运行 `scripts/security/check-git-identity.sh`。在 GitHub 网页合并的身份行为完成独立复核前，暂停使用 GitHub 自动生成 Merge Commit 的路径。CI、Review 和必要测试通过后，获取最新 `main`，执行受控本地合并，对拟合并提交运行 `scripts/security/check-public-history-identity.sh`，然后正常 Push `main`。发布后立即对公开 `main` 重跑历史身份扫描与 `scripts/security/check-public-repo.sh`；失败会阻断阶段收尾。架构兼容时用 `scripts/git/install-hooks.sh` 安装版本化 pre-push Hook。未配置现成且获 GitHub 认可的签名环境时，允许未签名的本地合并。
+
+维护者应在 GitHub 账号设置中开启 **Keep my email addresses private** 和 **Block command line pushes that expose my email**。无论账号设置如何，仓库 Gate 都必须独立执行。不得打印检测到的私人邮箱。
+
 ## 安全
 
 不要在公开 Issue 中提交包含敏感细节的漏洞报告。遵循 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)。不得提交 Secret、Token、Cookie、Session、私钥、恢复短语、个人数据或受限第三方材料。

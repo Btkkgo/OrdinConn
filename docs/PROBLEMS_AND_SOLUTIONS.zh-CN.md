@@ -259,3 +259,9 @@ Verification 必须证明动作特定的目标状态，而不只是“有变化�
 ## 问题 010 — 被拒绝请求的标识可能泄入动作回执
 
 调用方可以在过期 Session ID、Snapshot ID、Element Ref 或未授权 Package 字符串里放入任意文本。最初的 Receipt 构造函数即使拒绝动作也复制这些字符串。RED→GREEN 测试暴露了该持久化入口。现在 Receipt 的 Session/Snapshot ID 来自可信 Capture；未知 Ref 与未批准 Package Target 被脱敏，只有策略允许后才恢复已批准目标。回归测试确认调用方提供的哨兵字符串不出现在序列化 Receipt 中。
+
+## 问题 011 — GitHub 自动合并身份未通过公开历史门
+
+M2 PR 的 29 项技术与行为检查已通过，但 GitHub 自动生成的 Merge Commit 使用了不符合 noreply 的 Author 与 Committer 元数据。原提交带有 GitHub 已验证签名，因此修改身份会使原签名失效。一次授权的替代提交使用仓库本地 noreply 身份；因没有现成签名配置，移除了旧签名。Tree、按顺序排列的 Parents、Message 与时间戳完全一致，`git diff` 为空。新的公开 `main` 通过可达历史身份预检。旧对象仍可从 GitHub 访问，PR #8 仍引用它；没有再次改写。
+
+长期修复是在合并前检查仓库本地身份、在 Push `main` 前后检查公开可达历史，并安装版本化 pre-push Hook。GitHub 自动生成的网页 Merge Commit 在身份行为完成独立验证前暂停使用。另一个独立 Worktree 中，原脱敏器误把 `.git` 指针文件当作公开内容扫描；排除该 Git 元数据文件并继续扫描普通文件后，完整仓库 Gate 恢复通过。这是修正扫描边界，不是绕过安全检查。

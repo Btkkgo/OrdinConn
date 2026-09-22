@@ -51,6 +51,8 @@ mnemonic_pattern = re.compile(
 
 def iter_files(paths: list[Path]):
     for path in paths:
+        if path.name in excluded_dirs:
+            continue
         if path.is_symlink():
             yield path
             continue
@@ -69,6 +71,8 @@ def iter_files(paths: list[Path]):
             ]
             yield from symlink_dirs
             for name in files:
+                if name in excluded_dirs:
+                    continue
                 candidate = Path(root) / name
                 yield candidate
 

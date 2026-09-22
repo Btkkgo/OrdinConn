@@ -259,3 +259,9 @@ Verification must prove the action-specific target state, not merely that someth
 ## Problem 010 — Denied request identifiers could leak into action receipts
 
 A caller could put arbitrary text into a stale session ID, snapshot ID, element ref, or disallowed package string. The first receipt constructor copied those strings even when policy denied the action. A RED→GREEN test exposed this persistence route. Receipts now take session/snapshot IDs from the trusted capture and redact unrecognized refs or unapproved package targets; an approved target is restored only after policy permits it. The regression checks that caller-supplied sentinel strings are absent from serialized receipts.
+
+## Problem 011 — GitHub-generated merge identity failed the public-history gate
+
+The M2 PR passed 29 technical and behavior checks, but its GitHub-generated merge commit used non-noreply Author and Committer metadata. The original commit had a verified GitHub signature, so changing its identity invalidated that signature. A single authorized replacement used repository-local noreply identity and removed the old signature because no existing signing setup was configured. The tree, ordered parents, message, and timestamps remained identical; `git diff` was empty. The new public `main` passed the reachable-history identity preflight. The old object remains GitHub-accessible and referenced by PR #8; no further rewrite was attempted.
+
+The permanent fix is a repository-local identity check before merging, a reachable public-history check before and after pushing `main`, and a versioned pre-push hook. GitHub-generated web merge commits are suspended pending independent identity validation. In a separate worktree, the existing sanitizer initially scanned the `.git` pointer file as public content; excluding that Git metadata file while continuing to scan ordinary files restored the full repository gate. This preserves the security check rather than bypassing it.

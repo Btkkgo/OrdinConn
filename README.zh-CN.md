@@ -49,6 +49,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 - M1.5 Gate：**通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - M2：**已验证 — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**（[Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7)；[验收记录](docs/mobile/M2_ACCEPTANCE.zh-CN.md)）
+- M2 公开历史身份门在一次 noreply Merge 元数据修复后通过；已审查的产品 Tree 未变。替代 Merge 未签名，M3 尚未开始。
 - 真实资金执行：未实现，V0.1 仅支持 Paper Execution
 
 真实 Android Gate 已在 Android 16 ARM64 Emulator 上通过环境、Frame、UI Tree、Snapshot Parse、Element Refs、`MobileObservation`、Workspace Projection 和 Session Shutdown。另一次打包桌面 Smoke 真实执行了 Rust → Tauri Command/Event → React 链路，覆盖状态、白名单错误、Session Start、Observation 和 Stop。独立的真实密码节点测试也确认敏感内容不会进入序列化 Capture。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。

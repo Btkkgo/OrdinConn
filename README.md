@@ -49,6 +49,7 @@ See the [architecture overview](docs/architecture/OVERVIEW.md) ([中文](docs/ar
 - M1.5 gate: **PASS**
 - Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - M2: **VERIFIED — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN** ([Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7); [acceptance](docs/mobile/M2_ACCEPTANCE.md))
+- M2 public-history identity passed after a one-time noreply merge-metadata repair; the reviewed product tree is unchanged. The replacement merge is unsigned, and M3 has not started.
 - Real-money execution: not implemented; V0.1 is paper-only
 
 The real Android gate passed against an Android 16 ARM64 Emulator: environment readiness, frame capture, UI tree, snapshot parse, element references, `MobileObservation`, workspace projection, and session shutdown. A separate packaged-desktop smoke exercised the real Rust → Tauri command/event → React path for status, allowlist error, session start, observation, and stop. A real password-node test also verified that sensitive content does not enter the serialized capture. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.

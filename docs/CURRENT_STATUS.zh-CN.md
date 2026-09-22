@@ -49,7 +49,7 @@ Issue #4 Reliability 分支上，改动前十次 Default-parallel Desktop 运行
 
 PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完整 Workspace 重跑及隔离公开历史安全门通过。Issue #4 作为 Verified 关闭。此前保留的仅本地隐私备份已在 M2 开工前依所有者明确授权删除；本地全引用安全门现已通过。
 
-Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Back、Type、Home、OpenApp、动作后 Observation、Receipt 持久化与 Audit Event。真实过期 Ref、错误 Package、未授权 App、临时密码字段 Type 均在 ADB 输入前被阻断。中英文金融与敏感文案通过合成 Fixture 阻断，没有连接金融 App。最终复核进一步收紧同 Activity 的 UI Tree 执行前校验、动作前持久审计 Intent、分动作验证、动态 Home Package、Session ID/预算轮换及固定的 Settings 生产动作面；这些修改后真实 M2 Smoke 再次通过。最终打包版 Tauri UI 完成人工 Inspector Tap → 类型化 IPC → `executed · VERIFIED`，显示不同的前后 Snapshot ID；Stop Session 返回 Disconnected，AVD 保持在线。M1.5 十项 Smoke、默认并行 Desktop 44/44、完整 Rust Workspace、30 个 Desktop 与 5 个 Contracts TypeScript 测试、Formatting、Clippy、Typecheck、Rust/Vite Build 和最终 macOS Bundle 均通过。确切证据与边界见双语 [M2 验收记录](mobile/M2_ACCEPTANCE.zh-CN.md)。
+Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Back、Type、Home、OpenApp、动作后 Observation、Receipt 持久化与 Audit Event。真实过期 Ref、错误 Package、未授权 App、临时密码字段 Type 均在 ADB 输入前被阻断。中英文金融与敏感文案通过合成 Fixture 阻断，没有连接金融 App。最终复核进一步收紧同 Activity 的 UI Tree 执行前校验、动作前原子持久的 Pending Receipt/Audit Intent、分动作验证、动态 Home Package、Session ID/预算轮换及固定的 Settings 生产动作面；这些修改后真实 M2 Smoke 再次通过。最终打包版 Tauri UI 完成人工 Inspector Tap → 类型化 IPC → `executed · VERIFIED`，显示不同的前后 Snapshot ID；Stop Session 返回 Disconnected，AVD 保持在线。M1.5 十项 Smoke、默认并行 Desktop 44/44、完整 Rust Workspace、30 个 Desktop 与 5 个 Contracts TypeScript 测试、Formatting、Clippy、Typecheck、Rust/Vite Build 和最终 macOS Bundle 均通过。确切证据与边界见双语 [M2 验收记录](mobile/M2_ACCEPTANCE.zh-CN.md)。
 
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 

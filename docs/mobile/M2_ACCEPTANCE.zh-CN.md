@@ -8,7 +8,7 @@
 
 公开 Action 只有 `tap(elementRef)`、`swipe(direction)`、`type(elementRef, text)`、`back`、`home` 和 `open_app(packageName)`；没有原始坐标、Shell、ADB 参数或自由形式 Intent 字段。Rust 策略要求活跃 Emulator Session、用户控制的 Package Allowlist、预期与实时前台 Package/Activity 一致、快照不超过十秒、目标 Ref 属于该快照，以及每会话最多 20 次已派发 Action 尝试。M2 生产 Host 进一步将非逃离导航限制在 Android Settings 与 Settings Intelligence；用户自行添加包名不能放行任意 App。动态解析的 Launcher 只用于 Home 验证及返回 Settings。敏感或金融屏幕只允许 `back`/`home` 安全退出。Tap 坐标由已验证 Element Bounds 计算；Swipe 坐标由合理屏幕尺寸约束。Type 要求已聚焦、启用的 EditText，目前只接受 1–256 个 ASCII 字母、数字或空格；其他文本直接拒绝。
 
-Host 串行化 observe/action/stop；非逃离动作在固定 ADB 命令前重查设备、前台并重新读取实时 UI Tree。同一 Activity 内元素或 Bounds 改变时阻断旧坐标。动作后重新走生产 Observation；Tap、Swipe、Type、Back 要求前台或 UI Tree 变化，不能凭偶发画面像素变化判 Verified；Home 必须到动态解析的 Launcher 包，OpenApp 必须到指定包。OpenApp 使用固定 clear-top 标志，避免旧 Settings Search Task 冒充目标。设备输入前先持久写入脱敏 Audit Intent，写入失败即不输入；结果持久化失败会结束逻辑会话。成功的结果持久化写入脱敏 Receipt 和追加式 Outcome Event。Type 明文不进入 Request 序列化、Debug、Receipt 或 Event，动作后语义 Capture 脱敏。Frame 仅在内存中；实时画面的截图像素仍可能可视地显示非敏感输入文本，不能拿字符串扫描证明像素已脱敏。
+Host 串行化 observe/action/stop；非逃离动作在固定 ADB 命令前重查设备、前台并重新读取实时 UI Tree。同一 Activity 内元素或 Bounds 改变时阻断旧坐标。动作后重新走生产 Observation；Tap、Swipe、Type、Back 要求前台或 UI Tree 变化，不能凭偶发画面像素变化判 Verified；Home 必须到动态解析的 Launcher 包，OpenApp 必须到指定包。OpenApp 使用固定 clear-top 标志，避免旧 Settings Search Task 冒充目标。设备输入前原子地持久写入脱敏 Pending Receipt 与 Audit Intent，写入失败即不输入。结果持久化会原位完成该 Receipt 并追加 Outcome Event；若输入后写入失败，Pending Receipt 仍在、逻辑会话停止，设备结果未知且须人工调查。Type 明文不进入 Request 序列化、Debug、Receipt 或 Event，动作后语义 Capture 脱敏。Frame 仅在内存中；实时画面的截图像素仍可能可视地显示非敏感输入文本，不能拿字符串扫描证明像素已脱敏。
 
 ## 真实环境证据
 
@@ -47,7 +47,7 @@ M2 改动后重跑 M1.5 真实 Smoke，环境、Capture、Projection、Shutdown 
 | 19 | 过期 Ref 真实阻断 | R：旧 Snapshot Ref，未发送指令 | PASS |
 | 20 | 错误 Package 阻断 | R：未发送指令 | PASS |
 | 21 | 未授权 App 阻断 | R：未发送指令 | PASS |
-| 22 | Action Receipt 持久化 | U；R：最新 Receipt 投影 | PASS |
+| 22 | Action Receipt 持久化 | U：Pending 经重启保留且原位完成；R：最新 Receipt 投影 | PASS |
 | 23 | Audit Event | U；R：输入前持久 Intent 与 requested/blocked/executed/verified 结果 | PASS |
 | 24 | 动作后 Observation | U；R：新 Frame/UI Capture | PASS |
 | 25 | Verification | U；R/G：状态变化及目标包一致 | PASS |
@@ -69,4 +69,4 @@ ORDINCONN_MOBILE_M2_SENSITIVE_SMOKE=1 cargo test -p ordinconn-desktop real_m2_se
 ORDINCONN_MOBILE_SMOKE=1 ORDINCONN_MOBILE_ALLOWED_APPS=com.android.settings cargo test -p ordinconn-desktop real_emulator_smoke_is_explicitly_gated -- --nocapture
 ```
 
-Launcher 包经动态检测，与 Settings Intelligence 一样仅加入真实 Smoke 的测试白名单，生产默认值未扩张。验收中曾出现瞬时动作后采集失败、Task 复用导致 OpenApp 目标不匹配，以及 GUI 过期快照尝试；历史失败与最终通过分开记录。动作后采集失败为 `Failed`/`Interrupted`，不自动重试，也不声称 Verified。输入前 SQLite 不可用则不发送输入；输入后存储故障会留下持久 Intent，但可能缺少最终 Receipt，此时停止会话并需人工调查。保守的语义拒绝词表无法证明理解所有语言或纯视觉付款控件；M2 固定导航面避免用户添加金融 App 后只依赖该不完美分类器。M2 Gate 不授权 M3 或任何 X 发布。
+Launcher 包经动态检测，与 Settings Intelligence 一样仅加入真实 Smoke 的测试白名单，生产默认值未扩张。验收中曾出现瞬时动作后采集失败、Task 复用导致 OpenApp 目标不匹配，以及 GUI 过期快照尝试；历史失败与最终通过分开记录。动作后采集失败为 `Failed`/`Interrupted`，不自动重试，也不声称 Verified。输入前 SQLite 不可用则不发送输入；输入后存储故障会留下持久 Pending Receipt，设备结果未知，此时停止会话并需人工调查。保守的语义拒绝词表无法证明理解所有语言或纯视觉付款控件；M2 固定导航面避免用户添加金融 App 后只依赖该不完美分类器。M2 Gate 不授权 M3 或任何 X 发布。

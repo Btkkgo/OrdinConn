@@ -126,6 +126,7 @@ pub struct MobileActionReceipt {
     pub verification: Option<VerificationResult>,
     pub text_length: Option<usize>,
     pub text_sha256: Option<String>,
+    pub command_sent: bool,
 }
 
 /// Independent policy evaluator. The host must recheck the live foreground before input.

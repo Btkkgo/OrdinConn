@@ -1,8 +1,9 @@
 use chrono::Utc;
 use mobile_runtime::{
-    EvidenceStatus, ExtractionMethod, MobileBounds, MobileCapture, MobileDeviceSession,
-    MobileDeviceType, MobileFrame, MobileObservation, MobilePlatform, MobileSessionStatus,
-    MobileUiSnapshot, PrivacyClass, RawMobileElement,
+    EvidenceStatus, ExtractionMethod, MobileActionDecision, MobileActionDenyReason,
+    MobileActionReceipt, MobileActionStatus, MobileActionTarget, MobileBounds, MobileCapture,
+    MobileDeviceSession, MobileDeviceType, MobileFrame, MobileObservation, MobilePlatform,
+    MobileSessionStatus, MobileUiSnapshot, PrivacyClass, RawMobileElement, VerificationResult,
 };
 use ordinconn_app::{AppRuntime, MobileResearchBudget, MobileRuntimeSettings};
 use sqlx::Row;
@@ -62,6 +63,119 @@ fn fixture_capture() -> MobileCapture {
         frame,
         observation,
     }
+}
+
+fn mobile_action_receipt(
+    capture: &MobileCapture,
+    status: MobileActionStatus,
+) -> MobileActionReceipt {
+    MobileActionReceipt {
+        action_id: format!("action_{}", uuid::Uuid::now_v7()),
+        session_id: capture.session.session_id.clone(),
+        snapshot_id: capture.snapshot.snapshot_id.clone(),
+        target: MobileActionTarget::Type {
+            element_ref: "@e1".into(),
+        },
+        decision: if status == MobileActionStatus::Blocked {
+            MobileActionDecision::Denied(MobileActionDenyReason::SensitiveTarget)
+        } else {
+            MobileActionDecision::Allowed
+        },
+        status,
+        requested_at: Utc::now(),
+        completed_at: Utc::now(),
+        pre_package: capture.observation.package_name.clone(),
+        pre_activity: capture.observation.activity.clone(),
+        pre_frame_hash: capture.observation.frame_hash.clone(),
+        pre_ui_tree_hash: capture.observation.ui_tree_hash.clone(),
+        post_package: None,
+        post_activity: None,
+        post_frame_hash: None,
+        post_ui_tree_hash: None,
+        verification: None,
+        text_length: Some(4),
+        text_sha256: Some("sha256:dummy".into()),
+        command_sent: status == MobileActionStatus::Executed,
+    }
+}
+
+#[tokio::test]
+async fn mobile_action_receipts_and_events_persist_without_type_plaintext() {
+    let directory = tempfile::tempdir().unwrap();
+    let runtime = AppRuntime::initialize(&directory.path().join("action.sqlite3"))
+        .await
+        .unwrap();
+    let before = fixture_capture();
+    runtime.record_mobile_capture(&before).await.unwrap();
+    let blocked = mobile_action_receipt(&before, MobileActionStatus::Blocked);
+    runtime.record_mobile_action(&blocked, None).await.unwrap();
+    let after = fixture_capture();
+    let mut executed = mobile_action_receipt(&before, MobileActionStatus::Executed);
+    executed.post_package = Some(after.observation.package_name.clone());
+    executed.post_activity = Some(after.observation.activity.clone());
+    executed.post_frame_hash = Some(after.observation.frame_hash.clone());
+    executed.post_ui_tree_hash = Some(after.observation.ui_tree_hash.clone());
+    executed.verification = Some(VerificationResult::Verified);
+    runtime
+        .record_mobile_action(&executed, Some(&after))
+        .await
+        .unwrap();
+    let workspace = runtime.mobile_workspace_data().await.unwrap();
+    assert_eq!(
+        workspace.latest_action_receipt.unwrap().action_id,
+        executed.action_id
+    );
+    let event_types: Vec<String> = sqlx::query_scalar("SELECT event_type FROM runtime_events WHERE event_type LIKE 'mobile.action_%' ORDER BY sequence").fetch_all(runtime.pool()).await.unwrap();
+    assert_eq!(
+        event_types,
+        vec![
+            "mobile.action_requested",
+            "mobile.action_blocked",
+            "mobile.action_requested",
+            "mobile.action_executed",
+            "mobile.action_verified"
+        ]
+    );
+    let stored: Vec<String> =
+        sqlx::query_scalar("SELECT domain_json FROM mobile_action_receipts ORDER BY completed_at")
+            .fetch_all(runtime.pool())
+            .await
+            .unwrap();
+    assert_eq!(stored.len(), 2);
+    let all_db_text: Vec<String> = sqlx::query_scalar("SELECT payload_json FROM runtime_events")
+        .fetch_all(runtime.pool())
+        .await
+        .unwrap();
+    assert!(!stored.join("").contains("wifi"));
+    assert!(!all_db_text.join("").contains("wifi"));
+}
+
+#[tokio::test]
+async fn mobile_action_duplicate_receipt_rolls_back_post_capture_atomically() {
+    let directory = tempfile::tempdir().unwrap();
+    let runtime = AppRuntime::initialize(&directory.path().join("duplicate-action.sqlite3"))
+        .await
+        .unwrap();
+    let before = fixture_capture();
+    runtime.record_mobile_capture(&before).await.unwrap();
+    let blocked = mobile_action_receipt(&before, MobileActionStatus::Blocked);
+    runtime.record_mobile_action(&blocked, None).await.unwrap();
+    let after = fixture_capture();
+    let mut duplicate = mobile_action_receipt(&before, MobileActionStatus::Executed);
+    duplicate.action_id = blocked.action_id.clone();
+    duplicate.post_frame_hash = Some(after.observation.frame_hash.clone());
+    duplicate.post_ui_tree_hash = Some(after.observation.ui_tree_hash.clone());
+    assert!(
+        runtime
+            .record_mobile_action(&duplicate, Some(&after))
+            .await
+            .is_err()
+    );
+    let snapshots: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_ui_snapshots")
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    assert_eq!(snapshots, 1);
 }
 
 #[tokio::test]

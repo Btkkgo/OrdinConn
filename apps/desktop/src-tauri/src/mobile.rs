@@ -1051,6 +1051,9 @@ impl MobileHost {
                 capture: None,
             };
         }
+        if let Ok(mut state) = self.action_state.lock() {
+            state.executed_count = state.executed_count.saturating_add(1);
+        }
         let action = execute_adb_action(adb, &before, &request);
         if action.is_err() {
             receipt.status = MobileActionStatus::Failed;
@@ -1060,13 +1063,11 @@ impl MobileHost {
                 capture: None,
             };
         }
-        if let Ok(mut state) = self.action_state.lock() {
-            state.executed_count = state.executed_count.saturating_add(1);
-        }
+        receipt.command_sent = true;
         receipt.status = MobileActionStatus::Executed;
         thread::sleep(Duration::from_millis(300));
         match self.observe_unlocked(android_sdk, allowed_apps) {
-            Ok(after) => {
+            Ok(mut after) => {
                 if after.session.device_id != before.session.device_id {
                     if let Ok(mut state) = self.action_state.lock() {
                         state.latest_capture = None;
@@ -1078,6 +1079,14 @@ impl MobileHost {
                         receipt,
                         capture: None,
                     };
+                }
+                if matches!(request.target, MobileActionTarget::Type { .. })
+                    && let Some(value) = request.text.as_ref()
+                {
+                    redact_typed_post_capture(&mut after, value.as_str());
+                    if let Ok(mut state) = self.action_state.lock() {
+                        state.latest_capture = Some(after.clone());
+                    }
                 }
                 receipt.post_package = Some(after.observation.package_name.clone());
                 receipt.post_activity = Some(after.observation.activity.clone());
@@ -1144,7 +1153,45 @@ fn action_receipt(
         verification: None,
         text_length: request.text.as_ref().map(|text| text.len()),
         text_sha256: request.text.as_ref().map(|text| text.sha256()),
+        command_sent: false,
     }
+}
+
+fn redact_typed_post_capture(capture: &mut MobileCapture, typed_value: &str) {
+    let needle = typed_value.to_ascii_lowercase();
+    for element in &mut capture.snapshot.elements {
+        let editable = element.class_name.ends_with("EditText");
+        let matches_text = element
+            .text
+            .as_ref()
+            .is_some_and(|text| text.to_ascii_lowercase().contains(&needle));
+        let matches_description = element
+            .content_description
+            .as_ref()
+            .is_some_and(|description| description.to_ascii_lowercase().contains(&needle));
+        let matches_id = element
+            .resource_id
+            .as_ref()
+            .is_some_and(|id| id.to_ascii_lowercase().contains(&needle));
+        if editable || matches_text || matches_description || matches_id {
+            element.text = Some("[REDACTED]".into());
+            element.content_description = None;
+            if matches_id {
+                element.resource_id = None;
+            }
+            capture
+                .snapshot
+                .redactions
+                .push(format!("element:{}:typed", element.element_ref));
+        }
+    }
+    capture.observation = MobileObservation::from_snapshot(
+        &capture.snapshot,
+        &capture.frame,
+        capture.observation.task_id.clone(),
+        capture.observation.app_id.clone(),
+        capture.observation.privacy_class,
+    );
 }
 
 #[allow(dead_code)] // Called by execute_action once typed IPC is wired.
@@ -1485,8 +1532,10 @@ mod tests {
         let input_log = fixture.path().join("input.log");
         let fail_post = fixture.path().join("fail-post");
         let other_first = fixture.path().join("other-first");
+        let typed_visible = fixture.path().join("typed-visible");
         fs::write(&focus, FOCUS).unwrap();
         let safe_xml = r#"<hierarchy><node text="Network" class="android.widget.Button" resource-id="com.example.news:id/network" clickable="true" enabled="true" bounds="[10,20][900,100]"/><node text="Search" class="android.widget.EditText" resource-id="com.example.news:id/search" clickable="true" enabled="true" focused="true" bounds="[10,120][900,200]"/></hierarchy>"#;
+        let typed_xml = safe_xml.replace("text=\"Search\"", "text=\"wifi\"");
         executable(
             &sdk.join("platform-tools/adb"),
             &format!(
@@ -1502,11 +1551,11 @@ case "$*" in
   *"wm size"*) echo 'Physical size: 1080x2400' ;;
   *"dumpsys window"*) /bin/cat '{}' ;;
   *"uiautomator dump"*) if [ -f '{}' ]; then exit 1; fi; echo dumped ;;
-  *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
+  *"cat /sdcard/ordinconn-ui.xml"*) if [ -f '{}' ]; then printf '%s' '{}'; else printf '%s' '{}'; fi ;;
   *"screencap -p"*) printf PNG ;;
   *"cmd package resolve-activity"*) echo 'com.example.news/.MainActivity' ;;
   *"shell am start"*) printf '%s\n' "$*" >> '{}'; exit 0 ;;
-  *"shell input text"*) printf 'shell input text [REDACTED]\n' >> '{}'; exit 0 ;;
+  *"shell input text"*) printf 'shell input text [REDACTED]\n' >> '{}'; /usr/bin/touch '{}'; exit 0 ;;
   *"shell input"*) printf '%s\n' "$*" >> '{}'; exit 0 ;;
   *) exit 1 ;;
 esac
@@ -1514,9 +1563,12 @@ esac
                 other_first.display(),
                 focus.display(),
                 fail_post.display(),
+                typed_visible.display(),
+                typed_xml,
                 safe_xml,
                 input_log.display(),
                 input_log.display(),
+                typed_visible.display(),
                 input_log.display()
             ),
         );
@@ -1678,6 +1730,32 @@ esac
             MobileActionDecision::Denied(MobileActionDenyReason::BudgetExceeded)
         );
         assert!(!input_log.exists());
+    }
+
+    #[test]
+    fn mobile_action_type_plaintext_is_absent_from_post_capture() {
+        let (_fixture, sdk, _focus, input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let before = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        let mut request = mobile_action_request(&before);
+        request.target = MobileActionTarget::Type {
+            element_ref: "@e2".into(),
+        };
+        request.text = Some(mobile_runtime::SensitiveText::new("wifi".into()));
+        let result = host.execute_action(request, sdk.to_str(), &allowed);
+        assert_eq!(result.receipt.status, MobileActionStatus::Executed);
+        let post = result.capture.expect("fresh post-action capture");
+        assert!(
+            !serde_json::to_string(&post.snapshot)
+                .unwrap()
+                .contains("wifi")
+        );
+        assert!(
+            !serde_json::to_string(&post.observation)
+                .unwrap()
+                .contains("wifi")
+        );
+        assert!(!fs::read_to_string(input_log).unwrap().contains("wifi"));
     }
 
     #[test]

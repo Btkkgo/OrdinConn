@@ -126,6 +126,11 @@ pub async fn execute_mobile_action(
         target: input.target,
         text: input.text,
     };
+    state
+        .runtime
+        .record_mobile_action_intent(&request)
+        .await
+        .map_err(IpcError::internal)?;
     let (execution, environment, current_capture) =
         tauri::async_runtime::spawn_blocking(move || {
             let execution =
@@ -136,11 +141,14 @@ pub async fn execute_mobile_action(
         })
         .await
         .map_err(IpcError::internal)?;
-    state
+    if let Err(error) = state
         .runtime
         .record_mobile_action(&execution.receipt, execution.capture.as_ref())
         .await
-        .map_err(IpcError::internal)?;
+    {
+        state.mobile_host.stop_session();
+        return Err(IpcError::internal(error));
+    }
     let mut workspace = state
         .runtime
         .mobile_workspace_data()
@@ -191,9 +199,10 @@ pub(crate) async fn stop_mobile_workspace(
     runtime: &AppRuntime,
     mobile_host: &crate::mobile::MobileHost,
 ) -> Result<MobileWorkspaceData, IpcError> {
+    let session_id = mobile_host.session_id();
     if mobile_host.stop_session() {
         runtime
-            .end_mobile_session(mobile_host.session_id())
+            .end_mobile_session(&session_id)
             .await
             .map_err(IpcError::internal)?;
     }

@@ -425,6 +425,10 @@ button:disabled { color: var(--text-disabled); cursor: not-allowed; }
 .mobile-action-boundary { margin: 0; color: var(--text-muted); font-size: var(--text-xs); line-height: 1.4; }
 .mobile-action-receipt { display: flex; flex-wrap: wrap; gap: 6px 12px; border-top: 1px solid var(--line); padding-top: 8px; color: var(--text-secondary); font-size: var(--text-xs); }
 .mobile-action-receipt strong { color: var(--gold); }
+.mobile-action-receipt dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; width: 100%; margin: 4px 0 0; }
+.mobile-action-receipt dl div { min-width: 0; }
+.mobile-action-receipt dt { color: var(--text-muted); }
+.mobile-action-receipt dd { margin: 0; overflow-wrap: anywhere; color: var(--text-primary); }
 .selected-observation { padding: 18px; border-bottom: 1px solid var(--line); }
 .selected-observation h3 { margin: 12px 0 8px; font-size: var(--text-xl); }
 .selected-observation button { margin-top: 14px; }

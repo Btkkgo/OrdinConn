@@ -339,6 +339,7 @@ export interface MobileActionReceiptDto {
   preFrameHash: string;
   preUiTreeHash: string;
   postPackage?: string | null;
+  postSnapshotId?: string | null;
   postActivity?: string | null;
   postFrameHash?: string | null;
   postUiTreeHash?: string | null;

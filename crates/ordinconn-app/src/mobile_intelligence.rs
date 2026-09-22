@@ -233,6 +233,44 @@ impl AppRuntime {
         Ok(())
     }
 
+    /// Durable write-ahead intent. A failed write must prevent device input.
+    pub async fn record_mobile_action_intent(
+        &self,
+        request: &mobile_runtime::MobileActionRequest,
+    ) -> Result<(), AppError> {
+        if request.action_id.is_empty() {
+            return Err(AppError::InvalidData);
+        }
+        let mut transaction = self.pool().begin().await?;
+        let event = append_event(
+            &mut transaction,
+            "mobile.action_intent",
+            "mobile_action",
+            &request.action_id,
+            None,
+            None,
+            Some(&request.action_id),
+            &json!({
+                "actionId": request.action_id,
+                "requestedAt": request.requested_at,
+                "targetKind": match request.target {
+                    mobile_runtime::MobileActionTarget::Tap { .. } => "tap",
+                    mobile_runtime::MobileActionTarget::Swipe { .. } => "swipe",
+                    mobile_runtime::MobileActionTarget::Type { .. } => "type",
+                    mobile_runtime::MobileActionTarget::Back => "back",
+                    mobile_runtime::MobileActionTarget::Home => "home",
+                    mobile_runtime::MobileActionTarget::OpenApp { .. } => "open_app",
+                },
+                "textLength": request.text.as_ref().map(|value| value.len()),
+                "commandSent": false,
+            }),
+        )
+        .await?;
+        transaction.commit().await?;
+        self.event_bus.publish(event);
+        Ok(())
+    }
+
     pub async fn record_mobile_action(
         &self,
         receipt: &MobileActionReceipt,
@@ -256,6 +294,8 @@ impl AppRuntime {
         if let Some(capture) = post_capture
             && (capture.session.session_id != receipt.session_id
                 || capture.snapshot.snapshot_id == receipt.snapshot_id
+                || receipt.post_snapshot_id.as_deref()
+                    != Some(capture.snapshot.snapshot_id.as_str())
                 || receipt.post_frame_hash.as_deref()
                     != Some(capture.observation.frame_hash.as_str())
                 || receipt.post_ui_tree_hash.as_deref()

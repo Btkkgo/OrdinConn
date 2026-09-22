@@ -1,9 +1,10 @@
 use chrono::Utc;
 use mobile_runtime::{
     EvidenceStatus, ExtractionMethod, MobileActionDecision, MobileActionDenyReason,
-    MobileActionReceipt, MobileActionStatus, MobileActionTarget, MobileBounds, MobileCapture,
-    MobileDeviceSession, MobileDeviceType, MobileFrame, MobileObservation, MobilePlatform,
-    MobileSessionStatus, MobileUiSnapshot, PrivacyClass, RawMobileElement, VerificationResult,
+    MobileActionReceipt, MobileActionRequest, MobileActionStatus, MobileActionTarget, MobileBounds,
+    MobileCapture, MobileDeviceSession, MobileDeviceType, MobileFrame, MobileObservation,
+    MobilePlatform, MobileSessionStatus, MobileUiSnapshot, PrivacyClass, RawMobileElement,
+    SensitiveText, VerificationResult,
 };
 use ordinconn_app::{AppRuntime, MobileResearchBudget, MobileRuntimeSettings};
 use sqlx::Row;
@@ -65,6 +66,41 @@ fn fixture_capture() -> MobileCapture {
     }
 }
 
+#[tokio::test]
+async fn mobile_action_intent_is_durable_before_input_and_excludes_text() {
+    let directory = tempfile::tempdir().unwrap();
+    let runtime = AppRuntime::initialize(&directory.path().join("intent.sqlite3"))
+        .await
+        .unwrap();
+    let capture = fixture_capture();
+    let request = MobileActionRequest {
+        action_id: "mobile-action-intent-1".into(),
+        session_id: capture.session.session_id,
+        snapshot_id: capture.snapshot.snapshot_id,
+        expected_package: "com.example.news".into(),
+        requested_at: Utc::now(),
+        target: MobileActionTarget::Type {
+            element_ref: "@e1".into(),
+        },
+        text: Some(SensitiveText::new("wifi".into())),
+    };
+    runtime.record_mobile_action_intent(&request).await.unwrap();
+    let payload: String = sqlx::query_scalar(
+        "SELECT payload_json FROM runtime_events WHERE event_type='mobile.action_intent'",
+    )
+    .fetch_one(runtime.pool())
+    .await
+    .unwrap();
+    assert!(payload.contains("mobile-action-intent-1"));
+    assert!(payload.contains("\"commandSent\":false"));
+    assert!(!payload.contains("wifi"));
+    let receipts: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_action_receipts")
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    assert_eq!(receipts, 0);
+}
+
 fn mobile_action_receipt(
     capture: &MobileCapture,
     status: MobileActionStatus,
@@ -89,6 +125,7 @@ fn mobile_action_receipt(
         pre_frame_hash: capture.observation.frame_hash.clone(),
         pre_ui_tree_hash: capture.observation.ui_tree_hash.clone(),
         post_package: None,
+        post_snapshot_id: None,
         post_activity: None,
         post_frame_hash: None,
         post_ui_tree_hash: None,
@@ -112,6 +149,7 @@ async fn mobile_action_receipts_and_events_persist_without_type_plaintext() {
     let after = fixture_capture();
     let mut executed = mobile_action_receipt(&before, MobileActionStatus::Executed);
     executed.post_package = Some(after.observation.package_name.clone());
+    executed.post_snapshot_id = Some(after.snapshot.snapshot_id.clone());
     executed.post_activity = Some(after.observation.activity.clone());
     executed.post_frame_hash = Some(after.observation.frame_hash.clone());
     executed.post_ui_tree_hash = Some(after.observation.ui_tree_hash.clone());
@@ -163,6 +201,7 @@ async fn mobile_action_duplicate_receipt_rolls_back_post_capture_atomically() {
     let after = fixture_capture();
     let mut duplicate = mobile_action_receipt(&before, MobileActionStatus::Executed);
     duplicate.action_id = blocked.action_id.clone();
+    duplicate.post_snapshot_id = Some(after.snapshot.snapshot_id.clone());
     duplicate.post_frame_hash = Some(after.observation.frame_hash.clone());
     duplicate.post_ui_tree_hash = Some(after.observation.ui_tree_hash.clone());
     assert!(

@@ -125,6 +125,8 @@ pub struct MobileActionReceipt {
     pub pre_frame_hash: String,
     pub pre_ui_tree_hash: String,
     pub post_package: Option<String>,
+    #[serde(default)]
+    pub post_snapshot_id: Option<String>,
     pub post_activity: Option<String>,
     pub post_frame_hash: Option<String>,
     pub post_ui_tree_hash: Option<String>,
@@ -511,6 +513,136 @@ mod tests {
         assert_eq!(
             decide(&request(&snapshot, MobileActionTarget::Back), &snapshot),
             MobileActionDecision::Allowed
+        );
+    }
+
+    #[test]
+    fn financial_semantics_block_tap_and_type_without_real_financial_apps() {
+        let (session, _) = fixture();
+        for term in [
+            "Transfer",
+            "Buy",
+            "Sell",
+            "Withdraw",
+            "Wallet sign",
+            "Pay now",
+            "Confirm payment",
+            "购买",
+            "转账",
+            "提现",
+            "钱包签名",
+        ] {
+            let snapshot = MobileUiSnapshot::from_elements(
+                "session-1",
+                "com.android.settings",
+                ".Settings",
+                1080,
+                2400,
+                vec![RawMobileElement {
+                    text: Some(term.into()),
+                    role: "edittext".into(),
+                    class_name: "android.widget.EditText".into(),
+                    content_description: None,
+                    bounds: MobileBounds {
+                        x: 100,
+                        y: 200,
+                        width: 300,
+                        height: 80,
+                    },
+                    clickable: true,
+                    scrollable: false,
+                    enabled: true,
+                    focused: true,
+                    selected: false,
+                    resource_id: None,
+                    password: false,
+                }],
+            );
+            assert_eq!(
+                snapshot.sensitive_state,
+                Some(VerificationResult::FinancialActionBlocked)
+            );
+            for target in [
+                MobileActionTarget::Tap {
+                    element_ref: "@e1".into(),
+                },
+                MobileActionTarget::Type {
+                    element_ref: "@e1".into(),
+                },
+            ] {
+                let mut action = request(&snapshot, target);
+                if matches!(action.target, MobileActionTarget::Type { .. }) {
+                    action.text = Some(SensitiveText::new("test".into()));
+                }
+                assert_eq!(
+                    evaluate_action(
+                        &action,
+                        &session,
+                        &snapshot,
+                        &["com.android.settings".into()],
+                        0,
+                        "com.android.settings",
+                        ".Settings",
+                        snapshot.captured_at,
+                    ),
+                    MobileActionDecision::Denied(MobileActionDenyReason::SensitiveScreen)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn chinese_verification_code_is_sensitive_without_password_flag() {
+        let (session, _) = fixture();
+        let snapshot = MobileUiSnapshot::from_elements(
+            "session-1",
+            "com.android.settings",
+            ".Settings",
+            1080,
+            2400,
+            vec![RawMobileElement {
+                text: Some("验证码".into()),
+                role: "edittext".into(),
+                class_name: "android.widget.EditText".into(),
+                content_description: None,
+                bounds: MobileBounds {
+                    x: 100,
+                    y: 200,
+                    width: 300,
+                    height: 80,
+                },
+                clickable: true,
+                scrollable: false,
+                enabled: true,
+                focused: true,
+                selected: false,
+                resource_id: None,
+                password: false,
+            }],
+        );
+        assert_eq!(
+            snapshot.sensitive_state,
+            Some(VerificationResult::SensitiveFieldBlocked)
+        );
+        let mut action = request(
+            &snapshot,
+            MobileActionTarget::Type {
+                element_ref: "@e1".into(),
+            },
+        );
+        action.text = Some(SensitiveText::new("123456".into()));
+        assert_eq!(
+            evaluate_action(
+                &action,
+                &session,
+                &snapshot,
+                &["com.android.settings".into()],
+                0,
+                "com.android.settings",
+                ".Settings",
+                snapshot.captured_at
+            ),
+            MobileActionDecision::Denied(MobileActionDenyReason::SensitiveScreen)
         );
     }
 

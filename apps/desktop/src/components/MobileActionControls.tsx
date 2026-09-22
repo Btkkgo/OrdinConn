@@ -39,6 +39,17 @@ function safeElement(snapshot: MobileUiSnapshotDto | undefined, selected: Mobile
     !snapshot.redactions?.some((redaction) => redaction.startsWith(`element:${selected.ref}:`));
 }
 
+function receiptTarget(target: MobileActionTargetDto): string {
+  switch (target.kind) {
+    case "tap":
+    case "type": return target.elementRef;
+    case "swipe": return target.direction;
+    case "open_app": return target.packageName;
+    case "back":
+    case "home": return "—";
+  }
+}
+
 export function MobileActionControls({ session, snapshot, selected, allowedApps, receipt, onAction, t }: MobileActionControlsProps) {
   const [typeDraft, setTypeDraft] = useState("");
   const [openPackage, setOpenPackage] = useState(allowedApps[0] ?? "");
@@ -83,6 +94,20 @@ export function MobileActionControls({ session, snapshot, selected, allowedApps,
       <button className="secondary-button" type="button" disabled={!availability.navigate || !selectedPackage || busy} onClick={() => void execute({ kind: "open_app", packageName: selectedPackage })}>{t("mobile.openAllowedApp")}</button>
     </div>
     <p className="mobile-action-boundary">{t("mobile.manualBoundary")}</p>
-    {receipt ? <div className="mobile-action-receipt" aria-live="polite"><strong>{t("mobile.lastAction")}</strong><span>{receipt.status} · {receipt.verification ?? (receipt.decision.outcome === "denied" ? receipt.decision.reason : "—")}</span>{receipt.textLength != null ? <span>{t("mobile.typeLength", { count: receipt.textLength })}</span> : null}</div> : null}
+    {receipt ? <div className="mobile-action-receipt" aria-live="polite">
+      <strong>{t("mobile.lastAction")}</strong>
+      <span>{receipt.status} · {receipt.verification ?? (receipt.decision.outcome === "denied" ? receipt.decision.reason : "—")}</span>
+      <dl>
+        <div><dt>{t("mobile.receiptAction")}</dt><dd>{t(`mobile.actionKind.${receipt.target.kind}`)}</dd></div>
+        <div><dt>{t("mobile.receiptTarget")}</dt><dd>{receiptTarget(receipt.target)}</dd></div>
+        <div><dt>{t("mobile.receiptPolicy")}</dt><dd>{receipt.decision.outcome === "allowed" ? t("mobile.policyAllowed") : `${t("mobile.policyDenied")}: ${receipt.decision.reason}`}</dd></div>
+        <div><dt>{t("mobile.receiptExecuted")}</dt><dd>{receipt.commandSent ? t("mobile.yes") : t("mobile.no")} · {receipt.status}</dd></div>
+        <div><dt>{t("mobile.receiptVerification")}</dt><dd>{receipt.verification ?? "—"}</dd></div>
+        <div><dt>{t("mobile.receiptPreSnapshot")}</dt><dd>{receipt.snapshotId || "—"}</dd></div>
+        <div><dt>{t("mobile.receiptPostSnapshot")}</dt><dd>{receipt.postSnapshotId ?? "—"}</dd></div>
+        <div><dt>{t("mobile.receiptTimestamp")}</dt><dd>{receipt.completedAt}</dd></div>
+        {receipt.textLength != null ? <div><dt>{t("mobile.typeLength", { count: receipt.textLength })}</dt><dd>—</dd></div> : null}
+      </dl>
+    </div> : null}
   </section>;
 }

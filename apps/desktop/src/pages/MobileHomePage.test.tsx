@@ -50,7 +50,7 @@ describe("mobile home workspace", () => {
         decision: { outcome: "allowed" as const }, status: "executed" as const,
         requestedAt: new Date().toISOString(), completedAt: new Date().toISOString(), prePackage: "com.android.settings",
         preActivity: ".Settings", preFrameHash: "sha256:before", preUiTreeHash: "sha256:before",
-        postPackage: "com.android.settings", postActivity: ".Settings", postFrameHash: "sha256:after",
+        postSnapshotId: "snapshot-2", postPackage: "com.android.settings", postActivity: ".Settings", postFrameHash: "sha256:after",
         postUiTreeHash: "sha256:after", verification: "VERIFIED" as const, commandSent: true,
       },
     } satisfies MobileWorkspaceDto;
@@ -61,6 +61,14 @@ describe("mobile home workspace", () => {
     expect(html).toContain("Swipe up");
     expect(html).toContain("Open allowed app");
     expect(html).toContain("Last action");
+    expect(html).toContain("Action");
+    expect(html).toContain("Target");
+    expect(html).toContain("Policy");
+    expect(html).toContain("Executed");
+    expect(html).toContain("Pre snapshot");
+    expect(html).toContain("Post snapshot");
+    expect(html).toContain("snapshot-2");
+    expect(html).toContain("Timestamp");
     expect(html).not.toContain("Auto navigate");
   });
 });

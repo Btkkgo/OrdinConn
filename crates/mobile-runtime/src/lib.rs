@@ -6,6 +6,9 @@ use sha2::{Digest, Sha256};
 use std::collections::{HashSet, VecDeque};
 use uuid::Uuid;
 
+pub mod action;
+pub use action::*;
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidDeviceInfo {
@@ -525,6 +528,21 @@ const SENSITIVE_TERMS: &[&str] = &[
     "mnemonic",
     "banking",
     "payment",
+    "verification",
+    "security code",
+    "2fa",
+    "authenticator",
+    "password field",
+    "验证码",
+    "验证代码",
+    "动态码",
+    "一次性密码",
+    "短信码",
+    "密码",
+    "助记词",
+    "私钥",
+    "银行卡",
+    "银行账户",
 ];
 const FINANCIAL_TERMS: &[&str] = &[
     "buy",
@@ -537,6 +555,31 @@ const FINANCIAL_TERMS: &[&str] = &[
     "deposit",
     "wallet sign",
     "sign transaction",
+    "pay now",
+    "confirm payment",
+    "checkout",
+    "purchase",
+    "send money",
+    "send crypto",
+    "place trade",
+    "confirm order",
+    "交易签名",
+    "钱包签名",
+    "确认交易",
+    "确认订单",
+    "转账",
+    "汇款",
+    "购买",
+    "买入",
+    "卖出",
+    "提现",
+    "提币",
+    "充值",
+    "支付",
+    "付款",
+    "下单",
+    "做多",
+    "做空",
 ];
 const KNOWN_ENTITIES: &[&str] = &["BTC", "ETH", "SOL", "NVDA", "NVIDIA", "FED"];
 

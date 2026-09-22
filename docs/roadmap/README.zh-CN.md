@@ -6,13 +6,13 @@
 
 ## 当前 Gate
 
-M1.5 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。Production Capture Gate 和另行执行的打包桌面 Rust → Tauri → React 验收均已通过。M2 仍为**尚未开始**，且需要新的明确指令才能进入。
+M1.5 与 M2 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。M2 的 30 项验收包含真实受限导航、安全负例、脱敏 Receipt，以及打包桌面 Rust → Tauri → React 人工 Tap。详见 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 和 [M2 验收记录](../mobile/M2_ACCEPTANCE.zh-CN.md)。M3 尚未开始。
 
 完成的 Gate 记录在 [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1)。间歇性 Process-fixture 并发超时风险单独记录在 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 
 ## M2 — 验证式导航
 
-只有 M1.5 通过后，才允许加入最小安全 Action Set：有界 Tap、Swipe、Type、Back/Home 和 Application Navigation，并具备 Preconditions、Policy Check、Action Receipt、Post-action Observation 与 Verification。
+M1.5 通过后，最小安全 Action Set 已在 Emulator 上验证：有界 Tap、Swipe、Type、Back/Home 和 Application Navigation，具备 Preconditions、Policy Check、Action Receipt、Post-action Observation 与 Verification。这不授权自主 App Skills 或物理设备。
 
 ## M3 — 生产级 App Skill
 

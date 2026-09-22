@@ -38,6 +38,7 @@ pub fn run() {
             commands::test_model_provider,
             commands::get_mobile_workspace,
             commands::observe_mobile_device,
+            commands::execute_mobile_action,
             commands::stop_mobile_session,
             commands::start_mobile_avd,
             commands::set_warehouse_entry,
@@ -52,8 +53,8 @@ pub fn run() {
         if matches!(event, RunEvent::ExitRequested { .. })
             && let Some(state) = app_handle.try_state::<state::AppState>()
         {
-            let ended_mobile_session = state.mobile_host.stop_session();
             let mobile_session_id = state.mobile_host.session_id().to_owned();
+            let ended_mobile_session = state.mobile_host.stop_session();
             let runtime = Arc::clone(&state.runtime);
             let _ = tauri::async_runtime::block_on(async move {
                 if ended_mobile_session {

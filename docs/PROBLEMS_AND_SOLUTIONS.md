@@ -237,3 +237,25 @@ The four existing cases each passed 20 isolated pre-change runs, and related tes
 ### Reusable Lesson
 
 A success test should validate behavior, not accidentally benchmark cold process startup. Keep short timeout assertions in dedicated failure-path tests, and use repeat runs plus controlled latency to distinguish deterministic coverage from a lucky green rerun.
+
+## Problem 009 — An existing Android task can obscure an OpenApp result
+
+### Context and symptom
+
+The M2 real Settings Search flow moved foreground to the separate system Settings Intelligence package. After Home, a launcher-component `am start` for Settings could resume the existing search task. The frame changed, so generic change detection initially called it verified even though the requested package was not foreground.
+
+### Root cause and failed attempt
+
+Post-action verification checked for any frame/UI change, not the OpenApp target package. The initial fixed launcher command also did not clear the existing task stack. The first real OpenApp assertion failed despite fixture tests passing.
+
+### Final solution and verification
+
+OpenApp now uses a fixed `--activity-clear-top` flag and requires the post-observation foreground package to equal the requested allowlisted package. A focused unit test rejects a changed frame with the wrong package; the final real M2 flow returned to `com.android.settings` and passed. Settings Intelligence was allowlisted only for the real search test, not as a production default.
+
+### Reusable lesson
+
+Verification must prove the action-specific target state, not merely that something changed. Android task reuse is observable only in the real environment.
+
+## Problem 010 — Denied request identifiers could leak into action receipts
+
+A caller could put arbitrary text into a stale session ID, snapshot ID, element ref, or disallowed package string. The first receipt constructor copied those strings even when policy denied the action. A RED→GREEN test exposed this persistence route. Receipts now take session/snapshot IDs from the trusted capture and redact unrecognized refs or unapproved package targets; an approved target is restored only after policy permits it. The regression checks that caller-supplied sentinel strings are absent from serialized receipts.

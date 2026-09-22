@@ -59,6 +59,8 @@ M2's Issue #7 branch has a real dedicated-AVD Settings flow covering Tap, Swipe,
 
 The first PR #8 merge commit failed the post-merge public-history identity gate, leaving M2 at 29 PASS / 1 FAIL. One authorized privacy repair replaced `af843783` with unsigned `5a19c25` using noreply Author/Committer metadata; the tree, ordered parents, message, timestamps, and product files remained identical. Reachable public `main` identity then passed. The old object remains GitHub-accessible and referenced by PR #8; this cache condition is separate from the public reachable-history gate. The final 30/30 statement depends on the paired acceptance record and the completed security checks, not on the pre-merge technical result alone.
 
+PR #9 added permanent identity gates and was merged locally as `5bdf6b3` with a noreply identity; GitHub recognized the merge. Post-merge working-tree, staged-snapshot, reachable-history, local all-ref, repository-security, public-doc, and diff gates passed. Issue #7 is CLOSED / `status:verified`. GitHub reported no configured CI checks for PR #9; the named local gates are the verification evidence.
+
 The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
 
 ## Partial

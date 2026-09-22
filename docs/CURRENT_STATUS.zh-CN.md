@@ -53,6 +53,8 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 
 PR #8 首个 Merge Commit 未通过合并后公开历史身份门，使 M2 当时为 29 PASS / 1 FAIL。一次授权的隐私修复以 noreply Author/Committer 元数据把 `af843783` 替换为未签名的 `5a19c25`；Tree、按顺序排列的 Parents、Message、时间戳与产品文件完全相同。随后公开可达的 `main` 身份检查通过。旧对象仍可从 GitHub 访问，PR #8 也仍引用它；这一缓存状态与公开可达历史 Gate 分开处理。最终 30/30 结论以成对验收记录和完成的安全检查为依据，不以合并前技术结果单独推断。
 
+PR #9 新增永久身份门，并以 noreply 身份受控本地合并为 `5bdf6b3`；GitHub 已识别该合并。合并后的工作区、暂存快照、可达历史、本地全引用、仓库安全、公开文档及 Diff Gate 均通过。Issue #7 为 CLOSED / `status:verified`。GitHub 没有为 PR #9 报告已配置的 CI 检查；上述本地 Gate 是本次验证证据。
+
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 
 ## 部分完成

@@ -2,7 +2,7 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-- Date: 2026-09-20
+- Date: 2026-09-22
 - Version: 0.1.0
 - Official repository: https://github.com/Btkkgo/OrdinConn
 - Current Mobile gate: https://github.com/Btkkgo/OrdinConn/issues/1
@@ -11,6 +11,7 @@
 - Mobile stage: M1.5 real-environment validation complete
 - Gate: **M1.5 PASS**
 - Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
+- Runtime reliability follow-up: **Issue #4 VERIFIED on its issue branch**
 - Next phase: **M2 NOT STARTED**
 
 This document separates implementation, verification, partial work, blocked work, design, plans, and work that has not started. Written intent is never counted as runtime evidence.
@@ -45,9 +46,11 @@ Typed IPC has separate real GUI evidence. In the packaged Tauri application, the
 
 A separate temporary local test application exposed one real `password=true` node. UIAutomator did not emit the test plaintext, OrdinConn recorded one redaction, and serialized capture data did not contain the test value. The app and temporary artifacts were removed after validation.
 
-For the open-source initialization, public-log sanitizer, allowlisted Git sync, scheduler rendering, document validation, plist lint, TypeScript tests/typecheck, Vite build, and Tauri bundle passed. During the corrective run, the first default-parallel workspace attempt exposed two intermittent AVD lifecycle fixture failures; after an unrelated gate-label assertion was corrected, the complete default-parallel workspace rerun passed and all 28 desktop tests passed serially. The nondeterminism remains tracked in Issue #4 rather than being erased by the green rerun.
+For the open-source initialization, public-log sanitizer, allowlisted Git sync, scheduler rendering, document validation, plist lint, TypeScript tests/typecheck, Vite build, and Tauri bundle passed. During the corrective run, the first default-parallel workspace attempt exposed two intermittent AVD lifecycle fixture failures; after an unrelated gate-label assertion was corrected, the complete default-parallel workspace rerun passed and all 28 desktop tests passed serially. The nondeterminism was tracked in Issue #4 rather than being erased by the green rerun.
 
-The M1.5 stage-close verification reproduced Issue #4 again: the first fresh default-parallel workspace run passed 24 of 28 desktop tests and failed four process/AVD timing-sensitive fixtures. The immediate serial desktop run passed 28/28, and the next complete default-parallel workspace rerun passed 125/125. This fresh sequence reinforces that the issue is intermittent and remains open; it does not invalidate the separately completed 15/15 real M1.5 acceptance.
+The M1.5 stage-close verification reproduced Issue #4 again: the first fresh default-parallel workspace run passed 24 of 28 desktop tests and failed four process/AVD timing-sensitive fixtures. The immediate serial desktop run passed 28/28, and the next complete default-parallel workspace rerun passed 125/125. At that checkpoint the issue remained open; it did not invalidate the separately completed 15/15 real M1.5 acceptance.
+
+On the Issue #4 reliability branch, the first of ten pre-change default-parallel desktop runs again failed the same four tests at 24/28, while nine warm runs passed. A controlled four-fixture cold-start regression failed with the original one-second success budget and passed after separating bounded test-only success budgets from the unchanged 30/50 ms timeout checks. Default-parallel desktop then passed 20/20 runs (29/29 each), full workspace passed 10/10 runs (136 tests per run), and an eight-thread desktop run passed 29/29. The first real Android smoke correctly rejected an unallowlisted cold-boot Launcher; after opening Settings on the dedicated AVD, the unchanged smoke passed 10/10 checks. Production deadlines and runtime code did not change. Rust formatting, Clippy with warnings denied, 31 TypeScript tests, typecheck, Rust/Vite builds, and the Tauri bundle passed.
 
 The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
 
@@ -58,7 +61,7 @@ The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.o
 ## Blocked
 
 - No M1.5 product gate remains blocked.
-- No product acceptance item is blocked. Issue #4 remains open because the desktop process-fixture tests showed intermittent timeout failures under default concurrency even though the final workspace rerun passed.
+- No product acceptance item is blocked. The historical Issue #4 timeout failures remain documented; repeated default-parallel verification on the reliability branch now passes.
 
 ## Designed
 
@@ -73,7 +76,7 @@ Designed items are not current product capabilities.
 
 ## Planned
 
-- Resolve the concurrent process-fixture timeouts in Issue #4 without weakening production command deadlines or the real acceptance gate.
+- Keep Issue #4 reliability coverage in the default-parallel test suite without weakening production command deadlines or the real acceptance gate.
 - Continue issue-first public engineering records in GitHub.
 
 ## Not Started
@@ -90,4 +93,4 @@ M1.5 can pass only after Android SDK, ADB, Emulator, AVD, online device, real sm
 
 ## Next
 
-Complete owner review of the M1.5 evidence; do not start M2 until a new explicit instruction authorizes it.
+Complete owner review of the M1.5 and Issue #4 evidence; do not start M2 until a new explicit instruction authorizes it.

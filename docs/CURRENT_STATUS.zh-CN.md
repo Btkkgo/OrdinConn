@@ -2,7 +2,7 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-- 日期：2026-09-20
+- 日期：2026-09-22
 - 版本：0.1.0
 - 正式仓库：https://github.com/Btkkgo/OrdinConn
 - 当前 Mobile Gate：https://github.com/Btkkgo/OrdinConn/issues/1
@@ -11,6 +11,7 @@
 - Mobile 阶段：M1.5 真实环境验收完成
 - Gate：**M1.5 通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
+- Runtime Reliability 后续：**Issue #4 已在 Issue 分支通过验证**
 - 下一阶段：**M2 尚未开始**
 
 本文严格区分已实现、已验证、部分完成、受阻、已设计、已计划和尚未开始。设计文档不能替代运行证据。
@@ -39,9 +40,11 @@
 
 独立的临时本地测试 App 产生了 1 个真实 `password=true` 节点。UIAutomator 没有输出测试明文，OrdinConn 记录了 1 次 Redaction，序列化 Capture 不含测试值。验收后已卸载 App 并清理临时产物。
 
-开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。本次修正的第一次默认并行 Workspace 尝试暴露 2 个间歇性 AVD lifecycle Fixture 失败；修正另一个无关的 Gate 标签断言后，完整默认并行 Workspace 重跑通过，28 个 Desktop 测试也全部串行通过。该不确定性仍记录在 Issue #4，不能因后续重跑变绿而删除。
+开源初始化阶段，公开日志脱敏、同步脚本、调度器渲染、文档校验、plist、TypeScript 测试与 Typecheck、Vite Build 和 Tauri Bundle 均通过。本次修正的第一次默认并行 Workspace 尝试暴露 2 个间歇性 AVD lifecycle Fixture 失败；修正另一个无关的 Gate 标签断言后，完整默认并行 Workspace 重跑通过，28 个 Desktop 测试也全部串行通过。该不确定性被记录在 Issue #4，没有因后续重跑变绿而删除。
 
-M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel Workspace Run 的 Desktop Test 为 24/28，通过 24 项、失败 4 个 Process/AVD Timing-sensitive Fixture。紧接着的 Serial Desktop Run 为 28/28 PASS，下一次完整 Default-parallel Workspace Rerun 为 125/125 PASS。这组新证据进一步确认问题具有间歇性，因此 Issue 保持 Open；它不推翻已经独立完成的 M1.5 15/15 真实验收。
+M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel Workspace Run 的 Desktop Test 为 24/28，通过 24 项、失败 4 个 Process/AVD Timing-sensitive Fixture。紧接着的 Serial Desktop Run 为 28/28 PASS，下一次完整 Default-parallel Workspace Rerun 为 125/125 PASS。在当时的检查点 Issue 保持 Open；它不推翻已经独立完成的 M1.5 15/15 真实验收。
+
+Issue #4 Reliability 分支上，改动前十次 Default-parallel Desktop 运行的第一次再次由同样四个测试造成 24/28，随后九次热态运行通过。受控四夹具冷启动回归在原一秒成功预算下失败；将有界的测试专用成功预算与保持不变的 30/50ms 超时检查分开后通过。随后 Default-parallel Desktop 20/20 次通过（每次 29/29）、完整 Workspace 10/10 次通过（每次 136 项测试），八线程 Desktop 29/29 通过。真实 Android Smoke 首次正确拒绝白名单外的冷启动 Launcher；在专用 AVD 上打开 Settings 后，原样 Smoke 十项全部通过。生产 Deadline 和 Runtime Code 均未改动。Rust Formatting、禁止 Warning 的 Clippy、31 个 TypeScript 测试、Typecheck、Rust/Vite Build 与 Tauri Bundle 均通过。
 
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 
@@ -52,7 +55,7 @@ M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel 
 ## 受阻
 
 - M1.5 产品 Gate 已无受阻项。
-- 产品验收项已无受阻。Issue #4 仍保持 OPEN，因为 Desktop 进程 Fixture 在默认并发下曾出现间歇性超时，即使最终 Workspace 重跑已通过。
+- 产品验收项已无受阻。Issue #4 的历史 Timeout Failure 保留在记录中；Reliability 分支上的重复默认并行验证现已通过。
 
 ## 已设计
 
@@ -65,7 +68,7 @@ M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel 
 
 ## 已计划
 
-- 在不削弱生产命令时限或真实 Gate 的前提下，通过 Issue #4 解决并行进程 Fixture Timeout。
+- 将 Issue #4 Reliability Coverage 保持在默认并行测试套件中，不削弱生产命令时限或真实 Gate。
 - 持续使用 GitHub Issue-first 工程记录。
 
 ## 尚未开始
@@ -82,4 +85,4 @@ M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel 
 
 ## 下一步
 
-由项目所有者人工验收 M1.5 证据；在新的明确指令授权前不进入 M2。
+由项目所有者人工验收 M1.5 与 Issue #4 证据；在新的明确指令授权前不进入 M2。

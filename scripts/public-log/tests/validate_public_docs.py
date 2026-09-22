@@ -39,6 +39,7 @@ CORE_PAIRS = (
     ("docs/codex/CODEX_FIELD_NOTES.md", "docs/codex/CODEX_FIELD_NOTES.zh-CN.md"),
     ("docs/decisions/README.md", "docs/decisions/README.zh-CN.md"),
     ("docs/devlog/2026-09-20.md", "docs/devlog/2026-09-20.zh-CN.md"),
+    ("docs/devlog/2026-09-22.md", "docs/devlog/2026-09-22.zh-CN.md"),
     ("docs/mobile/APP_SKILLS.md", "docs/mobile/APP_SKILLS.zh-CN.md"),
     ("docs/mobile/DEVICE_RUNTIME.md", "docs/mobile/DEVICE_RUNTIME.zh-CN.md"),
     ("docs/mobile/M1_5_ACCEPTANCE.md", "docs/mobile/M1_5_ACCEPTANCE.zh-CN.md"),
@@ -82,15 +83,18 @@ for heading in (
 require("- Gate: **M1.5 PASS**" in stage and "- Next phase: **M2 NOT STARTED**" in stage, "M1.5 gate status is unclear")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage, "M1.5 acceptance total is unclear")
 require("125 Rust tests" in stage and "31 TypeScript tests" in stage, "verified counts missing")
+require("136 tests per run" in stage and "Issue #4" in stage, "Issue #4 verification missing")
 
 stage_zh = (ROOT / "docs" / "CURRENT_STATUS.zh-CN.md").read_text(encoding="utf-8")
 require("- Gate：**M1.5 通过**" in stage_zh and "- 下一阶段：**M2 尚未开始**" in stage_zh, "Chinese M1.5 gate status is unclear")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage_zh, "Chinese M1.5 acceptance total is unclear")
 require("125 个测试" in stage_zh and "31 个 TypeScript 测试" in stage_zh, "Chinese verified counts missing")
+require("136 项测试" in stage_zh and "Issue #4" in stage_zh, "Chinese Issue #4 verification missing")
 
 agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
 for marker in ("## BUILD IN PUBLIC LANGUAGE POLICY", "Chinese by default", "English is the primary/default", "`## English — Publication Version`", "`## 中文 — 参考版本`"):
     require(marker in agents, f"AGENTS language policy missing {marker}")
+require("Ordinary bug fixes, test infrastructure" in agents, "selective X-draft policy missing")
 
 acceptance = (ROOT / "docs" / "mobile" / "M1_5_ACCEPTANCE.md").read_text(encoding="utf-8")
 acceptance_zh = (ROOT / "docs" / "mobile" / "M1_5_ACCEPTANCE.zh-CN.md").read_text(encoding="utf-8")

@@ -11,7 +11,7 @@ OrdinConn publishes engineering progress to make architecture, failure modes, an
 - Problems, root causes, and verified solutions
 - Test and build results with their environment limits
 - Sanitized daily engineering summaries
-- Stage-level X threads and reusable engineering lessons
+- Selected milestone X threads and reusable engineering lessons
 
 ## What is not published
 
@@ -23,7 +23,7 @@ OrdinConn publishes engineering progress to make architecture, failure modes, an
 
 ## Cadence
 
-Ordinary engineering work updates the daily DevLog and waits for the two-hour documentation sync. The primary local scheduler is the macOS LaunchAgent `com.ordinconn.github-sync`; it runs at login and every 7,200 seconds without requiring Codex or ChatGPT. A Codex heartbeat may remain paused as a recovery fallback, but it is not the primary scheduler. A meaningful stage close also updates Current Status, Problems and Solutions, Codex Field Notes, and an X draft.
+Meaningful engineering work follows Issue → development → test → bilingual DevLog → Issue update → security/diff gates → commit → push. The primary local documentation scheduler is the macOS LaunchAgent `com.ordinconn.github-sync`; it runs at login and every 7,200 seconds without requiring Codex or ChatGPT. A Codex heartbeat may remain paused as a recovery fallback, but it is not the primary scheduler. Stage close updates Current Status and relevant public engineering records, but does not automatically create an X draft.
 
 The LaunchAgent starts a dedicated, ad-hoc-signed `OrdinConn GitHub Sync` launcher from `~/Library/Application Support/OrdinConn/automation/`. That launcher is the narrow macOS privacy identity responsible for reading this repository under `Documents`; the job does not grant Files and Folders or Full Disk Access to a general-purpose shell. The launcher invokes `github-sync-runner.sh`, which sets an explicit tool path, calls the repository-owned fail-closed sync script, and writes structured records to `~/Library/Logs/OrdinConn/github-sync.log`. The log rotates at 5 MiB and never records credentials.
 
@@ -38,6 +38,8 @@ Meaningful work is issue-first. The Issue defines scope and acceptance, receives
 English is the primary/default language for public GitHub records; Simplified Chinese is maintained as the synchronized secondary edition. Core documents use paired `.md` and `.zh-CN.md` files with reciprocal language links. Issue titles and commit messages use English; Issue bodies, important Issue comments, and Pull Request bodies use English first and Chinese second. Codex communicates with the owner in Chinese by default.
 
 DevLogs use `YYYY-MM-DD.md` and `YYYY-MM-DD.zh-CN.md`. X drafts contain `## English — Publication Version` and `## 中文 — 参考版本`, include the complete thread in both languages, remain owner-reviewed, and are never published automatically. The two languages must report the same stage, tests, outcome, risks, and next step.
+
+Create a new X draft only for a major user-facing capability or product milestone, a coherent story spanning multiple engineering stages, a significant public technical breakthrough, or an explicit owner request. Ordinary bug fixes, test infrastructure, refactors, internal architecture work, and small stages stay in GitHub records. Existing X history is preserved. GitHub is the complete engineering history; X is a selective milestone channel.
 
 ## Publication states
 

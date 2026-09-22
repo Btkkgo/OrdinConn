@@ -2,12 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Stage-level Build in Public material moves through two states:
+Selected milestone Build in Public material moves through two states:
 
 - `drafts/`: sanitized content waiting for manual owner review and publication.
 - `published/`: immutable content plus publication time, X URLs, source commit, and SHA-256 content hash.
 
 Templates live in `templates/`. Ordinary code changes belong in the daily DevLog, not in an X post.
+
+Create a draft only for a major user-facing capability or milestone, a coherent multi-stage story, a significant public technical breakthrough, or an explicit owner request. Ordinary bug fixes, test infrastructure, refactors, internal architecture, and small stages remain in GitHub records. Existing X history is preserved.
 
 ## Publication rules
 

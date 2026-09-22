@@ -55,9 +55,11 @@ Evidence keys: **U** = automated unit/fixture test, **R** = real AVD gate, **G**
 | 27 | React manual controls | U; G: inspector selection and manual Tap | PASS |
 | 28 | Session shutdown regression | U; R/G: logical stop, AVD stays online | PASS |
 | 29 | M1.5 regression | R: ten-check real smoke; default-parallel desktop | PASS |
-| 30 | Security gate | S: public-doc validator, sanitizer, repo scan, diff check | PASS |
+| 30 | Public-history security gate | S: public-doc validator, working/staged scans, reachable `main` identity, local all-ref scan, repository scan, diff check | PASS |
 
 **Final gate: 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN.**
+
+The 29 technical and behavior checks passed before PR #8 merged. Its first GitHub-generated merge commit failed item 30 because its Author and Committer metadata were not noreply compliant, so M2 remained **NOT PASSED** at that checkpoint. A single authorized privacy repair replaced only that commit's identity and signature metadata: `af843783` → `5a19c25`. Tree, ordered parents, message, and timestamps are identical, and `git diff` has zero file changes. The replacement is **UNSIGNED** because no existing signing configuration was available. Reachable public `main` identity passed after the repair. The old GitHub commit object remains accessible and PR #8 still references it; cached-object cleanup is separate from the reachable-public-history gate. No M2 product behavior or test result was changed by the rewrite.
 
 ## Commands and limitations
 

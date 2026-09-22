@@ -8,6 +8,8 @@
 
 M1.5 与 M2 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。M2 的 30 项验收包含真实受限导航、安全负例、脱敏 Receipt，以及打包桌面 Rust → Tauri → React 人工 Tap。详见 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 和 [M2 验收记录](../mobile/M2_ACCEPTANCE.zh-CN.md)。M3 尚未开始。
 
+M2 最后一项是合并后的公开历史身份门。一次保留已审查产品 Tree 的 noreply 元数据修复后，该项通过。后续 PR 使用受控本地合并与合并前后身份检查；GitHub 自动生成的网页 Merge Commit 在独立验证前暂停使用。
+
 完成的 Gate 记录在 [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1)。间歇性 Process-fixture 并发超时风险单独记录在 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 
 ## M2 — 验证式导航

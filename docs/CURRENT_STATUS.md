@@ -57,6 +57,8 @@ PR #6 merged this verified tree into `main` as `52e73ca`; a post-merge full work
 
 M2's Issue #7 branch has a real dedicated-AVD Settings flow covering Tap, Swipe, Back, Type, Home, OpenApp, post-action observations, receipt persistence, and audit events. Real stale-ref, wrong-package, unallowlisted-app, and temporary password-field Type attempts were blocked before ADB input. Synthetic English/Chinese financial and sensitive targets were blocked without connecting a financial app. Final review tightened same-activity UI-tree preflight, atomic write-ahead Pending Receipt/audit intent, action-specific verification, dynamic Home-package detection, session identity/budget rotation, and a fixed Settings-only production action surface; the real M2 smoke passed again after these changes. The final packaged Tauri UI completed manual inspector Tap through typed IPC and showed `executed · VERIFIED` with distinct pre/post Snapshot IDs; Stop Session returned to Disconnected while the AVD remained online. The M1.5 ten-check smoke, default-parallel desktop 44/44, complete Rust workspace, 30 desktop and five contracts TypeScript tests, formatting, Clippy, typecheck, Rust/Vite builds, and final macOS bundle passed. See the paired [M2 acceptance record](mobile/M2_ACCEPTANCE.md) for exact evidence and limits.
 
+The first PR #8 merge commit failed the post-merge public-history identity gate, leaving M2 at 29 PASS / 1 FAIL. One authorized privacy repair replaced `af843783` with unsigned `5a19c25` using noreply Author/Committer metadata; the tree, ordered parents, message, timestamps, and product files remained identical. Reachable public `main` identity then passed. The old object remains GitHub-accessible and referenced by PR #8; this cache condition is separate from the public reachable-history gate. The final 30/30 statement depends on the paired acceptance record and the completed security checks, not on the pre-merge technical result alone.
+
 The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
 
 ## Partial
@@ -97,4 +99,4 @@ M1.5 can pass only after Android SDK, ADB, Emulator, AVD, online device, real sm
 
 ## Next
 
-Complete the Issue #7 public closeout after the verified branch is merged. Stop at M2; do not start M3 or create/publish X content without a new owner request.
+Run one owner-led M2 Verified Navigation experience check: Observe → Select Element → Tap/Swipe/Type → Receipt → Post Observation → Verification. Stop at M2; do not start M3 or create/publish X content without a new owner request.

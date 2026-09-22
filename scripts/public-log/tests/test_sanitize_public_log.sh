@@ -110,6 +110,13 @@ cp "$fixture_dir/safe.md" "$fixture_dir/nested/safe.md"
 "$scanner" --check "$fixture_dir/nested"
 "$scanner" --check "$scanner" "$repo_root/scripts/public-log/tests/test_sanitize_public_log.sh"
 
+mkdir "$fixture_dir/worktree-like"
+printf 'gitdir: %s\n' "$raw_home" > "$fixture_dir/worktree-like/.git"
+cp "$fixture_dir/safe.md" "$fixture_dir/worktree-like/safe.md"
+"$scanner" --check "$fixture_dir/worktree-like"
+printf '%s\n' "$raw_home" > "$fixture_dir/worktree-like/leak.txt"
+expect_blocked worktree-content "$fixture_dir/worktree-like" "$raw_home"
+
 history_repo="$fixture_dir/history-repo"
 git init -q -b main "$history_repo"
 git -C "$history_repo" config user.name "History Scan Test"

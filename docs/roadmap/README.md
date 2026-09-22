@@ -8,6 +8,8 @@ Roadmap entries are directions, not completion claims.
 
 M1.5 and M2 passed against the dedicated `OrdinConn_M1_5` Android 16 ARM64 AVD. M2's 30-item acceptance includes real bounded navigation, safety negatives, sanitized receipts, and a packaged-desktop Rust → Tauri → React manual Tap. See [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) and the [M2 acceptance record](../mobile/M2_ACCEPTANCE.md). M3 has not started.
 
+M2's final item is the post-merge public-history identity gate. It passed after a one-time noreply metadata repair that preserved the reviewed product tree. Future PRs use a local controlled merge and pre/post-merge identity checks; GitHub-generated web merge commits are suspended pending separate validation.
+
 The completed gate is recorded in [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1). Intermittent process-fixture concurrency timeouts remain tracked separately in [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 
 ## M2 — Verified navigation

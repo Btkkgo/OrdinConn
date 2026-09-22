@@ -55,9 +55,11 @@ M2 改动后重跑 M1.5 真实 Smoke，环境、Capture、Projection、Shutdown 
 | 27 | React 手动控件 | U；G：Inspector 选择与手动 Tap | PASS |
 | 28 | Session Shutdown 回归 | U；R/G：逻辑停止，AVD 在线 | PASS |
 | 29 | M1.5 回归 | R：十项真实 Smoke；默认并行 Desktop | PASS |
-| 30 | 安全门 | S：公开文档、脱敏器、仓库扫描、Diff 检查 | PASS |
+| 30 | 公开历史安全门 | S：公开文档、工作区与暂存扫描、可达 `main` 身份、本地全引用扫描、仓库扫描、Diff 检查 | PASS |
 
 **最终 Gate：30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN。**
+
+29 项技术与行为检查在 PR #8 合并前已通过。GitHub 自动生成的首个 Merge Commit 因 Author 与 Committer 元数据不符合 noreply，使第 30 项失败；当时 M2 为 **NOT PASSED**。一次授权的隐私修复只替换该 Commit 的身份与签名元数据：`af843783` → `5a19c25`。Tree、按顺序排列的 Parents、Message 和时间戳完全相同，`git diff` 没有文件变化。因没有现成签名配置，替代提交为 **UNSIGNED**。修复后的公开可达 `main` 身份检查通过。旧 GitHub Commit Object 仍可访问，PR #8 仍引用它；缓存对象清理与公开可达历史 Gate 分开处理。重写没有改变 M2 产品行为或测试结果。
 
 ## 命令与已知边界
 

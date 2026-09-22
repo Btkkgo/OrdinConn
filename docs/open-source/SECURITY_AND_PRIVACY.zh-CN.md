@@ -35,3 +35,9 @@ OrdinConn 不采集 Private Key、Recovery Phrase 或 Password-field Content。�
 一次经过明确授权的一次性 Privacy History Repair，只把 M1.5 Merge Commit 的 Author/Committer Identity Metadata 替换为当前 GitHub No-reply Identity。Tree、两个 Parent、Timestamp、Commit Message、File、Code、Test、Documentation 与 Issue State 均未变化。只有在 Remote 仍与预期旧 SHA 完全一致后，才使用精确 `--force-with-lease` 更新 `main`；普通 Force-push 继续禁止。
 
 Branch 更新后，修复前 SHA 仍可通过 GitHub 直接访问，PR #5 也仍引用该 SHA。没有继续执行更多历史重写。该状态记录为 `GITHUB_CACHED_COMMIT_REMAINS`；是否需要 GitHub Support Cleanup 应另行评估。
+
+## M2 隐私修复 — 2026-09-22
+
+M2 Merge Commit `af843783` 的 Author 与 Committer 元数据不符合 noreply。一次明确授权的 `--force-with-lease` 将其替换为 `5a19c25`。Tree、按顺序排列的 Parents、Message 与时间戳完全相同；`git diff` 为空。由于本机未配置现成签名环境，替代提交为未签名，没有复制 GitHub 原签名而造成无效签名。公开可达的 `main` 身份预检现已符合 noreply。旧提交仍可从 GitHub 访问，PR #8 也仍引用它（`GITHUB_CACHED_COMMIT_REMAINS`）；托管平台缓存清理属于后续独立任务。本轮没有再次 Force Push 的授权。
+
+仓库本地身份门、公开历史身份门与版本化 pre-push Hook 负责防止再次发生。在网页合并身份行为完成独立验证前，暂停 GitHub 自动生成 Merge Commit 的路径。维护者也应开启 **Keep my email addresses private** 和 **Block command line pushes that expose my email**，但账号设置不能代替仓库检查。

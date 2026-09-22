@@ -51,6 +51,8 @@ PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完�
 
 Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Back、Type、Home、OpenApp、动作后 Observation、Receipt 持久化与 Audit Event。真实过期 Ref、错误 Package、未授权 App、临时密码字段 Type 均在 ADB 输入前被阻断。中英文金融与敏感文案通过合成 Fixture 阻断，没有连接金融 App。最终复核进一步收紧同 Activity 的 UI Tree 执行前校验、动作前原子持久的 Pending Receipt/Audit Intent、分动作验证、动态 Home Package、Session ID/预算轮换及固定的 Settings 生产动作面；这些修改后真实 M2 Smoke 再次通过。最终打包版 Tauri UI 完成人工 Inspector Tap → 类型化 IPC → `executed · VERIFIED`，显示不同的前后 Snapshot ID；Stop Session 返回 Disconnected，AVD 保持在线。M1.5 十项 Smoke、默认并行 Desktop 44/44、完整 Rust Workspace、30 个 Desktop 与 5 个 Contracts TypeScript 测试、Formatting、Clippy、Typecheck、Rust/Vite Build 和最终 macOS Bundle 均通过。确切证据与边界见双语 [M2 验收记录](mobile/M2_ACCEPTANCE.zh-CN.md)。
 
+PR #8 首个 Merge Commit 未通过合并后公开历史身份门，使 M2 当时为 29 PASS / 1 FAIL。一次授权的隐私修复以 noreply Author/Committer 元数据把 `af843783` 替换为未签名的 `5a19c25`；Tree、按顺序排列的 Parents、Message、时间戳与产品文件完全相同。随后公开可达的 `main` 身份检查通过。旧对象仍可从 GitHub 访问，PR #8 也仍引用它；这一缓存状态与公开可达历史 Gate 分开处理。最终 30/30 结论以成对验收记录和完成的安全检查为依据，不以合并前技术结果单独推断。
+
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 
 ## 部分完成
@@ -90,4 +92,4 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 
 ## 下一步
 
-在验证过的分支合并后完成 Issue #7 公开收尾。停在 M2；未经所有者新请求，不进入 M3，也不创建或发布 X 内容。
+由所有者实际体验一次 M2 Verified Navigation：Observe → Select Element → Tap/Swipe/Type → Receipt → Post Observation → Verification。停在 M2；未经所有者新请求，不进入 M3，也不创建或发布 X 内容。

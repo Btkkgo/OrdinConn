@@ -35,3 +35,9 @@ If a secret is suspected in Git history, stop sync and publication. Rotate or re
 One one-time, explicitly authorized privacy history repair replaced only the Author and Committer identity metadata of the M1.5 merge commit with the current GitHub no-reply identity. The tree, both parents, timestamps, commit message, files, code, tests, documentation, and Issue state were unchanged. A precise `--force-with-lease` updated `main` only after the remote still matched the expected old SHA; ordinary force-push remains prohibited.
 
 The pre-repair SHA remained directly accessible through GitHub and remained referenced by PR #5 after the branch update. No further history rewrite was attempted. This is recorded as `GITHUB_CACHED_COMMIT_REMAINS`; GitHub Support cleanup may require separate evaluation.
+
+## M2 privacy repair — 2026-09-22
+
+The M2 merge commit `af843783` had non-noreply Author and Committer metadata. One explicitly authorized `--force-with-lease` replaced it with `5a19c25`. The tree, ordered parents, message, and timestamps are identical; `git diff` is empty. No existing signing setup was configured, so the replacement is unsigned rather than carrying an invalid copy of GitHub's signature. Reachable public `main` identity now passes the noreply preflight. The old commit remains accessible through GitHub and referenced by PR #8 (`GITHUB_CACHED_COMMIT_REMAINS`); any hosting-provider cleanup is a separate task. No further force-push is authorized.
+
+The repository-local identity gate, public-history identity gate, and versioned pre-push hook now guard future merges. GitHub-generated web merge commits are suspended pending independent identity verification. Maintainers should also enable **Keep my email addresses private** and **Block command line pushes that expose my email**, but account settings do not replace repository checks.

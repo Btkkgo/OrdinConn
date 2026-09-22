@@ -26,6 +26,12 @@ Use the feature or research template. Separate current implementation from desig
 
 Use `Refs #N` while work is partial. Use `Fixes #N` only when the complete acceptance criteria are satisfied.
 
+## Safe PR merge
+
+Maintainers must use a repository-local GitHub noreply identity and run `scripts/security/check-git-identity.sh` before merging. The GitHub-generated web merge commit path is suspended until its identity behavior is independently revalidated. After CI, review, and required tests pass, fetch the latest `main`, perform a controlled local merge, run `scripts/security/check-public-history-identity.sh` on the proposed merge, and push `main` normally. Immediately rerun the history identity scan and `scripts/security/check-public-repo.sh` on the published `main`; a failure blocks stage close. Install the versioned pre-push hook with `scripts/git/install-hooks.sh` where compatible. An unsigned local merge is acceptable when no existing GitHub-recognized signing setup is configured.
+
+Maintainers should enable **Keep my email addresses private** and **Block command line pushes that expose my email** in GitHub account settings. Repository gates remain mandatory regardless of those account settings. Never print a detected private email.
+
 ## Security
 
 Do not put a vulnerability report containing sensitive details into a public Issue. Follow [SECURITY.md](SECURITY.md). Never commit secrets, tokens, cookies, sessions, private keys, recovery phrases, personal data, or restricted third-party material.

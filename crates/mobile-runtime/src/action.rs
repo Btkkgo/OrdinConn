@@ -83,6 +83,7 @@ pub enum MobileActionDenyReason {
     TargetDisabled,
     TargetNotClickable,
     TargetNotEditable,
+    TargetNotFocused,
     InvalidBounds,
     UnsafeText,
     InvalidAction,
@@ -235,6 +236,9 @@ pub fn evaluate_action(
                 if !element.class_name.ends_with("EditText") {
                     return deny(D::TargetNotEditable);
                 }
+                if !element.focused {
+                    return deny(D::TargetNotFocused);
+                }
                 if !request
                     .text
                     .as_ref()
@@ -250,7 +254,9 @@ pub fn evaluate_action(
             if request.text.is_some() {
                 return deny(D::InvalidAction);
             }
-            if snapshot.screen_width < 100 || snapshot.screen_height < 100 {
+            if !(100..=10_000).contains(&snapshot.screen_width)
+                || !(100..=10_000).contains(&snapshot.screen_height)
+            {
                 return deny(D::InvalidBounds);
             }
         }
@@ -655,6 +661,12 @@ mod tests {
             MobileActionDecision::Denied(MobileActionDenyReason::TargetDisabled)
         );
         snapshot.elements[1].enabled = true;
+        snapshot.elements[1].focused = false;
+        assert_eq!(
+            decide(&req, &snapshot),
+            MobileActionDecision::Denied(MobileActionDenyReason::TargetNotFocused)
+        );
+        snapshot.elements[1].focused = true;
         snapshot.redactions.push("element:@e2:sensitive".into());
         assert_eq!(
             decide(&req, &snapshot),
@@ -701,6 +713,32 @@ mod tests {
         assert_eq!(
             decide(&req, snapshot.captured_at),
             MobileActionDecision::Denied(MobileActionDenyReason::UnsafeText)
+        );
+    }
+
+    #[test]
+    fn implausible_screen_dimensions_deny_swipe_before_coordinate_math() {
+        let (session, mut snapshot) = fixture();
+        snapshot.screen_height = u32::MAX;
+        let allowed = vec!["com.android.settings".to_owned()];
+        let req = request(
+            &snapshot,
+            MobileActionTarget::Swipe {
+                direction: SwipeDirection::Up,
+            },
+        );
+        assert_eq!(
+            evaluate_action(
+                &req,
+                &session,
+                &snapshot,
+                &allowed,
+                0,
+                "com.android.settings",
+                &snapshot.activity,
+                snapshot.captured_at
+            ),
+            MobileActionDecision::Denied(MobileActionDenyReason::InvalidBounds)
         );
     }
 }

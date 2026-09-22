@@ -57,7 +57,7 @@ The real Android gate passed against an Android 16 ARM64 Emulator: environment r
 
 Implemented M0/M1 foundations include device-session contracts, bounded screen frames, semantic UI snapshots, scoped element references, sensitive-node redaction policy, typed IPC projection, persistence, and `MobileObservation`.
 
-Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 is now owner-authorized and in progress. Its action-domain policy has unit coverage, but no navigation adapter or real action acceptance is verified yet; the production device path remains observe-only at this checkpoint.
+Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 is now owner-authorized and in progress. Its action-domain policy and Android adapter have unit/fixture coverage, but the adapter is not yet wired to IPC or real-action acceptance; the user-facing production path remains observe-only at this checkpoint.
 
 ## Computer Runtime
 

@@ -1,8 +1,11 @@
 use chrono::Utc;
 use mobile_runtime::{
-    AndroidAvdInfo, AndroidDeviceInfo, AndroidEnvironmentDiagnostics, MobileBounds, MobileCapture,
-    MobileDeviceSession, MobileDeviceType, MobileFrame, MobileObservation, MobilePlatform,
-    MobileSessionStatus, MobileUiSnapshot, PrivacyClass, RawMobileElement, ScreenFrameBuffer,
+    AndroidAvdInfo, AndroidDeviceInfo, AndroidEnvironmentDiagnostics, MobileActionDecision,
+    MobileActionDenyReason, MobileActionReceipt, MobileActionRequest, MobileActionStatus,
+    MobileActionTarget, MobileBounds, MobileCapture, MobileDeviceSession, MobileDeviceType,
+    MobileFrame, MobileObservation, MobilePlatform, MobileSessionStatus, MobileUiSnapshot,
+    PrivacyClass, RawMobileElement, ScreenFrameBuffer, SwipeDirection, VerificationResult,
+    evaluate_action, verify_action,
 };
 use quick_xml::{Reader, events::Event};
 #[cfg(test)]
@@ -668,6 +671,21 @@ pub struct MobileHost {
     session_id: String,
     session_active: AtomicBool,
     frames: Mutex<ScreenFrameBuffer>,
+    operation_lock: Mutex<()>,
+    action_state: Mutex<MobileActionState>,
+}
+
+#[derive(Default)]
+#[allow(dead_code)] // Wired to the typed IPC command in the next M2 increment.
+struct MobileActionState {
+    latest_capture: Option<MobileCapture>,
+    executed_count: u8,
+}
+
+#[allow(dead_code)] // Wired to the typed IPC command in the next M2 increment.
+pub struct MobileActionExecution {
+    pub receipt: MobileActionReceipt,
+    pub capture: Option<MobileCapture>,
 }
 
 impl MobileHost {
@@ -677,6 +695,8 @@ impl MobileHost {
             session_id: format!("mobile_session_{}", Uuid::now_v7()),
             session_active: AtomicBool::new(false),
             frames: Mutex::new(ScreenFrameBuffer::new(5)),
+            operation_lock: Mutex::new(()),
+            action_state: Mutex::new(MobileActionState::default()),
         }
     }
 
@@ -691,6 +711,8 @@ impl MobileHost {
             session_id: format!("mobile_session_{}", Uuid::now_v7()),
             session_active: AtomicBool::new(false),
             frames: Mutex::new(ScreenFrameBuffer::new(5)),
+            operation_lock: Mutex::new(()),
+            action_state: Mutex::new(MobileActionState::default()),
         }
     }
 
@@ -701,6 +723,8 @@ impl MobileHost {
             session_id: format!("mobile_session_{}", Uuid::now_v7()),
             session_active: AtomicBool::new(false),
             frames: Mutex::new(ScreenFrameBuffer::new(5)),
+            operation_lock: Mutex::new(()),
+            action_state: Mutex::new(MobileActionState::default()),
         }
     }
 
@@ -803,6 +827,13 @@ impl MobileHost {
     }
 
     pub fn stop_session(&self) -> bool {
+        let _guard = self
+            .operation_lock
+            .lock()
+            .expect("mobile operation lock poisoned");
+        if let Ok(mut state) = self.action_state.lock() {
+            state.latest_capture = None;
+        }
         self.session_active.swap(false, Ordering::AcqRel)
     }
 
@@ -815,6 +846,18 @@ impl MobileHost {
     }
 
     pub fn observe_with_sdk(
+        &self,
+        android_sdk: Option<&str>,
+        allowed_apps: &[String],
+    ) -> Result<MobileCapture, MobileHostError> {
+        let _guard = self
+            .operation_lock
+            .lock()
+            .map_err(|_| MobileHostError::CommandFailed("mobile operation lock poisoned".into()))?;
+        self.observe_unlocked(android_sdk, allowed_apps)
+    }
+
+    fn observe_unlocked(
         &self,
         android_sdk: Option<&str>,
         allowed_apps: &[String],
@@ -874,9 +917,354 @@ impl MobileHost {
             .lock()
             .map_err(|_| MobileHostError::CommandFailed("frame buffer lock poisoned".into()))?
             .push(capture.frame.clone());
+        self.action_state
+            .lock()
+            .map_err(|_| MobileHostError::CommandFailed("action state lock poisoned".into()))?
+            .latest_capture = Some(capture.clone());
         self.session_active.store(true, Ordering::Release);
         Ok(capture)
     }
+
+    #[allow(dead_code)] // The public IPC command is added after receipt persistence.
+    pub fn execute_action(
+        &self,
+        request: MobileActionRequest,
+        android_sdk: Option<&str>,
+        allowed_apps: &[String],
+    ) -> MobileActionExecution {
+        let guard = self.operation_lock.lock();
+        if guard.is_err() {
+            return MobileActionExecution {
+                receipt: action_receipt(
+                    &request,
+                    None,
+                    MobileActionDecision::Denied(MobileActionDenyReason::InactiveSession),
+                    MobileActionStatus::Failed,
+                ),
+                capture: None,
+            };
+        }
+        let _guard = guard.expect("checked above");
+        let state = self.action_state.lock();
+        let (before, executed_count) = match state {
+            Ok(state) => (state.latest_capture.clone(), state.executed_count),
+            Err(_) => (None, 20),
+        };
+        let Some(before) = before else {
+            return MobileActionExecution {
+                receipt: action_receipt(
+                    &request,
+                    None,
+                    MobileActionDecision::Denied(MobileActionDenyReason::StaleSnapshot),
+                    MobileActionStatus::Blocked,
+                ),
+                capture: None,
+            };
+        };
+        let mut receipt = action_receipt(
+            &request,
+            Some(&before),
+            MobileActionDecision::Allowed,
+            MobileActionStatus::Blocked,
+        );
+        if !self.is_session_active() {
+            receipt.decision =
+                MobileActionDecision::Denied(MobileActionDenyReason::InactiveSession);
+            return MobileActionExecution {
+                receipt,
+                capture: None,
+            };
+        }
+        let initial = evaluate_action(
+            &request,
+            &before.session,
+            &before.snapshot,
+            allowed_apps,
+            executed_count,
+            &before.snapshot.package_name,
+            &before.snapshot.activity,
+            Utc::now(),
+        );
+        if initial != MobileActionDecision::Allowed {
+            receipt.decision = initial;
+            return MobileActionExecution {
+                receipt,
+                capture: None,
+            };
+        }
+        let diagnostics = self.environment_diagnostics(android_sdk);
+        let Some(adb) = diagnostics
+            .adb_path
+            .as_deref()
+            .map(Path::new)
+            .filter(|_| diagnostics.adb_status == "ready")
+        else {
+            receipt.status = MobileActionStatus::Failed;
+            receipt.verification = Some(VerificationResult::DeviceOffline);
+            return MobileActionExecution {
+                receipt,
+                capture: None,
+            };
+        };
+        let live = (|| -> Result<(String, String), MobileHostError> {
+            let devices = run_text(adb, &["devices"])?;
+            if !parse_online_emulators(&devices).contains(&before.session.device_id) {
+                return Err(MobileHostError::NoOnlineEmulator);
+            }
+            let focus = run_text(
+                adb,
+                &[
+                    "-s",
+                    &before.session.device_id,
+                    "shell",
+                    "dumpsys",
+                    "window",
+                ],
+            )?;
+            parse_focused_app(&focus).ok_or(MobileHostError::FocusUnavailable)
+        })();
+        let (live_package, live_activity) = match live {
+            Ok(value) => value,
+            Err(_) => {
+                receipt.status = MobileActionStatus::Failed;
+                receipt.verification = Some(VerificationResult::DeviceOffline);
+                return MobileActionExecution {
+                    receipt,
+                    capture: None,
+                };
+            }
+        };
+        let decision = evaluate_action(
+            &request,
+            &before.session,
+            &before.snapshot,
+            allowed_apps,
+            executed_count,
+            &live_package,
+            &live_activity,
+            Utc::now(),
+        );
+        if decision != MobileActionDecision::Allowed {
+            receipt.decision = decision;
+            return MobileActionExecution {
+                receipt,
+                capture: None,
+            };
+        }
+        let action = execute_adb_action(adb, &before, &request);
+        if action.is_err() {
+            receipt.status = MobileActionStatus::Failed;
+            receipt.verification = Some(VerificationResult::Interrupted);
+            return MobileActionExecution {
+                receipt,
+                capture: None,
+            };
+        }
+        if let Ok(mut state) = self.action_state.lock() {
+            state.executed_count = state.executed_count.saturating_add(1);
+        }
+        receipt.status = MobileActionStatus::Executed;
+        thread::sleep(Duration::from_millis(300));
+        match self.observe_unlocked(android_sdk, allowed_apps) {
+            Ok(after) => {
+                if after.session.device_id != before.session.device_id {
+                    if let Ok(mut state) = self.action_state.lock() {
+                        state.latest_capture = None;
+                    }
+                    receipt.status = MobileActionStatus::Failed;
+                    receipt.verification = Some(VerificationResult::UnexpectedState);
+                    receipt.completed_at = Utc::now();
+                    return MobileActionExecution {
+                        receipt,
+                        capture: None,
+                    };
+                }
+                receipt.post_package = Some(after.observation.package_name.clone());
+                receipt.post_activity = Some(after.observation.activity.clone());
+                receipt.post_frame_hash = Some(after.observation.frame_hash.clone());
+                receipt.post_ui_tree_hash = Some(after.observation.ui_tree_hash.clone());
+                receipt.verification = Some(
+                    if after.observation.verification_status != VerificationResult::Verified {
+                        after.observation.verification_status
+                    } else {
+                        verify_action(&before.observation, &after.observation)
+                    },
+                );
+                receipt.completed_at = Utc::now();
+                MobileActionExecution {
+                    receipt,
+                    capture: Some(after),
+                }
+            }
+            Err(_) => {
+                receipt.status = MobileActionStatus::Failed;
+                receipt.verification = Some(VerificationResult::Interrupted);
+                receipt.completed_at = Utc::now();
+                MobileActionExecution {
+                    receipt,
+                    capture: None,
+                }
+            }
+        }
+    }
+}
+
+#[allow(dead_code)] // Called by execute_action once typed IPC is wired.
+fn action_receipt(
+    request: &MobileActionRequest,
+    before: Option<&MobileCapture>,
+    decision: MobileActionDecision,
+    status: MobileActionStatus,
+) -> MobileActionReceipt {
+    MobileActionReceipt {
+        action_id: request.action_id.clone(),
+        session_id: request.session_id.clone(),
+        snapshot_id: request.snapshot_id.clone(),
+        target: request.target.clone(),
+        decision,
+        status,
+        requested_at: request.requested_at,
+        completed_at: Utc::now(),
+        pre_package: before.map_or(String::new(), |capture| {
+            capture.observation.package_name.clone()
+        }),
+        pre_activity: before.map_or(String::new(), |capture| {
+            capture.observation.activity.clone()
+        }),
+        pre_frame_hash: before.map_or(String::new(), |capture| {
+            capture.observation.frame_hash.clone()
+        }),
+        pre_ui_tree_hash: before.map_or(String::new(), |capture| {
+            capture.observation.ui_tree_hash.clone()
+        }),
+        post_package: None,
+        post_activity: None,
+        post_frame_hash: None,
+        post_ui_tree_hash: None,
+        verification: None,
+        text_length: request.text.as_ref().map(|text| text.len()),
+        text_sha256: request.text.as_ref().map(|text| text.sha256()),
+    }
+}
+
+#[allow(dead_code)] // Called by execute_action once typed IPC is wired.
+fn execute_adb_action(
+    adb: &Path,
+    before: &MobileCapture,
+    request: &MobileActionRequest,
+) -> Result<(), MobileHostError> {
+    let device_id = &before.session.device_id;
+    let coordinates = |element_ref: &str| {
+        before
+            .snapshot
+            .elements
+            .iter()
+            .find(|element| element.element_ref == element_ref)
+            .map(|element| {
+                (
+                    element.bounds.x + element.bounds.width / 2,
+                    element.bounds.y + element.bounds.height / 2,
+                )
+            })
+            .ok_or(MobileHostError::InvalidUiTree(
+                "action target missing".into(),
+            ))
+    };
+    match &request.target {
+        MobileActionTarget::Tap { element_ref } => {
+            let (x, y) = coordinates(element_ref)?;
+            run_text(
+                adb,
+                &[
+                    "-s",
+                    device_id,
+                    "shell",
+                    "input",
+                    "tap",
+                    &x.to_string(),
+                    &y.to_string(),
+                ],
+            )?;
+        }
+        MobileActionTarget::Swipe { direction } => {
+            let width = before.snapshot.screen_width;
+            let height = before.snapshot.screen_height;
+            let (x1, y1, x2, y2) = match direction {
+                SwipeDirection::Up => (width / 2, height * 7 / 10, width / 2, height * 3 / 10),
+                SwipeDirection::Down => (width / 2, height * 3 / 10, width / 2, height * 7 / 10),
+                SwipeDirection::Left => (width * 7 / 10, height / 2, width * 3 / 10, height / 2),
+                SwipeDirection::Right => (width * 3 / 10, height / 2, width * 7 / 10, height / 2),
+            };
+            run_text(
+                adb,
+                &[
+                    "-s",
+                    device_id,
+                    "shell",
+                    "input",
+                    "swipe",
+                    &x1.to_string(),
+                    &y1.to_string(),
+                    &x2.to_string(),
+                    &y2.to_string(),
+                    "350",
+                ],
+            )?;
+        }
+        MobileActionTarget::Type { .. } => {
+            let value = request
+                .text
+                .as_ref()
+                .ok_or(MobileHostError::InvalidUiTree("type text missing".into()))?;
+            let encoded = value.as_str().replace(' ', "%s");
+            run_text(adb, &["-s", device_id, "shell", "input", "text", &encoded])?;
+        }
+        MobileActionTarget::Back => {
+            run_text(adb, &["-s", device_id, "shell", "input", "keyevent", "4"])?;
+        }
+        MobileActionTarget::Home => {
+            run_text(adb, &["-s", device_id, "shell", "input", "keyevent", "3"])?;
+        }
+        MobileActionTarget::OpenApp { package_name } => {
+            let resolution = run_text(
+                adb,
+                &[
+                    "-s",
+                    device_id,
+                    "shell",
+                    "cmd",
+                    "package",
+                    "resolve-activity",
+                    "--brief",
+                    "-a",
+                    "android.intent.action.MAIN",
+                    "-c",
+                    "android.intent.category.LAUNCHER",
+                    "-p",
+                    package_name,
+                ],
+            )?;
+            let component = resolution
+                .lines()
+                .map(str::trim)
+                .find(|line| line.starts_with(&format!("{package_name}/")))
+                .ok_or(MobileHostError::InvalidUiTree(
+                    "launcher activity not resolved".into(),
+                ))?;
+            if !component.bytes().all(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'$' | b'/')
+            }) {
+                return Err(MobileHostError::InvalidUiTree(
+                    "invalid launcher component".into(),
+                ));
+            }
+            run_text(
+                adb,
+                &["-s", device_id, "shell", "am", "start", "-n", component],
+            )?;
+        }
+    }
+    Ok(())
 }
 
 fn bind_capture_to_session(mut capture: MobileCapture, session_id: &str) -> MobileCapture {
@@ -1089,6 +1477,208 @@ mod tests {
     const FOCUS: &str =
         "mCurrentFocus=Window{123 u0 com.example.news/com.example.news.MainActivity}";
     const XML: &str = r#"<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node index="0" text="BTC ETF inflows" resource-id="com.example.news:id/title" class="android.widget.TextView" package="com.example.news" content-desc="headline" clickable="false" enabled="true" bounds="[10,20][900,100]"/><node index="1" text="secret" password="true" resource-id="com.example.news:id/password" class="android.widget.EditText" package="com.example.news" clickable="true" enabled="true" bounds="[10,120][900,200]"/></hierarchy>"#;
+
+    fn mobile_action_fixture() -> (TempDir, PathBuf, PathBuf, PathBuf, MobileHost) {
+        let fixture = TempDir::new().unwrap();
+        let sdk = fixture.path().join("sdk");
+        let focus = fixture.path().join("focus.txt");
+        let input_log = fixture.path().join("input.log");
+        let fail_post = fixture.path().join("fail-post");
+        let other_first = fixture.path().join("other-first");
+        fs::write(&focus, FOCUS).unwrap();
+        let safe_xml = r#"<hierarchy><node text="Network" class="android.widget.Button" resource-id="com.example.news:id/network" clickable="true" enabled="true" bounds="[10,20][900,100]"/><node text="Search" class="android.widget.EditText" resource-id="com.example.news:id/search" clickable="true" enabled="true" focused="true" bounds="[10,120][900,200]"/></hierarchy>"#;
+        executable(
+            &sdk.join("platform-tools/adb"),
+            &format!(
+                r##"#!/bin/sh
+if [ "$1" = "version" ]; then echo adb-fixture; exit 0; fi
+if [ "$1" = "devices" ]; then
+  if [ -f '{}' ]; then printf 'List of devices attached\nemulator-5556 device\nemulator-5554 device\n';
+  else printf 'List of devices attached\nemulator-5554 device\n'; fi
+  exit 0
+fi
+case "$*" in
+  *ro.build.version.release*) echo 16 ;;
+  *"wm size"*) echo 'Physical size: 1080x2400' ;;
+  *"dumpsys window"*) /bin/cat '{}' ;;
+  *"uiautomator dump"*) if [ -f '{}' ]; then exit 1; fi; echo dumped ;;
+  *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
+  *"screencap -p"*) printf PNG ;;
+  *"cmd package resolve-activity"*) echo 'com.example.news/.MainActivity' ;;
+  *"shell am start"*) printf '%s\n' "$*" >> '{}'; exit 0 ;;
+  *"shell input text"*) printf 'shell input text [REDACTED]\n' >> '{}'; exit 0 ;;
+  *"shell input"*) printf '%s\n' "$*" >> '{}'; exit 0 ;;
+  *) exit 1 ;;
+esac
+"##,
+                other_first.display(),
+                focus.display(),
+                fail_post.display(),
+                safe_xml,
+                input_log.display(),
+                input_log.display(),
+                input_log.display()
+            ),
+        );
+        let host = MobileHost::new(None);
+        (fixture, sdk, focus, input_log, host)
+    }
+
+    fn mobile_action_request(capture: &MobileCapture) -> mobile_runtime::MobileActionRequest {
+        mobile_runtime::MobileActionRequest {
+            action_id: format!("action_{}", Uuid::now_v7()),
+            session_id: capture.session.session_id.clone(),
+            snapshot_id: capture.snapshot.snapshot_id.clone(),
+            expected_package: capture.snapshot.package_name.clone(),
+            requested_at: Utc::now(),
+            target: mobile_runtime::MobileActionTarget::Tap {
+                element_ref: "@e1".into(),
+            },
+            text: None,
+        }
+    }
+
+    #[test]
+    fn mobile_action_stale_ref_and_changed_foreground_do_not_emit_input() {
+        let (_fixture, sdk, focus, input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let capture = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        let mut request = mobile_action_request(&capture);
+        request.snapshot_id = "stale".into();
+        let stale = host.execute_action(request, sdk.to_str(), &allowed);
+        assert_eq!(
+            stale.receipt.status,
+            mobile_runtime::MobileActionStatus::Blocked
+        );
+        assert!(!input_log.exists());
+        fs::write(
+            &focus,
+            "mCurrentFocus=Window{123 u0 com.example.other/.Main}",
+        )
+        .unwrap();
+        let changed = host.execute_action(mobile_action_request(&capture), sdk.to_str(), &allowed);
+        assert_eq!(
+            changed.receipt.status,
+            mobile_runtime::MobileActionStatus::Blocked
+        );
+        assert!(!input_log.exists());
+    }
+
+    #[test]
+    fn mobile_action_tap_is_bounded_and_no_change_is_not_verified() {
+        let (_fixture, sdk, _focus, input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let capture = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        let result = host.execute_action(mobile_action_request(&capture), sdk.to_str(), &allowed);
+        assert_eq!(
+            result.receipt.status,
+            mobile_runtime::MobileActionStatus::Executed
+        );
+        assert_eq!(
+            result.receipt.verification,
+            Some(mobile_runtime::VerificationResult::NoChange)
+        );
+        assert!(result.capture.is_some());
+        assert!(
+            fs::read_to_string(input_log)
+                .unwrap()
+                .contains("shell input tap 455 60")
+        );
+    }
+
+    #[test]
+    fn mobile_action_failed_post_capture_never_verifies() {
+        let (fixture, sdk, _focus, input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let capture = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        fs::write(fixture.path().join("fail-post"), "1").unwrap();
+        let result = host.execute_action(mobile_action_request(&capture), sdk.to_str(), &allowed);
+        assert_eq!(
+            result.receipt.status,
+            mobile_runtime::MobileActionStatus::Failed
+        );
+        assert_ne!(
+            result.receipt.verification,
+            Some(mobile_runtime::VerificationResult::Verified)
+        );
+        assert!(result.capture.is_none());
+        assert!(input_log.exists());
+    }
+
+    #[test]
+    fn mobile_action_post_capture_on_different_emulator_is_unexpected() {
+        let (fixture, sdk, _focus, _input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let capture = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        fs::write(fixture.path().join("other-first"), "1").unwrap();
+        let result = host.execute_action(mobile_action_request(&capture), sdk.to_str(), &allowed);
+        assert_eq!(
+            result.receipt.verification,
+            Some(VerificationResult::UnexpectedState)
+        );
+    }
+
+    #[test]
+    fn mobile_action_all_six_structured_commands_are_fixed_and_bounded() {
+        let (_fixture, sdk, _focus, input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let mut capture = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        let targets = [
+            MobileActionTarget::Tap {
+                element_ref: "@e1".into(),
+            },
+            MobileActionTarget::Swipe {
+                direction: SwipeDirection::Up,
+            },
+            MobileActionTarget::Type {
+                element_ref: "@e2".into(),
+            },
+            MobileActionTarget::Back,
+            MobileActionTarget::Home,
+            MobileActionTarget::OpenApp {
+                package_name: "com.example.news".into(),
+            },
+        ];
+        for target in targets {
+            let mut request = mobile_action_request(&capture);
+            if matches!(target, MobileActionTarget::Type { .. }) {
+                request.text = Some(mobile_runtime::SensitiveText::new("wifi".into()));
+            }
+            request.target = target;
+            let result = host.execute_action(request, sdk.to_str(), &allowed);
+            assert_eq!(result.receipt.status, MobileActionStatus::Executed);
+            assert!(
+                !serde_json::to_string(&result.receipt)
+                    .unwrap()
+                    .contains("wifi")
+            );
+            capture = result.capture.expect("fresh production capture");
+        }
+        let commands = fs::read_to_string(input_log).unwrap();
+        assert_eq!(commands.lines().count(), 6);
+        assert!(commands.contains("shell input tap 455 60"));
+        assert!(commands.contains("shell input swipe 540 1680 540 720 350"));
+        assert!(commands.contains("shell input text [REDACTED]"));
+        assert!(!commands.contains("wifi"));
+        assert!(commands.contains("shell input keyevent 4"));
+        assert!(commands.contains("shell input keyevent 3"));
+        assert!(commands.contains("shell am start -n com.example.news/.MainActivity"));
+    }
+
+    #[test]
+    fn mobile_action_twenty_action_budget_blocks_before_adb_input() {
+        let (_fixture, sdk, _focus, input_log, host) = mobile_action_fixture();
+        let allowed = vec!["com.example.news".to_owned()];
+        let capture = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        host.action_state.lock().unwrap().executed_count = 20;
+        let result = host.execute_action(mobile_action_request(&capture), sdk.to_str(), &allowed);
+        assert_eq!(result.receipt.status, MobileActionStatus::Blocked);
+        assert_eq!(
+            result.receipt.decision,
+            MobileActionDecision::Denied(MobileActionDenyReason::BudgetExceeded)
+        );
+        assert!(!input_log.exists());
+    }
 
     #[test]
     fn adb_parsers_select_only_online_emulators() {

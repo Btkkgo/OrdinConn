@@ -294,6 +294,63 @@ export interface MobileUiSnapshotDto {
   screenHeight: number;
   capturedAt: string;
   elements: MobileElementDto[];
+  redactions?: string[];
+  sensitiveState?: MobileVerificationResult | null;
+}
+
+export type MobileSwipeDirectionDto = "up" | "down" | "left" | "right";
+export type MobileActionTargetDto =
+  | { kind: "tap"; elementRef: string }
+  | { kind: "swipe"; direction: MobileSwipeDirectionDto }
+  | { kind: "type"; elementRef: string }
+  | { kind: "back" }
+  | { kind: "home" }
+  | { kind: "open_app"; packageName: string };
+
+export interface MobileActionInputDto {
+  sessionId: string;
+  snapshotId: string;
+  expectedPackage: string;
+  target: MobileActionTargetDto;
+  text?: string;
+}
+
+export type MobileActionDenyReasonDto =
+  | "INACTIVE_SESSION" | "PHYSICAL_DEVICE" | "BUDGET_EXCEEDED" | "PACKAGE_NOT_ALLOWED"
+  | "FOREGROUND_CHANGED" | "STALE_SNAPSHOT" | "SENSITIVE_SCREEN" | "TARGET_MISSING"
+  | "SENSITIVE_TARGET" | "TARGET_DISABLED" | "TARGET_NOT_CLICKABLE" | "TARGET_NOT_EDITABLE"
+  | "TARGET_NOT_FOCUSED" | "INVALID_BOUNDS" | "UNSAFE_TEXT" | "INVALID_ACTION";
+
+export type MobileActionDecisionDto =
+  | { outcome: "allowed" }
+  | { outcome: "denied"; reason: MobileActionDenyReasonDto };
+
+export interface MobileActionReceiptDto {
+  actionId: string;
+  sessionId: string;
+  snapshotId: string;
+  target: MobileActionTargetDto;
+  decision: MobileActionDecisionDto;
+  status: "blocked" | "executed" | "failed";
+  requestedAt: string;
+  completedAt: string;
+  prePackage: string;
+  preActivity: string;
+  preFrameHash: string;
+  preUiTreeHash: string;
+  postPackage?: string | null;
+  postActivity?: string | null;
+  postFrameHash?: string | null;
+  postUiTreeHash?: string | null;
+  verification?: MobileVerificationResult | null;
+  textLength?: number | null;
+  textSha256?: string | null;
+  commandSent: boolean;
+}
+
+export interface MobileActionResultDto {
+  receipt: MobileActionReceiptDto;
+  workspace: MobileWorkspaceDto;
 }
 
 export interface MobileFrameDto {
@@ -431,6 +488,7 @@ export interface MobileWorkspaceDto {
   session?: MobileDeviceSessionDto;
   uiSnapshot?: MobileUiSnapshotDto;
   frame?: MobileFrameDto;
+  latestActionReceipt?: MobileActionReceiptDto | null;
   observations: MobileObservationDto[];
   feed: IntelligenceItemDto[];
   warehouse: WarehouseEntryDto[];

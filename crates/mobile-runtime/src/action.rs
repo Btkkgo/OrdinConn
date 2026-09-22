@@ -45,7 +45,12 @@ pub enum SwipeDirection {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(
+    tag = "kind",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
 pub enum MobileActionTarget {
     Tap { element_ref: String },
     Swipe { direction: SwipeDirection },
@@ -740,6 +745,36 @@ mod tests {
                 snapshot.captured_at
             ),
             MobileActionDecision::Denied(MobileActionDenyReason::InvalidBounds)
+        );
+    }
+
+    #[test]
+    fn mobile_action_target_json_uses_typed_camel_case_fields() {
+        let target = MobileActionTarget::Tap {
+            element_ref: "@e1".into(),
+        };
+        assert_eq!(
+            serde_json::to_value(&target).unwrap(),
+            serde_json::json!({"kind":"tap","elementRef":"@e1"})
+        );
+        let opened = MobileActionTarget::OpenApp {
+            package_name: "com.android.settings".into(),
+        };
+        assert_eq!(
+            serde_json::to_value(&opened).unwrap(),
+            serde_json::json!({"kind":"open_app","packageName":"com.android.settings"})
+        );
+        assert!(
+            serde_json::from_value::<MobileActionTarget>(
+                serde_json::json!({"kind":"tap","elementRef":"@e1","x":100,"y":200})
+            )
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<MobileActionTarget>(
+                serde_json::json!({"kind":"shell","command":"input tap 1 2"})
+            )
+            .is_err()
         );
     }
 }

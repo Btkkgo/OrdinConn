@@ -19,7 +19,7 @@ const signals = [{ id: "signal-1", title: "BTC linked signal", asset: "BTC" }] a
 describe("mobile home workspace", () => {
   it("renders feed, live mobile state, and related signals as linked columns", () => {
     const html = renderToStaticMarkup(
-      <MobileHomePage workspace={workspace} signals={signals} selectedItemId="mobile-1" onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onOpenDetail={() => undefined} t={createTranslator("en")} />,
+      <MobileHomePage workspace={workspace} signals={signals} selectedItemId="mobile-1" onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onAction={async () => undefined} onOpenDetail={() => undefined} t={createTranslator("en")} />,
     );
     expect(html).toContain("aria-label=\"Intelligence feed\"");
     expect(html).toContain("aria-label=\"Mobile live view\"");
@@ -27,5 +27,40 @@ describe("mobile home workspace", () => {
     expect(html).toContain("ADB unavailable");
     expect(html).toContain("BTC linked signal");
     expect(html).toContain("Stop session");
+  });
+
+  it("renders only manual M2 controls and a sanitized receipt summary", () => {
+    const active = {
+      ...workspace,
+      runtimeStatus: "observing" as const,
+      adbStatus: "ready" as const,
+      session: {
+        sessionId: "session-1", deviceId: "emulator-5554", platform: "android" as const,
+        deviceType: "emulator" as const, osVersion: "16", screenWidth: 1080, screenHeight: 2400,
+        connectedAt: new Date().toISOString(), currentApp: "com.android.settings", currentActivity: ".Settings",
+        status: "connected" as const, lastObservationAt: new Date().toISOString(),
+      },
+      uiSnapshot: {
+        snapshotId: "snapshot-1", sessionId: "session-1", packageName: "com.android.settings", activity: ".Settings",
+        screenWidth: 1080, screenHeight: 2400, capturedAt: new Date().toISOString(), elements: [], redactions: [],
+      },
+      settings: { ...workspace.settings, allowedApps: ["com.android.settings"] },
+      latestActionReceipt: {
+        actionId: "action-1", sessionId: "session-1", snapshotId: "snapshot-1", target: { kind: "back" as const },
+        decision: { outcome: "allowed" as const }, status: "executed" as const,
+        requestedAt: new Date().toISOString(), completedAt: new Date().toISOString(), prePackage: "com.android.settings",
+        preActivity: ".Settings", preFrameHash: "sha256:before", preUiTreeHash: "sha256:before",
+        postPackage: "com.android.settings", postActivity: ".Settings", postFrameHash: "sha256:after",
+        postUiTreeHash: "sha256:after", verification: "VERIFIED" as const, commandSent: true,
+      },
+    } satisfies MobileWorkspaceDto;
+    const html = renderToStaticMarkup(
+      <MobileHomePage workspace={active} signals={signals} onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onOpenDetail={() => undefined} onAction={async () => undefined} t={createTranslator("en")} />,
+    );
+    expect(html).toContain("Tap selected");
+    expect(html).toContain("Swipe up");
+    expect(html).toContain("Open allowed app");
+    expect(html).toContain("Last action");
+    expect(html).not.toContain("Auto navigate");
   });
 });

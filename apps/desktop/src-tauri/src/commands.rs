@@ -1,5 +1,9 @@
 use agent_runtime::PageContext;
-use mobile_runtime::{AndroidEnvironmentDiagnostics, MobileCapture};
+use chrono::Utc;
+use mobile_runtime::{
+    AndroidEnvironmentDiagnostics, MobileActionReceipt, MobileActionRequest, MobileActionTarget,
+    MobileCapture, SensitiveText,
+};
 use model_gateway::{
     ModelProviderAdapter, OpenAiCompatibleChatAdapter, ProviderCapabilities, UnifiedModelRequest,
 };
@@ -81,6 +85,84 @@ pub async fn observe_mobile_device(
     .map_err(IpcError::internal)?
     .map_err(IpcError::internal)?;
     record_mobile_capture_workspace(state.runtime.as_ref(), environment, capture).await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MobileActionInput {
+    session_id: String,
+    snapshot_id: String,
+    expected_package: String,
+    target: MobileActionTarget,
+    text: Option<SensitiveText>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MobileActionResult {
+    receipt: MobileActionReceipt,
+    workspace: MobileWorkspaceData,
+}
+
+#[tauri::command]
+pub async fn execute_mobile_action(
+    input: MobileActionInput,
+    state: State<'_, AppState>,
+) -> Result<MobileActionResult, IpcError> {
+    let current = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    let configured_sdk = current.settings.android_sdk.clone();
+    let allowed_apps = current.settings.allowed_apps.clone();
+    let mobile_host = Arc::clone(&state.mobile_host);
+    let request = MobileActionRequest {
+        action_id: format!("mobile_action_{}", Uuid::now_v7()),
+        session_id: input.session_id,
+        snapshot_id: input.snapshot_id,
+        expected_package: input.expected_package,
+        requested_at: Utc::now(),
+        target: input.target,
+        text: input.text,
+    };
+    let (execution, environment, current_capture) =
+        tauri::async_runtime::spawn_blocking(move || {
+            let execution =
+                mobile_host.execute_action(request, configured_sdk.as_deref(), &allowed_apps);
+            let environment = mobile_host.environment_diagnostics(configured_sdk.as_deref());
+            let current_capture = mobile_host.current_capture();
+            (execution, environment, current_capture)
+        })
+        .await
+        .map_err(IpcError::internal)?;
+    state
+        .runtime
+        .record_mobile_action(&execution.receipt, execution.capture.as_ref())
+        .await
+        .map_err(IpcError::internal)?;
+    let mut workspace = state
+        .runtime
+        .mobile_workspace_data()
+        .await
+        .map_err(IpcError::internal)?;
+    workspace.runtime_status = if state.mobile_host.is_session_active() {
+        "observing"
+    } else {
+        "disconnected"
+    }
+    .into();
+    workspace.adb_status = environment.adb_status.clone();
+    workspace.android_environment = environment;
+    if let Some(capture) = current_capture {
+        workspace.session = Some(capture.session);
+        workspace.ui_snapshot = Some(capture.snapshot);
+        workspace.frame = Some(capture.frame);
+    }
+    Ok(MobileActionResult {
+        receipt: execution.receipt,
+        workspace,
+    })
 }
 
 pub(crate) async fn record_mobile_capture_workspace(
@@ -419,4 +501,24 @@ fn validate_provider(input: &ProviderInput) -> Result<(), IpcError> {
         return Err(IpcError { code: "invalid_provider".into(), message: "Provider name, HTTP(S) base URL, model, and chatCompletions capability are required".into(), retryable: false });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod mobile_action_ipc_tests {
+    use super::MobileActionInput;
+
+    #[test]
+    fn mobile_action_ipc_rejects_raw_coordinates_commands_and_extra_fields() {
+        let safe = serde_json::json!({
+            "sessionId": "session-1", "snapshotId": "snapshot-1", "expectedPackage": "com.android.settings",
+            "target": { "kind": "tap", "elementRef": "@e1" }
+        });
+        assert!(serde_json::from_value::<MobileActionInput>(safe.clone()).is_ok());
+        let mut with_coordinates = safe.clone();
+        with_coordinates["target"]["x"] = serde_json::json!(10);
+        assert!(serde_json::from_value::<MobileActionInput>(with_coordinates).is_err());
+        let mut with_shell = safe;
+        with_shell["command"] = serde_json::json!("shell input tap 1 2");
+        assert!(serde_json::from_value::<MobileActionInput>(with_shell).is_err());
+    }
 }

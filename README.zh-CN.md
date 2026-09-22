@@ -57,7 +57,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 
 M0/M1 已实现设备会话契约、受限 Screen Frame、语义 UI Snapshot、作用域化 Element Ref、敏感节点脱敏策略、类型化 IPC 投影、持久化和 `MobileObservation`。
 
-真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 现已获所有者授权并正在实施；动作领域策略和 Android 适配器已有单元/夹具覆盖，但适配器尚未接入 IPC，也未通过真实动作验收。在此检查点，用户可见的生产路径仍保持 observe-only。
+真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 现已获所有者授权并正在实施；动作领域策略、Android 适配器、回执持久化、类型化 IPC 与人工 UI 已有单元/夹具覆盖。M2 真实动作 Gate 尚未通过，不声称里程碑完成。
 
 ## Computer Runtime
 

@@ -6,7 +6,7 @@ M1 is observe-only. Its tool capability surface advertises observation, frames, 
 
 M1.5 adds environment discovery, existing-AVD listing/start, diagnostics, and a real-runtime acceptance gate. These are host lifecycle capabilities, not Agent navigation actions.
 
-M2 is now owner-authorized under [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7). Its platform-neutral action request, policy decision, sanitized receipt, and verification contracts are under implementation. Every action must reference a current snapshot and every accepted device action must be followed by a new observation. Only `VERIFIED` may advance a task by default. At this checkpoint, the production device path is still observe-only.
+M2 is now owner-authorized under [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7). Its platform-neutral action request, policy decision, sanitized receipt, verification contracts, typed IPC, and manual controls are implemented on the issue branch and fixture-tested. Every action must reference a current snapshot and every accepted device action must be followed by a new observation. Only `VERIFIED` may advance a task by default. Real-device acceptance is still pending, and no autonomous Agent navigation is available.
 
 Reserved verification results are:
 

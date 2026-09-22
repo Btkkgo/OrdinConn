@@ -676,13 +676,11 @@ pub struct MobileHost {
 }
 
 #[derive(Default)]
-#[allow(dead_code)] // Wired to the typed IPC command in the next M2 increment.
 struct MobileActionState {
     latest_capture: Option<MobileCapture>,
     executed_count: u8,
 }
 
-#[allow(dead_code)] // Wired to the typed IPC command in the next M2 increment.
 pub struct MobileActionExecution {
     pub receipt: MobileActionReceipt,
     pub capture: Option<MobileCapture>,
@@ -845,6 +843,10 @@ impl MobileHost {
         self.session_active.load(Ordering::SeqCst)
     }
 
+    pub fn current_capture(&self) -> Option<MobileCapture> {
+        self.action_state.lock().ok()?.latest_capture.clone()
+    }
+
     pub fn observe_with_sdk(
         &self,
         android_sdk: Option<&str>,
@@ -925,7 +927,6 @@ impl MobileHost {
         Ok(capture)
     }
 
-    #[allow(dead_code)] // The public IPC command is added after receipt persistence.
     pub fn execute_action(
         &self,
         request: MobileActionRequest,
@@ -1118,7 +1119,6 @@ impl MobileHost {
     }
 }
 
-#[allow(dead_code)] // Called by execute_action once typed IPC is wired.
 fn action_receipt(
     request: &MobileActionRequest,
     before: Option<&MobileCapture>,
@@ -1194,7 +1194,6 @@ fn redact_typed_post_capture(capture: &mut MobileCapture, typed_value: &str) {
     );
 }
 
-#[allow(dead_code)] // Called by execute_action once typed IPC is wired.
 fn execute_adb_action(
     adb: &Path,
     before: &MobileCapture,

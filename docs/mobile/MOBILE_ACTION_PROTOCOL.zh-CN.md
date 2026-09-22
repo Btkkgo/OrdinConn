@@ -6,7 +6,7 @@ M1 仅观察。其 Tool Capability Surface 提供 Observation、Frame、UI Tree 
 
 M1.5 增加 Environment Discovery、Existing-AVD Listing/Start、Diagnostic 与 Real-runtime Acceptance Gate。它们属于 Host Lifecycle Capability，不是 Agent Navigation Action。
 
-所有者现已通过 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 授权 M2。平台无关的动作请求、策略决定、脱敏回执和验证契约正在实施。每个 Action 必须引用当前 Snapshot，每个已接受 Device Action 后必须产生新 Observation。默认只有 `VERIFIED` 可以推进 Task。在此检查点，生产设备路径仍仅观察。
+所有者现已通过 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 授权 M2。平台无关的动作请求、策略决定、脱敏回执、验证契约、类型化 IPC 与人工控件已在 Issue 分支实现并通过夹具测试。每个 Action 必须引用当前 Snapshot，每个已接受 Device Action 后必须产生新 Observation。默认只有 `VERIFIED` 可以推进 Task。真实设备验收仍待执行，也没有 Agent 自动导航。
 
 保留的 Verification Result：
 

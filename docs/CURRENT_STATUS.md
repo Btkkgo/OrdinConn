@@ -59,7 +59,7 @@ The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.o
 ## Partial
 
 - Computer Runtime interfaces and permission concepts exist, but broad production computer operation is not implemented.
-- M2 platform-neutral action contracts and fail-closed policy have 7/7 focused unit tests; the Android adapter has 7/7 fake-ADB tests, including post-Type plaintext redaction. SQLite receipt/audit persistence has 2/2 focused tests, including atomic rollback on duplicate action ID. The adapter is not yet wired to IPC; real M2 execution, typed IPC/UI, and full acceptance are not verified.
+- M2 platform-neutral action contracts and fail-closed policy have 8/8 focused unit tests; the Android adapter has 7/7 fake-ADB tests, including post-Type plaintext redaction. SQLite receipt/audit persistence has 2/2 focused tests, including atomic rollback on duplicate action ID. Typed IPC has a contract rejection test; manual React controls have render and unsafe-state tests. This is fixture coverage, not a passed real M2 gate.
 
 ## Blocked
 

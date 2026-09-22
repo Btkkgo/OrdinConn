@@ -8,6 +8,8 @@ import type {
   ExecutionRecordDto,
   ModelProviderDto,
   MobileResearchBudgetDto,
+  MobileActionInputDto,
+  MobileActionResultDto,
   MobileRuntimeSettingsDto,
   MobileWorkspaceDto,
   ProviderCapabilitiesDto,
@@ -60,6 +62,7 @@ export const runtimeClient = {
     invoke<ConnectionTestResult>("test_model_provider", { input }),
   getMobileWorkspace: () => invoke<MobileWorkspaceDto>("get_mobile_workspace"),
   observeMobileDevice: () => invoke<MobileWorkspaceDto>("observe_mobile_device"),
+  executeMobileAction: (input: MobileActionInputDto) => invoke<MobileActionResultDto>("execute_mobile_action", { input }),
   stopMobileSession: () => invoke<MobileWorkspaceDto>("stop_mobile_session"),
   startMobileAvd: (name: string) => invoke<MobileWorkspaceDto>("start_mobile_avd", { name }),
   setWarehouseEntry: (itemId: string, favorite: boolean, saved: boolean, tags: string[]) =>

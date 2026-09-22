@@ -48,7 +48,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 - Mobile 阶段：M1.5 真实环境验收完成
 - M1.5 Gate：**通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
-- M2：**尚未开始**
+- M2：**进行中 / 尚未验证**（[Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7)）
 - 真实资金执行：未实现，V0.1 仅支持 Paper Execution
 
 真实 Android Gate 已在 Android 16 ARM64 Emulator 上通过环境、Frame、UI Tree、Snapshot Parse、Element Refs、`MobileObservation`、Workspace Projection 和 Session Shutdown。另一次打包桌面 Smoke 真实执行了 Rust → Tauri Command/Event → React 链路，覆盖状态、白名单错误、Session Start、Observation 和 Stop。独立的真实密码节点测试也确认敏感内容不会进入序列化 Capture。详细边界见[当前状态](docs/CURRENT_STATUS.zh-CN.md)。
@@ -57,7 +57,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 
 M0/M1 已实现设备会话契约、受限 Screen Frame、语义 UI Snapshot、作用域化 Element Ref、敏感节点脱敏策略、类型化 IPC 投影、持久化和 `MobileObservation`。
 
-真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 仍未获授权，Mobile 继续保持 observe-only。
+真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 现已获所有者授权并正在实施；动作领域策略已有单元测试，但导航适配器和真实动作验收尚未验证。在此检查点，生产设备路径仍保持 observe-only。
 
 ## Computer Runtime
 
@@ -112,7 +112,7 @@ GitHub 是 OrdinConn 唯一的公开工程事实来源。Issue 定义正式工�
 
 ## 路线图
 
-所有阶段必须通过真实 Gate 后才能前进。M1.5 已在真实 Emulator 上通过；M2 仍未开始并等待单独授权，之后依次是 M3 的生产级 App Skills、M4 的 Evidence 晋升，以及 M5 的物理 Android 设备。详见[公开路线图](docs/roadmap/README.zh-CN.md)（[English](docs/roadmap/README.md)）。
+所有阶段必须通过真实 Gate 后才能前进。M1.5 已在真实 Emulator 上通过；M2 现已获所有者授权并进入实施，但尚未验证。M3 的生产级 App Skills、M4 的 Evidence 晋升及 M5 的物理 Android 设备继续不在本轮范围。详见[公开路线图](docs/roadmap/README.zh-CN.md)（[English](docs/roadmap/README.md)）。
 
 ## 贡献
 

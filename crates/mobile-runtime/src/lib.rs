@@ -6,6 +6,9 @@ use sha2::{Digest, Sha256};
 use std::collections::{HashSet, VecDeque};
 use uuid::Uuid;
 
+pub mod action;
+pub use action::*;
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidDeviceInfo {

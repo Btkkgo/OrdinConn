@@ -6,7 +6,7 @@ Roadmap entries are directions, not completion claims.
 
 ## Current gate
 
-M1.5 passed against the dedicated `OrdinConn_M1_5` Android 16 ARM64 AVD. The production capture gate and the separate packaged-desktop Rust → Tauri → React acceptance both passed. M2 remains **NOT STARTED** and requires a separate explicit instruction.
+M1.5 passed against the dedicated `OrdinConn_M1_5` Android 16 ARM64 AVD. The production capture gate and the separate packaged-desktop Rust → Tauri → React acceptance both passed. The owner has now authorized M2; it is **IN PROGRESS / NOT VERIFIED** under [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7).
 
 The completed gate is recorded in [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1). Intermittent process-fixture concurrency timeouts remain tracked separately in [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 

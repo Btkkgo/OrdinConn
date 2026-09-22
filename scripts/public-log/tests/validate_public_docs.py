@@ -80,13 +80,13 @@ for heading in (
     "## Next",
 ):
     require(heading in stage, f"CURRENT_STATUS missing {heading}")
-require("- Gate: **M1.5 PASS**" in stage and "- Next phase: **M2 NOT STARTED**" in stage, "M1.5 gate status is unclear")
+require("- Gate: **M1.5 PASS**" in stage and "- Current phase: **M2 IN PROGRESS / NOT VERIFIED**" in stage, "M1.5/M2 gate status is unclear")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage, "M1.5 acceptance total is unclear")
 require("125 Rust tests" in stage and "31 TypeScript tests" in stage, "verified counts missing")
 require("136 tests per run" in stage and "Issue #4" in stage, "Issue #4 verification missing")
 
 stage_zh = (ROOT / "docs" / "CURRENT_STATUS.zh-CN.md").read_text(encoding="utf-8")
-require("- Gate：**M1.5 通过**" in stage_zh and "- 下一阶段：**M2 尚未开始**" in stage_zh, "Chinese M1.5 gate status is unclear")
+require("- Gate：**M1.5 通过**" in stage_zh and "- 当前阶段：**M2 进行中 / 尚未验证**" in stage_zh, "Chinese M1.5/M2 gate status is unclear")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage_zh, "Chinese M1.5 acceptance total is unclear")
 require("125 个测试" in stage_zh and "31 个 TypeScript 测试" in stage_zh, "Chinese verified counts missing")
 require("136 项测试" in stage_zh and "Issue #4" in stage_zh, "Chinese Issue #4 verification missing")

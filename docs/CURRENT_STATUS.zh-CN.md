@@ -12,7 +12,7 @@
 - Gate：**M1.5 通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - Runtime Reliability 后续：**Issue #4 CLOSED / VERIFIED**
-- 下一阶段：**M2 尚未开始**
+- 当前阶段：**M2 进行中 / 尚未验证**（[Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7)）
 
 本文严格区分已实现、已验证、部分完成、受阻、已设计、已计划和尚未开始。设计文档不能替代运行证据。
 
@@ -46,13 +46,14 @@ M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel 
 
 Issue #4 Reliability 分支上，改动前十次 Default-parallel Desktop 运行的第一次再次由同样四个测试造成 24/28，随后九次热态运行通过。受控四夹具冷启动回归在原一秒成功预算下失败；将有界的测试专用成功预算与保持不变的 30/50ms 超时检查分开后通过。随后 Default-parallel Desktop 20/20 次通过（每次 29/29）、完整 Workspace 10/10 次通过（每次 136 项测试），八线程 Desktop 29/29 通过。真实 Android Smoke 首次正确拒绝白名单外的冷启动 Launcher；在专用 AVD 上打开 Settings 后，原样 Smoke 十项全部通过。生产 Deadline 和 Runtime Code 均未改动。Rust Formatting、禁止 Warning 的 Clippy、31 个 TypeScript 测试、Typecheck、Rust/Vite Build 与 Tauri Bundle 均通过。
 
-PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完整 Workspace 重跑及隔离公开历史安全门通过。Issue #4 作为 Verified 关闭。有意保留的仅本地隐私备份不属于公开 `main` 历史。
+PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完整 Workspace 重跑及隔离公开历史安全门通过。Issue #4 作为 Verified 关闭。此前保留的仅本地隐私备份已在 M2 开工前依所有者明确授权删除；本地全引用安全门现已通过。
 
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 
 ## 部分完成
 
 - Computer Runtime 已有接口和权限概念，但尚未形成广泛的生产级电脑操作能力。
+- M2 平台无关动作契约与失败即拒绝策略已有 6/6 单元测试通过；Android 执行、持久化、IPC/UI 与真实 M2 验收尚未验证。
 
 ## 受阻
 
@@ -75,7 +76,7 @@ PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完�
 
 ## 尚未开始
 
-- Mobile M2 Action 与 Verified Navigation。
+- Mobile M2 真实动作执行与 Verified Navigation 验收。
 - 面向第三方 App 的生产级 App Skills。
 - Mobile Observation 自动晋升为 Evidence。
 - 物理 Android 设备支持。
@@ -87,4 +88,4 @@ PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完�
 
 ## 下一步
 
-由项目所有者人工验收 M1.5 与 Issue #4 证据；在新的明确指令授权前不进入 M2。
+继续 Issue #7 实施与真实模拟器验收。未通过强制门禁且未经所有者决策前，不得声称 M2 完成、进入 M3 或发布 X。

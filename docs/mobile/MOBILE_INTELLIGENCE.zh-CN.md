@@ -18,7 +18,7 @@ M1 截止到 Observation，不执行 Tap、Swipe、Text Input、Application Laun
 
 - M0：Contract、Product Policy、Security、Audit Event 与 Documentation。
 - M1：Android Emulator Detection、Observe-only Session、Frame、Semantic UI Snapshot、Element Reference、Observation、Intelligence Feed、Warehouse 与 Three-column UI。
-- M2：Verified Navigation。本阶段明确不包含。
+- M2：Verified Navigation。所有者已通过 Issue #7 授权；当前正在实施，尚未验证。
 - M3：一个 Production App Skill。
 - M4：Observation-to-evidence Promotion 与 Mobile-backed Strategy Input。
 - M5：Physical Android Device。

@@ -12,7 +12,7 @@
 - Gate: **M1.5 PASS**
 - Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - Runtime reliability follow-up: **Issue #4 CLOSED / VERIFIED**
-- Next phase: **M2 NOT STARTED**
+- Current phase: **M2 IN PROGRESS / NOT VERIFIED** ([Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7))
 
 This document separates implementation, verification, partial work, blocked work, design, plans, and work that has not started. Written intent is never counted as runtime evidence.
 
@@ -52,13 +52,14 @@ The M1.5 stage-close verification reproduced Issue #4 again: the first fresh def
 
 On the Issue #4 reliability branch, the first of ten pre-change default-parallel desktop runs again failed the same four tests at 24/28, while nine warm runs passed. A controlled four-fixture cold-start regression failed with the original one-second success budget and passed after separating bounded test-only success budgets from the unchanged 30/50 ms timeout checks. Default-parallel desktop then passed 20/20 runs (29/29 each), full workspace passed 10/10 runs (136 tests per run), and an eight-thread desktop run passed 29/29. The first real Android smoke correctly rejected an unallowlisted cold-boot Launcher; after opening Settings on the dedicated AVD, the unchanged smoke passed 10/10 checks. Production deadlines and runtime code did not change. Rust formatting, Clippy with warnings denied, 31 TypeScript tests, typecheck, Rust/Vite builds, and the Tauri bundle passed.
 
-PR #6 merged this verified tree into `main` as `52e73ca`; a post-merge full workspace run and an isolated public-history security gate passed. Issue #4 is closed as verified. The intentionally retained local-only privacy backup is not part of public `main` history.
+PR #6 merged this verified tree into `main` as `52e73ca`; a post-merge full workspace run and an isolated public-history security gate passed. Issue #4 is closed as verified. The formerly retained local-only privacy backup was deleted under explicit owner authorization before M2 work; the full local all-ref security gate now passes.
 
 The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.ordinconn.github-sync` with a 7,200-second interval, the dedicated launcher received Documents access, and its first background run completed a no-change scan without Codex involvement. The final change/push and second no-change acceptance are recorded in Issue #2 and the DevLog.
 
 ## Partial
 
 - Computer Runtime interfaces and permission concepts exist, but broad production computer operation is not implemented.
+- M2 platform-neutral action contracts and fail-closed policy are unit-tested (6/6); Android execution, persistence, IPC/UI, and real M2 acceptance are not yet verified.
 
 ## Blocked
 
@@ -83,7 +84,7 @@ Designed items are not current product capabilities.
 
 ## Not Started
 
-- Mobile M2 action execution and verified navigation.
+- Mobile M2 real action execution and verified navigation acceptance.
 - Production App Skills for third-party mobile applications.
 - Automatic promotion of mobile observations to Evidence.
 - Physical Android device support.
@@ -95,4 +96,4 @@ M1.5 can pass only after Android SDK, ADB, Emulator, AVD, online device, real sm
 
 ## Next
 
-Complete owner review of the M1.5 and Issue #4 evidence; do not start M2 until a new explicit instruction authorizes it.
+Continue Issue #7 implementation and real-emulator acceptance. Do not claim M2 complete, start M3, or publish X before the required gates and owner decision.

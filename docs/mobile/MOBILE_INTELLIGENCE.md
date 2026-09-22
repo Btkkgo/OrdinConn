@@ -18,7 +18,7 @@ M1 ends at observation. It does not execute taps, swipes, text input, applicatio
 
 - M0: contracts, product policy, security, audit events, and documentation.
 - M1: Android Emulator detection, observe-only sessions, frames, semantic UI snapshots, element references, observations, intelligence feed, warehouse, and the three-column UI.
-- M2: verified navigation. Explicitly out of scope for this phase.
+- M2: verified navigation. Owner-authorized under Issue #7; implementation is in progress and not yet verified.
 - M3: one production app skill.
 - M4: observation-to-evidence promotion and mobile-backed strategy inputs.
 - M5: physical Android devices.

@@ -6,7 +6,7 @@
 
 ## 当前 Gate
 
-M1.5 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。Production Capture Gate 和另行执行的打包桌面 Rust → Tauri → React 验收均已通过。M2 仍为**尚未开始**，且需要新的明确指令才能进入。
+M1.5 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。Production Capture Gate 和另行执行的打包桌面 Rust → Tauri → React 验收均已通过。所有者现已授权 M2，当前为**进行中 / 尚未验证**，由 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 跟踪。
 
 完成的 Gate 记录在 [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1)。间歇性 Process-fixture 并发超时风险单独记录在 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 

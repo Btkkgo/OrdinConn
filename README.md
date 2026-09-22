@@ -48,7 +48,7 @@ See the [architecture overview](docs/architecture/OVERVIEW.md) ([中文](docs/ar
 - Mobile stage: M1.5 real-environment validation complete
 - M1.5 gate: **PASS**
 - Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
-- M2: **NOT STARTED**
+- M2: **IN PROGRESS / NOT VERIFIED** ([Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7))
 - Real-money execution: not implemented; V0.1 is paper-only
 
 The real Android gate passed against an Android 16 ARM64 Emulator: environment readiness, frame capture, UI tree, snapshot parse, element references, `MobileObservation`, workspace projection, and session shutdown. A separate packaged-desktop smoke exercised the real Rust → Tauri command/event → React path for status, allowlist error, session start, observation, and stop. A real password-node test also verified that sensitive content does not enter the serialized capture. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.
@@ -57,7 +57,7 @@ The real Android gate passed against an Android 16 ARM64 Emulator: environment r
 
 Implemented M0/M1 foundations include device-session contracts, bounded screen frames, semantic UI snapshots, scoped element references, sensitive-node redaction policy, typed IPC projection, persistence, and `MobileObservation`.
 
-Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are now verified against the dedicated `OrdinConn_M1_5` AVD. This does not authorize M2 actions; Mobile remains observe-only.
+Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 is now owner-authorized and in progress. Its action-domain policy has unit coverage, but no navigation adapter or real action acceptance is verified yet; the production device path remains observe-only at this checkpoint.
 
 ## Computer Runtime
 
@@ -117,7 +117,7 @@ GitHub is OrdinConn's public engineering source of truth. Issues define meaningf
 
 ## Roadmap
 
-The roadmap advances only on verified gates. M1.5 passed against a real emulator; M2 remains not started pending separate authorization, followed by production App Skills in M3, Evidence promotion in M4, and physical Android devices in M5. See the [public roadmap](docs/roadmap/README.md) ([中文](docs/roadmap/README.zh-CN.md)).
+The roadmap advances only on verified gates. M1.5 passed against a real emulator; M2 is now owner-authorized and in progress, but not verified. Production App Skills in M3, Evidence promotion in M4, and physical Android devices in M5 remain out of scope. See the [public roadmap](docs/roadmap/README.md) ([中文](docs/roadmap/README.zh-CN.md)).
 
 ## Contributing
 

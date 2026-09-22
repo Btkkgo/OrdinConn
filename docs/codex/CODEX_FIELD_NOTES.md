@@ -50,3 +50,9 @@ The first fresh default-parallel desktop run failed the same four process/AVD ca
 ### What changed after evidence
 
 Codex kept the short failure-path timeout assertions and all production command deadlines unchanged, added independent concurrent fixture coverage, and required repeated desktop/workspace runs plus a real Android smoke. The first smoke correctly rejected an unallowlisted Launcher; only the later Settings foreground run passed. Both outcomes belong in the record.
+
+## Issue #7 — Real navigation changed the answer
+
+Fake ADB tests established command shape, but the dedicated Android 16 AVD revealed two different boundaries: Settings Search is a separate system package, and Android task reuse made a generic changed-frame check insufficient for OpenApp. The first real attempts were reported as failures; only after target-package verification and a fixed clear-top launch did the full gated flow pass. A separate packaged-app UI check caught an expected stale-snapshot denial before a fresh inspector selection produced `executed · VERIFIED`.
+
+The useful Codex pattern was to preserve each failure's exact evidence, add a small failing regression, and rerun the real device after the fix. The easy mistake would have been to equate a passing fixture, a successful bundle, or any changed screen with M2 acceptance. A second small privacy test caught untrusted rejected identifiers in receipts before public documentation was finalized. Context was managed with a paired plan, narrow test commands, and a concise progress ledger rather than repeatedly reloading the full task brief. M3 and X remained outside the authorized scope.

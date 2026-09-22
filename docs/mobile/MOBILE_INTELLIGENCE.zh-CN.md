@@ -18,7 +18,7 @@ M1 截止到 Observation，不执行 Tap、Swipe、Text Input、Application Laun
 
 - M0：Contract、Product Policy、Security、Audit Event 与 Documentation。
 - M1：Android Emulator Detection、Observe-only Session、Frame、Semantic UI Snapshot、Element Reference、Observation、Intelligence Feed、Warehouse 与 Three-column UI。
-- M2：Verified Navigation。所有者已通过 Issue #7 授权；当前正在实施，尚未验证。
+- M2：Verified Navigation。其 30 项真实 Emulator 与打包 GUI Gate 已在 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 范围内通过；见[验收证据](M2_ACCEPTANCE.zh-CN.md)。
 - M3：一个 Production App Skill。
 - M4：Observation-to-evidence Promotion 与 Mobile-backed Strategy Input。
 - M5：Physical Android Device。
@@ -45,4 +45,4 @@ UI 不显示 OrdinConn Product Name、Version Copy 或 Logo Wordmark，只在 Na
 
 ## 验收边界
 
-只有在可用 Android Emulator 上运行 `ORDINCONN_MOBILE_SMOKE=1`，才能验证 Real Emulator Support。Android SDK、ADB、Online Emulator 或 Allowed Application 缺失时会如实报告 Unavailable，绝不以伪造成功状态替代。
+M1.5 Observe-only 支持通过 `ORDINCONN_MOBILE_SMOKE=1` 验证；M2 Action 需要单独的 `ORDINCONN_MOBILE_M2_SMOKE=1` Gate。两者均在专用 AVD 上执行。Android SDK、ADB、Online Emulator 或 Allowed Application 缺失时如实报告 Unavailable，不伪造成功。M3 尚未开始。

@@ -43,6 +43,7 @@ CORE_PAIRS = (
     ("docs/mobile/APP_SKILLS.md", "docs/mobile/APP_SKILLS.zh-CN.md"),
     ("docs/mobile/DEVICE_RUNTIME.md", "docs/mobile/DEVICE_RUNTIME.zh-CN.md"),
     ("docs/mobile/M1_5_ACCEPTANCE.md", "docs/mobile/M1_5_ACCEPTANCE.zh-CN.md"),
+    ("docs/mobile/M2_ACCEPTANCE.md", "docs/mobile/M2_ACCEPTANCE.zh-CN.md"),
     ("docs/mobile/MOBILE_ACTION_PROTOCOL.md", "docs/mobile/MOBILE_ACTION_PROTOCOL.zh-CN.md"),
     ("docs/mobile/MOBILE_INTELLIGENCE.md", "docs/mobile/MOBILE_INTELLIGENCE.zh-CN.md"),
     ("docs/mobile/MOBILE_OBSERVATION.md", "docs/mobile/MOBILE_OBSERVATION.zh-CN.md"),
@@ -80,13 +81,13 @@ for heading in (
     "## Next",
 ):
     require(heading in stage, f"CURRENT_STATUS missing {heading}")
-require("- Gate: **M1.5 PASS**" in stage and "- Current phase: **M2 IN PROGRESS / NOT VERIFIED**" in stage, "M1.5/M2 gate status is unclear")
+require("- Gate: **M1.5 PASS**" in stage and "- Current phase: **M2 VERIFIED — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**" in stage, "M1.5/M2 gate status is unclear")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage, "M1.5 acceptance total is unclear")
 require("125 Rust tests" in stage and "31 TypeScript tests" in stage, "verified counts missing")
 require("136 tests per run" in stage and "Issue #4" in stage, "Issue #4 verification missing")
 
 stage_zh = (ROOT / "docs" / "CURRENT_STATUS.zh-CN.md").read_text(encoding="utf-8")
-require("- Gate：**M1.5 通过**" in stage_zh and "- 当前阶段：**M2 进行中 / 尚未验证**" in stage_zh, "Chinese M1.5/M2 gate status is unclear")
+require("- Gate：**M1.5 通过**" in stage_zh and "- 当前阶段：**M2 已验证 — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**" in stage_zh, "Chinese M1.5/M2 gate status is unclear")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in stage_zh, "Chinese M1.5 acceptance total is unclear")
 require("125 个测试" in stage_zh and "31 个 TypeScript 测试" in stage_zh, "Chinese verified counts missing")
 require("136 项测试" in stage_zh and "Issue #4" in stage_zh, "Chinese Issue #4 verification missing")
@@ -100,6 +101,10 @@ acceptance = (ROOT / "docs" / "mobile" / "M1_5_ACCEPTANCE.md").read_text(encodin
 acceptance_zh = (ROOT / "docs" / "mobile" / "M1_5_ACCEPTANCE.zh-CN.md").read_text(encoding="utf-8")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in acceptance, "English M1.5 acceptance total missing")
 require("15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in acceptance_zh, "Chinese M1.5 acceptance total missing")
+m2_acceptance = (ROOT / "docs" / "mobile" / "M2_ACCEPTANCE.md").read_text(encoding="utf-8")
+m2_acceptance_zh = (ROOT / "docs" / "mobile" / "M2_ACCEPTANCE.zh-CN.md").read_text(encoding="utf-8")
+require("30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in m2_acceptance, "English M2 acceptance total missing")
+require("30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN" in m2_acceptance_zh, "Chinese M2 acceptance total missing")
 
 policy = (OPEN / "INTERACTION_LOG_POLICY.md").read_text(encoding="utf-8")
 for field in (

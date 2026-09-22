@@ -237,3 +237,25 @@ Issue #4 记录了四个 AVD/Subprocess 测试的间歇性失败。历史上出�
 ### 可复用经验
 
 成功路径测试应验证行为，而不是无意间测量冷态进程启动性能。短时限断言应留在专门的失败路径测试中；重复运行和受控延迟才能区分确定性覆盖与碰巧变绿。
+
+## 问题 009 — Android 既有 Task 可遮蔽 OpenApp 的真实结果
+
+### 背景与症状
+
+M2 真实 Settings Search 流程将前台切到独立的系统 Settings Intelligence 包。Home 后对 Settings Launcher Component 执行 `am start`，可能恢复已有 Search Task。画面确有变化，通用变化检测最初把它判为 Verified，但目标包并未成为前台。
+
+### 根因与失败尝试
+
+动作后验证只检查 Frame/UI 是否变化，没有检查 OpenApp 的目标 Package。最初的固定启动命令也未清理既有 Task Stack。真实 OpenApp 的第一次断言失败，尽管夹具测试通过。
+
+### 最终方案与验证
+
+OpenApp 现在使用固定的 `--activity-clear-top` 标志，并要求 Post Observation 的前台包等于请求的允许包。专项单元测试拒绝“画面变了但包不对”；最终真实 M2 流程回到 `com.android.settings` 并通过。Settings Intelligence 只加入真实 Search 测试的白名单，没有成为生产默认值。
+
+### 可复用经验
+
+Verification 必须证明动作特定的目标状态，而不只是“有变化”。Android Task 复用只有真实环境才能暴露。
+
+## 问题 010 — 被拒绝请求的标识可能泄入动作回执
+
+调用方可以在过期 Session ID、Snapshot ID、Element Ref 或未授权 Package 字符串里放入任意文本。最初的 Receipt 构造函数即使拒绝动作也复制这些字符串。RED→GREEN 测试暴露了该持久化入口。现在 Receipt 的 Session/Snapshot ID 来自可信 Capture；未知 Ref 与未批准 Package Target 被脱敏，只有策略允许后才恢复已批准目标。回归测试确认调用方提供的哨兵字符串不出现在序列化 Receipt 中。

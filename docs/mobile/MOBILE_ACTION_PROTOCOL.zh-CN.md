@@ -6,7 +6,7 @@ M1 仅观察。其 Tool Capability Surface 提供 Observation、Frame、UI Tree 
 
 M1.5 增加 Environment Discovery、Existing-AVD Listing/Start、Diagnostic 与 Real-runtime Acceptance Gate。它们属于 Host Lifecycle Capability，不是 Agent Navigation Action。
 
-所有者现已通过 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 授权 M2。平台无关的动作请求、策略决定、脱敏回执、验证契约、类型化 IPC 与人工控件已在 Issue 分支实现并通过夹具测试。每个 Action 必须引用当前 Snapshot，每个已接受 Device Action 后必须产生新 Observation。默认只有 `VERIFIED` 可以推进 Task。真实设备验收仍待执行，也没有 Agent 自动导航。
+M2 已在 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 范围内通过 30 项真实 Emulator 与打包 GUI Gate；见双语[验收记录](M2_ACCEPTANCE.zh-CN.md)。平台无关 Action Request、Policy Decision、脱敏 Receipt、Verification Contract、Typed IPC 和人工控件均已按各自边界实现与验证。即使用户将其他包加入白名单，生产 Host 也只对 Android Settings/Settings Intelligence 执行非逃离动作。每个 Action 引用当前 Snapshot，非逃离输入还会重查实时 UI Tree；每个已派发 Device Action 后都要求新 Observation。默认只有 `VERIFIED` 可以推进 Task。仍没有 Agent 自动导航。
 
 保留的 Verification Result：
 
@@ -28,6 +28,6 @@ React 永远不会直接调用 ADB 或 Platform Device API。
 
 ## M2 Entry Gate
 
-在 `M1_5_ACCEPTANCE.md` 中的真实 Capture Gate 与独立 Desktop Acceptance Item 通过前，M2 始终受阻。Unit Fixture 与 Parser Test 不能代替该 Evidence。M1.5 已通过 15/15 强制项；所有者随后另行给出由 Issue #7 跟踪的明确 M2 指令。该授权只允许受限实施，不代表真实导航已通过验收。Search 和自动动作循环继续不在范围内。
+在 `M1_5_ACCEPTANCE.md` 中的真实 Capture Gate 与独立 Desktop Acceptance Item 通过前，M2 始终受阻。M1.5 已通过 15/15 强制项；所有者随后另行给出由 Issue #7 跟踪的明确 M2 指令。现在真实 M2 导航与负向 Gate 已通过。通用 Search Action 与自动动作循环仍不在范围内；在允许的 Settings 搜索字段中人工 Tap/Type 属于受限动作集。
 
 2026-09-20 第一次 Run 因 SDK/ADB/Emulator 前置条件缺失而停止。之后的真实 Android 16 ARM64 Acceptance 已通过；项目在所有者新指令前按要求停在 M2 之前。

@@ -12,7 +12,7 @@
 - Gate：**M1.5 通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - Runtime Reliability 后续：**Issue #4 CLOSED / VERIFIED**
-- 当前阶段：**M2 进行中 / 尚未验证**（[Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7)）
+- 当前阶段：**M2 已验证 — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**（[Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7)；[验收记录](mobile/M2_ACCEPTANCE.zh-CN.md)）
 
 本文严格区分已实现、已验证、部分完成、受阻、已设计、已计划和尚未开始。设计文档不能替代运行证据。
 
@@ -25,6 +25,7 @@
 - Evidence-gated Signal、Agent Report、精确 Approval Capability 和仅 Paper Execution。
 - Mobile M0/M1 的设备会话、Screen Frame、语义 UI Snapshot、Element Ref、隐私分类和 `MobileObservation` 契约。
 - Android observe-only 代码路径：工具发现、已有 AVD 检查、在线 Emulator 发现、受限 Frame Capture、UI Tree Dump、敏感节点脱敏、持久化、事件和 Workspace 投影。
+- M2 的六种人工 Emulator Action、失败即拒绝策略、有界 ADB 适配器、动作后验证、脱敏 SQLite Receipt/Audit，以及类型化 Tauri/React 控件。
 - 公开工程文档、Issue Template、人工 X Draft 和 Fail-closed 公共仓库安全门。
 - 独立于 Codex/ChatGPT 的 macOS 两小时 GitHub 同步 LaunchAgent；它通过专用 TCC 身份和 Application Support runner 工作。
 
@@ -48,12 +49,14 @@ Issue #4 Reliability 分支上，改动前十次 Default-parallel Desktop 运行
 
 PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完整 Workspace 重跑及隔离公开历史安全门通过。Issue #4 作为 Verified 关闭。此前保留的仅本地隐私备份已在 M2 开工前依所有者明确授权删除；本地全引用安全门现已通过。
 
+Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Back、Type、Home、OpenApp、动作后 Observation、Receipt 持久化与 Audit Event。真实过期 Ref、错误 Package、未授权 App、临时密码字段 Type 均在 ADB 输入前被阻断。中英文金融与敏感文案通过合成 Fixture 阻断，没有连接金融 App。最终复核进一步收紧同 Activity 的 UI Tree 执行前校验、动作前持久审计 Intent、分动作验证、动态 Home Package、Session ID/预算轮换及固定的 Settings 生产动作面；这些修改后真实 M2 Smoke 再次通过。最终打包版 Tauri UI 完成人工 Inspector Tap → 类型化 IPC → `executed · VERIFIED`，显示不同的前后 Snapshot ID；Stop Session 返回 Disconnected，AVD 保持在线。M1.5 十项 Smoke、默认并行 Desktop 44/44、完整 Rust Workspace、30 个 Desktop 与 5 个 Contracts TypeScript 测试、Formatting、Clippy、Typecheck、Rust/Vite Build 和最终 macOS Bundle 均通过。确切证据与边界见双语 [M2 验收记录](mobile/M2_ACCEPTANCE.zh-CN.md)。
+
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 
 ## 部分完成
 
 - Computer Runtime 已有接口和权限概念，但尚未形成广泛的生产级电脑操作能力。
-- M2 平台无关动作契约与失败即拒绝策略已有 8/8 专项单元测试通过；Android 适配器已有 7/7 假 ADB 测试，包括 Type 动作后明文脱敏。SQLite 回执/审计持久化已有 2/2 专项测试，包括重复动作 ID 的原子回滚。类型化 IPC 有拒绝非法契约的测试；人工 React 控件有渲染和不安全状态测试。这些是夹具覆盖，不等于真实 M2 Gate 已通过。
+- Computer Runtime 仍属部分完成；M2 真实动作 Gate 已在上文独立验证。
 
 ## 受阻
 
@@ -65,7 +68,7 @@ PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完�
 - Structured Perception 优先于 Vision Inference。
 - 有合适 API 时，API 优先于 GUI Automation。
 - Event-driven Perception 优先于 Continuous Capture。
-- M2 验证式导航、M3 生产 App Skills、M4 `MobileObservation → Evidence`、M5 物理 Android 设备。
+- M3 生产 App Skills、M4 `MobileObservation → Evidence`、M5 物理 Android 设备。
 
 以上设计不代表当前已经实现。
 
@@ -76,8 +79,7 @@ PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完�
 
 ## 尚未开始
 
-- Mobile M2 真实动作执行与 Verified Navigation 验收。
-- 面向第三方 App 的生产级 App Skills。
+- Mobile M3 生产 App Skills 与任何自主导航。
 - Mobile Observation 自动晋升为 Evidence。
 - 物理 Android 设备支持。
 - 真实资金执行。
@@ -88,4 +90,4 @@ PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完�
 
 ## 下一步
 
-继续 Issue #7 实施与真实模拟器验收。未通过强制门禁且未经所有者决策前，不得声称 M2 完成、进入 M3 或发布 X。
+在验证过的分支合并后完成 Issue #7 公开收尾。停在 M2；未经所有者新请求，不进入 M3，也不创建或发布 X 内容。

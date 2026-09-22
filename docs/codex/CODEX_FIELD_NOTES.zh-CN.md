@@ -50,3 +50,9 @@ Codex 最适合作为边界明确的工程协作者：它可以检查大型 Code
 ### 证据如何改变做法
 
 Codex 保留短时限失败路径断言和全部生产 Command Deadline，增加独立并发夹具覆盖，并要求重复 Desktop/Workspace 测试及真实 Android Smoke。Smoke 首次正确拒绝白名单外的 Launcher；只有随后 Settings 前台运行才通过。两次结果都应记录。
+
+## Issue #7 — 真实导航改变了判断
+
+假 ADB 测试证明了命令形式，但专用 Android 16 AVD 暴露出两道不同边界：Settings Search 属于独立系统包；Android Task 复用也使“任意画面变化”不足以验证 OpenApp。最初真实尝试如实记为失败；加入目标包验证和固定 clear-top 启动后，完整门控流程才通过。单独的打包 App UI 检查先捕获到一次预期的过期快照拒绝；刷新后选择 Inspector 元素，才得到 `executed · VERIFIED`。
+
+这轮有效的 Codex 做法是保留每次失败的确切证据，添加小型失败回归，再用真实设备复测。容易跑偏之处是把夹具通过、Bundle 成功或任意屏幕变化等同于 M2 验收。另一个小型隐私测试在公开文档定稿前发现被拒绝请求的标识可能进入 Receipt。用双语计划、聚焦测试命令和简短进度账本管理上下文，避免反复加载完整任务说明。M3 与 X 始终不在授权范围。

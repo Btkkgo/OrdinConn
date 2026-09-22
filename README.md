@@ -48,7 +48,7 @@ See the [architecture overview](docs/architecture/OVERVIEW.md) ([中文](docs/ar
 - Mobile stage: M1.5 real-environment validation complete
 - M1.5 gate: **PASS**
 - Mandatory acceptance: **15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
-- M2: **IN PROGRESS / NOT VERIFIED** ([Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7))
+- M2: **VERIFIED — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN** ([Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7); [acceptance](docs/mobile/M2_ACCEPTANCE.md))
 - Real-money execution: not implemented; V0.1 is paper-only
 
 The real Android gate passed against an Android 16 ARM64 Emulator: environment readiness, frame capture, UI tree, snapshot parse, element references, `MobileObservation`, workspace projection, and session shutdown. A separate packaged-desktop smoke exercised the real Rust → Tauri command/event → React path for status, allowlist error, session start, observation, and stop. A real password-node test also verified that sensitive content does not enter the serialized capture. See [Current Status](docs/CURRENT_STATUS.md) for the evidence boundary.
@@ -57,7 +57,7 @@ The real Android gate passed against an Android 16 ARM64 Emulator: environment r
 
 Implemented M0/M1 foundations include device-session contracts, bounded screen frames, semantic UI snapshots, scoped element references, sensitive-node redaction policy, typed IPC projection, persistence, and `MobileObservation`.
 
-Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 is now owner-authorized and in progress. Its action-domain policy, Android adapter, receipt persistence, typed IPC, and manual UI have unit/fixture coverage. The M2 real-action gate has not passed; no milestone completion is claimed.
+Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 has also passed its 30-item gate: bounded real Settings navigation, negative safety checks, sanitized receipts/audit, packaged GUI manual Tap, and M1.5 regression. Production M2 actions are limited to Settings/Settings Intelligence even if another app is user-allowlisted. M3 remains not started; no X draft or post was created for M2.
 
 ## Computer Runtime
 
@@ -117,7 +117,7 @@ GitHub is OrdinConn's public engineering source of truth. Issues define meaningf
 
 ## Roadmap
 
-The roadmap advances only on verified gates. M1.5 passed against a real emulator; M2 is now owner-authorized and in progress, but not verified. Production App Skills in M3, Evidence promotion in M4, and physical Android devices in M5 remain out of scope. See the [public roadmap](docs/roadmap/README.md) ([中文](docs/roadmap/README.zh-CN.md)).
+The roadmap advances only on verified gates. M1.5 and M2 passed their real-emulator gates. Production App Skills in M3, Evidence promotion in M4, and physical Android devices in M5 remain out of scope. See the [public roadmap](docs/roadmap/README.md) ([中文](docs/roadmap/README.zh-CN.md)).
 
 ## Contributing
 

@@ -10,7 +10,7 @@ Rust AVD lifecycle and subprocess fixture tests fail intermittently under defaul
 
 ## Current State
 
-Issue #4 reached **VERIFIED** on the reliability branch after repeated default-parallel, high-concurrency, and real Android validation. The historical failure remains documented. It never invalidated the completed M1.5 real-environment acceptance.
+Issue #4 is **CLOSED / `status:verified`** after PR #6 merged the validated reliability branch into `main`. The historical failure remains documented. It never invalidated the completed M1.5 real-environment acceptance.
 
 ## Observed Behavior
 
@@ -69,7 +69,7 @@ Rust AVD Lifecycle 与 Subprocess Fixture Test 在默认并行执行下存在间
 
 ## 当前状态
 
-Issue #4 在 Reliability 分支经过重复默认并行、高并发与真实 Android 验证后达到 **VERIFIED**。历史失败继续保留记录。它从未推翻已经完成的 M1.5 真实环境验收。
+Issue #4 在 PR #6 将已验证 Reliability 分支合并到 `main` 后为 **CLOSED / `status:verified`**。历史失败继续保留记录。它从未推翻已经完成的 M1.5 真实环境验收。
 
 ## 已观察现象
 

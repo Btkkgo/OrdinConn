@@ -11,7 +11,7 @@
 - Mobile 阶段：M1.5 真实环境验收完成
 - Gate：**M1.5 通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
-- Runtime Reliability 后续：**Issue #4 已在 Issue 分支通过验证**
+- Runtime Reliability 后续：**Issue #4 CLOSED / VERIFIED**
 - 下一阶段：**M2 尚未开始**
 
 本文严格区分已实现、已验证、部分完成、受阻、已设计、已计划和尚未开始。设计文档不能替代运行证据。
@@ -45,6 +45,8 @@
 M1.5 Stage Close 验证再次复现 Issue #4：第一次新鲜 Default-parallel Workspace Run 的 Desktop Test 为 24/28，通过 24 项、失败 4 个 Process/AVD Timing-sensitive Fixture。紧接着的 Serial Desktop Run 为 28/28 PASS，下一次完整 Default-parallel Workspace Rerun 为 125/125 PASS。在当时的检查点 Issue 保持 Open；它不推翻已经独立完成的 M1.5 15/15 真实验收。
 
 Issue #4 Reliability 分支上，改动前十次 Default-parallel Desktop 运行的第一次再次由同样四个测试造成 24/28，随后九次热态运行通过。受控四夹具冷启动回归在原一秒成功预算下失败；将有界的测试专用成功预算与保持不变的 30/50ms 超时检查分开后通过。随后 Default-parallel Desktop 20/20 次通过（每次 29/29）、完整 Workspace 10/10 次通过（每次 136 项测试），八线程 Desktop 29/29 通过。真实 Android Smoke 首次正确拒绝白名单外的冷启动 Launcher；在专用 AVD 上打开 Settings 后，原样 Smoke 十项全部通过。生产 Deadline 和 Runtime Code 均未改动。Rust Formatting、禁止 Warning 的 Clippy、31 个 TypeScript 测试、Typecheck、Rust/Vite Build 与 Tauri Bundle 均通过。
+
+PR #6 已将验证过的 Tree 以 `52e73ca` 合并到 `main`；合并后的完整 Workspace 重跑及隔离公开历史安全门通过。Issue #4 作为 Verified 关闭。有意保留的仅本地隐私备份不属于公开 `main` 历史。
 
 独立 GitHub 调度器已在 macOS 上完成验证：`launchctl` 已加载 `com.ordinconn.github-sync`，执行间隔为 7,200 秒；专用 launcher 已获得 Documents 访问权限；首次后台执行在不依赖 Codex 的情况下完成了无变更扫描。最终变更推送与第二次无变更验收记录在 Issue #2 和 DevLog 中。
 

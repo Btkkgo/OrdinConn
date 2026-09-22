@@ -207,3 +207,33 @@ The packaged application first displayed the expected empty-allowlist error. Aft
 ### Reusable Lesson
 
 Serialization at a command helper boundary is not evidence that the UI invoked the Tauri command. Name lower-level gates precisely and verify GUI-only acceptance in the real desktop application.
+
+## Problem 008 — Cold parallel fixture startup exhausted success-test budgets
+
+### Problem and Observed Behavior
+
+Issue #4 tracked intermittent failures in four AVD/subprocess tests. Earlier runs included 21/24 and 24/28 desktop results followed by green serial or workspace reruns. On 2026-09-22, the first of ten fresh default-parallel desktop runs again failed those same four cases at 24/28; the next nine passed. The first cold run took 1.86 seconds inside the test binary, while warm runs took about 0.5 seconds.
+
+### Why Serial Passed and Parallel Failed
+
+The success-path fixtures launched several short-lived shell commands but used one-second deadlines as if process startup latency were a functional contract. Serial or warm runs usually completed inside that budget. Cold parallel startup consumed enough scheduling time that unrelated success-path checks reached their deadlines. Unique `TempDir` SDK/AVD roots, script paths, and process groups were already used; the audit found no fixed port, global environment mutation, or shared fixture path. The race was between test-only wall-clock budgets and external process startup under contention, not a shared AVD state file.
+
+### Root Cause Evidence
+
+A new regression starts four independently named AVD fixtures at a barrier, each with its own SDK, ADB script, Emulator script, and AVD home. Controlled 200 ms latency in the fake tools made the original one-second success budget fail with `AvdBootTimeout`; a three-second test-only budget passed. This reproduces the timing mechanism without changing production command deadlines.
+
+### Failed Approaches
+
+The earlier green reruns and serial execution were observations, not repairs. This task did not adopt global serialization, retry-until-pass, ignored tests, a production timeout increase, or extra production sleeps.
+
+### Correct Fix
+
+Give successful large-output and inherited-pipe fixture calls a bounded two-second test budget, and successful AVD lifecycle fixture calls a bounded three-second test budget. Keep the deliberate 30 ms command-timeout and 50 ms no-boot checks unchanged. The new concurrent fixture regression proves independent roots and idempotent logical shutdown; production code and process-group cleanup remain unchanged.
+
+### Regression Coverage
+
+The four existing cases each passed 20 isolated pre-change runs, and related tests passed 20 eight-thread and 20 32-thread warm runs, confirming the cold-start pattern rather than proving it absent. After the change, default-parallel desktop passed 20/20 runs (29/29 tests each), the full workspace passed 10/10 runs, and an eight-thread desktop run passed 29/29. A first real Android smoke failed closed because the cold-boot foreground Launcher was outside the Settings allowlist; after opening Settings on the dedicated AVD, the unchanged smoke passed all ten checks, including frame, UI tree, `MobileObservation`, and logical shutdown.
+
+### Reusable Lesson
+
+A success test should validate behavior, not accidentally benchmark cold process startup. Keep short timeout assertions in dedicated failure-path tests, and use repeat runs plus controlled latency to distinguish deterministic coverage from a lucky green rerun.

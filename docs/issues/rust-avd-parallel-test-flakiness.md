@@ -10,7 +10,7 @@ Rust AVD lifecycle and subprocess fixture tests fail intermittently under defaul
 
 ## Current State
 
-Issue #4 remains **OPEN** with `status:needs-validation`. It does not block the completed M1.5 real-environment acceptance, but it remains an independent runtime and test-reliability risk.
+Issue #4 reached **VERIFIED** on the reliability branch after repeated default-parallel, high-concurrency, and real Android validation. The historical failure remains documented. It never invalidated the completed M1.5 real-environment acceptance.
 
 ## Observed Behavior
 
@@ -24,6 +24,8 @@ Issue #4 remains **OPEN** with `status:needs-validation`. It does not block the 
 - Immediate stage-close default-parallel workspace rerun: 125/125 passed.
 
 The later green rerun does not prove that the intermittent concurrency sensitivity has been eliminated.
+
+On 2026-09-22, the first of ten pre-change default-parallel desktop runs again failed the same four tests at 24/28; the next nine warm runs passed. Each named case passed 20 isolated runs, and related warm concurrent tests passed 20 runs each at eight and 32 threads.
 
 ## Impact
 
@@ -45,11 +47,11 @@ The real M1.5 gate, sensitive redaction, packaged Tauri IPC, and logical shutdow
 
 ## Result
 
-Open and not yet resolved. The final workspace and serial reruns were green, but earlier failures were reproduced more than once.
+The root cause was a one-second success-path test budget that also measured cold, parallel external-process startup. Distinct temporary SDK/AVD roots, scripts, and process groups were already isolated; no shared path, fixed port, or global environment mutation was found. A new four-fixture concurrent cold-start regression failed under that original budget and passed with a bounded three-second test-only budget. Successful large-output and inherited-pipe fixtures now use a bounded two-second test budget. Deliberate 30 ms command-timeout and 50 ms no-boot tests, production deadlines, and production runtime code are unchanged. No global serial or retry workaround was used.
 
 ## Validation
 
-Current evidence consists of the initial 21/24 desktop result, the 24/24 serial result, two reproduced AVD lifecycle failures during the corrective workspace run, its later 125/125 workspace rerun, and the fresh stage-close sequence of 24/28 desktop tests on the first workspace attempt, 28/28 serial desktop tests, then 125/125 on the next workspace rerun.
+Historical evidence remains the initial 21/24 desktop result, 24/24 serial result, two reproduced AVD lifecycle failures, a later 125/125 workspace rerun, and the stage-close 24/28 desktop → 28/28 serial → 125/125 workspace sequence. New verification: default-parallel desktop 20/20 runs at 29/29 each; full workspace 10/10 runs at 136 tests each; eight-thread desktop 29/29; Rust formatting, Clippy with warnings denied, 31 TypeScript tests, typecheck, Rust/Vite builds, and Tauri bundle PASS. The first real Android smoke failed closed on an unallowlisted cold-boot Launcher; after selecting Settings on the dedicated AVD, the unchanged smoke passed all ten checks, including frame, UI tree, `MobileObservation`, and logical shutdown.
 
 ## Boundary
 
@@ -67,7 +69,7 @@ Rust AVD Lifecycle 与 Subprocess Fixture Test 在默认并行执行下存在间
 
 ## 当前状态
 
-Issue #4 继续保持 **OPEN** 和 `status:needs-validation`。它不阻塞已经完成的 M1.5 真实环境验收，但仍是独立的 Runtime/Test Reliability 风险。
+Issue #4 在 Reliability 分支经过重复默认并行、高并发与真实 Android 验证后达到 **VERIFIED**。历史失败继续保留记录。它从未推翻已经完成的 M1.5 真实环境验收。
 
 ## 已观察现象
 
@@ -81,6 +83,8 @@ Issue #4 继续保持 **OPEN** 和 `status:needs-validation`。它不阻塞已�
 - 紧接着的 Stage Close Default-parallel Workspace 重跑：125/125 通过。
 
 后续一次绿色重跑不能证明间歇性并发敏感问题已经消失。
+
+2026-09-22 改动前十次 Default-parallel Desktop 运行的第一次再次由同样四个用例形成 24/28，随后九次热态运行通过。四个具名用例各自单独运行 20 次通过，相关热态并发测试在八线程和 32 线程下也各通过 20 次。
 
 ## 影响
 
@@ -102,11 +106,11 @@ Issue #4 继续保持 **OPEN** 和 `status:needs-validation`。它不阻塞已�
 
 ## 结果
 
-仍为 Open，尚未解决。最终 Workspace 与 Serial 重跑为绿色，但此前失败已经不止一次复现。
+根因是成功路径使用一秒测试预算，同时把冷态并行外部进程启动耗时计入其中。各测试原本已有独立 Temp SDK/AVD Root、脚本与 Process Group；审计未发现共享路径、固定端口或全局环境变量修改。新增四夹具并发冷启动回归在原预算下失败，改为有界三秒测试专用预算后通过。成功的 Large-output 与 Inherited-pipe 夹具改用有界两秒测试预算。刻意验证超时的 30ms Command Test 和 50ms No-boot Test、生产 Deadline 与生产 Runtime Code 均未改变。没有使用全局串行或重试方案。
 
 ## 验证
 
-当前 Evidence 包括最初 21/24 Desktop Result、24/24 Serial Result、Corrective Workspace Run 中再次出现的两个 AVD Lifecycle Failure 及之后的 125/125 Workspace Rerun，以及本次 Stage Close 的新鲜序列：第一次 Workspace Attempt 中 Desktop 24/28、Serial Desktop 28/28、下一次 Workspace Rerun 125/125。
+历史 Evidence 保留最初 21/24 Desktop、24/24 Serial、再次出现的两个 AVD Lifecycle Failure、后续 125/125 Workspace，以及 Stage Close 的 Desktop 24/28 → Serial 28/28 → Workspace 125/125。新验证：Default-parallel Desktop 20/20 次、每次 29/29；完整 Workspace 10/10 次、每次 136 项；八线程 Desktop 29/29；Rust Formatting、禁止 Warning 的 Clippy、31 个 TypeScript 测试、Typecheck、Rust/Vite Build 和 Tauri Bundle 均 PASS。真实 Android Smoke 首次因冷启动 Launcher 不在白名单而按设计拒绝；在专用 AVD 上切换到 Settings 后，原样 Smoke 十项全部 PASS，包括 Frame、UI Tree、`MobileObservation` 与逻辑关闭。
 
 ## 边界
 

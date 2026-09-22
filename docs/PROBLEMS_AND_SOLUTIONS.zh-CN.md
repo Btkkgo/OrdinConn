@@ -207,3 +207,33 @@ M1.5 要求真实 Rust Mobile Runtime → Tauri Command/Event → React Frontend
 ### 可复用经验
 
 Command Helper 边界上的 Serialization 不能证明 UI 调用了 Tauri Command。准确命名 Lower-level Gate，并在真实 Desktop Application 中验证 GUI-only Acceptance。
+
+## 问题 008 — 冷态并行启动耗尽成功路径测试预算
+
+### 问题与观察结果
+
+Issue #4 记录了四个 AVD/Subprocess 测试的间歇性失败。历史上出现过 Desktop 21/24 与 24/28，随后串行或 Workspace 重跑变绿。2026-09-22 的十次新鲜默认并行 Desktop 运行中，第一次再次由相同四个用例形成 24/28，随后九次通过。第一次冷态 Test Binary 内耗时 1.86 秒，热态约 0.5 秒。
+
+### 为什么串行通过、并行失败
+
+成功路径夹具会依次启动多个短生命周期 Shell Command，却把一秒时限当成进程启动性能契约。串行或热态通常能在预算内完成；冷态并行启动的调度开销使无关的成功路径检查触及时限。测试原本已使用独立的 `TempDir` SDK/AVD Root、脚本路径与 Process Group；审计未发现固定端口、全局环境变量修改或共享夹具路径。真正的竞争是测试专用墙钟预算与外部进程启动，而非共享 AVD 状态文件。
+
+### 根因证据
+
+新增回归测试用 Barrier 同时启动四个名称独立的 AVD 夹具，每个都有自己的 SDK、ADB Script、Emulator Script 与 AVD Home。Fake Tool 中受控的 200ms 延迟让原一秒成功预算稳定产生 `AvdBootTimeout`；仅把测试专用预算改为三秒后通过。这个 RED→GREEN 复现了时序机制，没有修改生产命令时限。
+
+### 失败方法
+
+此前绿色重跑和串行执行只是观察，不是修复。本轮没有采用全局串行、重试直到通过、忽略测试、增加生产 Timeout 或额外生产 Sleep。
+
+### 正确修复
+
+对成功的 Large-output 与 Inherited-pipe 夹具使用有界两秒测试预算，对成功的 AVD Lifecycle 夹具使用有界三秒测试预算。刻意验证超时的 30ms Command Test 与 50ms No-boot Test 保持不变。新并发回归覆盖独立 Root 与幂等逻辑关闭；生产代码和 Process-group Cleanup 未改。
+
+### 回归覆盖
+
+改动前四个既有用例各单独运行 20 次全部通过，相关测试在八线程和 32 线程热态下也各运行 20 次通过；这说明问题偏向冷启动，而不是证明问题不存在。改动后默认并行 Desktop 20/20 次通过（每次 29/29），完整 Workspace 10/10 次通过，八线程 Desktop 29/29 通过。真实 Android Smoke 首次因冷启动前台 Launcher 不在 Settings 白名单内而按设计拒绝；在专用 AVD 上打开 Settings 后，原样 Smoke 十项全部通过，包括 Frame、UI Tree、`MobileObservation` 与逻辑关闭。
+
+### 可复用经验
+
+成功路径测试应验证行为，而不是无意间测量冷态进程启动性能。短时限断言应留在专门的失败路径测试中；重复运行和受控延迟才能区分确定性覆盖与碰巧变绿。

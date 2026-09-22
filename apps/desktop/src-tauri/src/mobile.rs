@@ -1557,7 +1557,7 @@ esac
             "#!/bin/sh\ndd if=/dev/zero bs=1024 count=256 2>/dev/null\n",
         );
 
-        let output = run_command_bytes_with_timeout(&tool, &[], Duration::from_secs(1)).unwrap();
+        let output = run_command_bytes_with_timeout(&tool, &[], Duration::from_secs(2)).unwrap();
 
         assert_eq!(output.len(), 256 * 1024);
     }
@@ -1572,7 +1572,7 @@ esac
         );
         let started = Instant::now();
 
-        let output = run_command_bytes_with_timeout(&tool, &[], Duration::from_secs(1))
+        let output = run_command_bytes_with_timeout(&tool, &[], Duration::from_secs(2))
             .expect("direct child succeeded before its deadline");
 
         assert_eq!(output, b"done");
@@ -1616,13 +1616,64 @@ esac
     }
 
     #[test]
+    fn concurrent_avd_lifecycle_fixtures_remain_independent_during_slow_tool_startup() {
+        // Model cold parallel process startup without changing production deadlines.
+        // Each worker owns its SDK, ADB script, Emulator script, and AVD home.
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(4));
+        let handles = (0..4)
+            .map(|index| {
+                let barrier = barrier.clone();
+                thread::spawn(move || {
+                    let fixture = TempDir::new().unwrap();
+                    let sdk = fixture.path().join("sdk");
+                    let name = format!("Fixture_AVD_{index}");
+                    executable(
+                        &sdk.join("platform-tools/adb"),
+                        &format!(
+                            r##"#!/bin/sh
+if [ "$1" = "version" ]; then sleep 0.2; echo adb-test; exit 0; fi
+if [ "$1" = "devices" ]; then sleep 0.2; printf 'List of devices attached\nemulator-5554 device\n'; exit 0; fi
+if [ "$3" = "emu" ] && [ "$4" = "avd" ]; then sleep 0.2; echo {name}; echo OK; exit 0; fi
+if [ "$3" = "shell" ] && [ "$4" = "getprop" ]; then sleep 0.2; echo 1; exit 0; fi
+exit 1
+"##
+                        ),
+                    );
+                    executable(
+                        &sdk.join("emulator/emulator"),
+                        &format!(
+                            "#!/bin/sh\nif [ \"$1\" = \"-list-avds\" ]; then echo {name}; exit 0; fi\nexit 1\n"
+                        ),
+                    );
+                    let detector = AndroidEnvironmentDetector::new(
+                        vec![sdk],
+                        Vec::new(),
+                        Some(fixture.path().join(".android/avd")),
+                    );
+                    let host = MobileHost::with_detector(detector);
+                    barrier.wait();
+                    let device = host
+                        .start_avd_with_timeout(&name, Duration::from_secs(3))
+                        .expect("independent fixture should complete within its test budget");
+                    assert_eq!(device.avd_name.as_deref(), Some(name.as_str()));
+                    assert!(host.stop_session());
+                    assert!(!host.stop_session());
+                })
+            })
+            .collect::<Vec<_>>();
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    }
+
+    #[test]
     fn avd_lifecycle_rejects_unknown_avd_and_times_out_without_boot() {
         let (_fixture, detector) = lifecycle_fixture(
             "#!/bin/sh\nif [ \"$1\" = \"version\" ]; then echo adb-test; exit 0; fi\nif [ \"$1\" = \"devices\" ]; then echo 'List of devices attached'; exit 0; fi\nexit 1\n",
         );
         let host = MobileHost::with_detector(detector);
         assert_eq!(
-            host.start_avd_with_timeout("Missing_AVD", std::time::Duration::from_secs(1))
+            host.start_avd_with_timeout("Missing_AVD", std::time::Duration::from_secs(3))
                 .unwrap_err(),
             MobileHostError::AvdNotFound("Missing_AVD".into())
         );
@@ -1648,7 +1699,7 @@ exit 1
         let host = MobileHost::with_detector(detector);
 
         let device = host
-            .start_avd_with_timeout("Pixel_9_API_36", std::time::Duration::from_secs(1))
+            .start_avd_with_timeout("Pixel_9_API_36", std::time::Duration::from_secs(3))
             .unwrap();
 
         assert_eq!(device.id, "emulator-5554");

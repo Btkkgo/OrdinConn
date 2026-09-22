@@ -2,12 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Stage-level Build in Public 材料分为两种状态：
+精选里程碑 Build in Public 材料分为两种状态：
 
 - `drafts/`：等待用户人工审核与发布的脱敏内容。
 - `published/`：不可变内容，以及 Publication Time、X URL、Source Commit 与 SHA-256 Content Hash。
 
 Template 位于 `templates/`。普通 Code Change 应记录在 Daily DevLog，而不是 X Post。
+
+只在出现用户可真实体验的重大能力或里程碑、完整的跨阶段故事、具有显著公共技术价值的重大突破，或用户明确要求时新增 Draft。普通 Bug Fix、Test Infrastructure、Refactor、Internal Architecture 与 Small Stage 保留在 GitHub 工程记录中。现有 X 历史保持不变。
 
 ## 发布规则
 

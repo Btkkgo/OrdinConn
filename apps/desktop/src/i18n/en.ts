@@ -85,6 +85,8 @@ export const en = {
   "mobile.receiptPostSnapshot": "Post snapshot",
   "mobile.receiptTimestamp": "Timestamp",
   "mobile.policyAllowed": "Allowed",
+  "mobile.policyPending": "Pending — result unknown",
+  "mobile.unknown": "Unknown",
   "mobile.policyDenied": "Denied",
   "mobile.yes": "Yes",
   "mobile.no": "No",

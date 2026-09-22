@@ -87,6 +87,8 @@ export const zhCN = {
   "mobile.receiptPostSnapshot": "动作后快照",
   "mobile.receiptTimestamp": "时间戳",
   "mobile.policyAllowed": "允许",
+  "mobile.policyPending": "处理中——结果未知",
+  "mobile.unknown": "未知",
   "mobile.policyDenied": "拒绝",
   "mobile.yes": "是",
   "mobile.no": "否",

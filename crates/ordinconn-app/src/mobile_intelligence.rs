@@ -1,8 +1,8 @@
 use chrono::Utc;
 use mobile_runtime::{
-    AndroidEnvironmentDiagnostics, MobileActionReceipt, MobileActionStatus, MobileCapture,
-    MobileDeviceSession, MobileFrame, MobileObservation, MobileSessionStatus, MobileUiSnapshot,
-    VerificationResult,
+    AndroidEnvironmentDiagnostics, MobileActionDecision, MobileActionReceipt, MobileActionStatus,
+    MobileActionTarget, MobileCapture, MobileDeviceSession, MobileFrame, MobileObservation,
+    MobileSessionStatus, MobileUiSnapshot, VerificationResult,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -241,7 +241,52 @@ impl AppRuntime {
         if request.action_id.is_empty() {
             return Err(AppError::InvalidData);
         }
+        let safe_target = match &request.target {
+            MobileActionTarget::Tap { .. } => MobileActionTarget::Tap {
+                element_ref: "[REDACTED]".into(),
+            },
+            MobileActionTarget::Type { .. } => MobileActionTarget::Type {
+                element_ref: "[REDACTED]".into(),
+            },
+            MobileActionTarget::OpenApp { .. } => MobileActionTarget::OpenApp {
+                package_name: "[REDACTED]".into(),
+            },
+            other => other.clone(),
+        };
+        let pending = MobileActionReceipt {
+            action_id: request.action_id.clone(),
+            session_id: String::new(),
+            snapshot_id: String::new(),
+            target: safe_target,
+            decision: MobileActionDecision::Pending,
+            status: MobileActionStatus::Pending,
+            requested_at: request.requested_at,
+            completed_at: request.requested_at,
+            pre_package: String::new(),
+            pre_activity: String::new(),
+            pre_frame_hash: String::new(),
+            pre_ui_tree_hash: String::new(),
+            post_package: None,
+            post_snapshot_id: None,
+            post_activity: None,
+            post_frame_hash: None,
+            post_ui_tree_hash: None,
+            verification: None,
+            text_length: request.text.as_ref().map(|value| value.len()),
+            text_sha256: request.text.as_ref().map(|value| value.sha256()),
+            command_sent: false,
+        };
         let mut transaction = self.pool().begin().await?;
+        sqlx::query("INSERT INTO mobile_action_receipts (id,session_id,snapshot_id,status,verification,completed_at,domain_json) VALUES (?,?,?,?,?,?,?)")
+            .bind(&pending.action_id)
+            .bind(&pending.session_id)
+            .bind(&pending.snapshot_id)
+            .bind(enum_value(&pending.status))
+            .bind(None::<String>)
+            .bind(pending.completed_at.to_rfc3339())
+            .bind(serde_json::to_string(&pending)?)
+            .execute(&mut *transaction)
+            .await?;
         let event = append_event(
             &mut transaction,
             "mobile.action_intent",
@@ -277,6 +322,8 @@ impl AppRuntime {
         post_capture: Option<&MobileCapture>,
     ) -> Result<(), AppError> {
         if receipt.action_id.is_empty()
+            || receipt.status == MobileActionStatus::Pending
+            || receipt.decision == MobileActionDecision::Pending
             || (receipt.status == MobileActionStatus::Blocked
                 && (receipt.command_sent
                     || !matches!(
@@ -307,16 +354,38 @@ impl AppRuntime {
         if let Some(capture) = post_capture {
             insert_mobile_capture_rows(&mut transaction, capture).await?;
         }
-        sqlx::query("INSERT INTO mobile_action_receipts (id,session_id,snapshot_id,status,verification,completed_at,domain_json) VALUES (?,?,?,?,?,?,?)")
-            .bind(&receipt.action_id)
-            .bind(&receipt.session_id)
-            .bind(&receipt.snapshot_id)
-            .bind(enum_value(&receipt.status))
-            .bind(receipt.verification.map(|value| enum_value(&value)))
-            .bind(receipt.completed_at.to_rfc3339())
-            .bind(serde_json::to_string(receipt)?)
-            .execute(&mut *transaction)
-            .await?;
+        let prior_status: Option<String> =
+            sqlx::query_scalar("SELECT status FROM mobile_action_receipts WHERE id=?")
+                .bind(&receipt.action_id)
+                .fetch_optional(&mut *transaction)
+                .await?;
+        match prior_status.as_deref() {
+            Some("pending") => {
+                sqlx::query("UPDATE mobile_action_receipts SET session_id=?,snapshot_id=?,status=?,verification=?,completed_at=?,domain_json=? WHERE id=? AND status='pending'")
+                    .bind(&receipt.session_id)
+                    .bind(&receipt.snapshot_id)
+                    .bind(enum_value(&receipt.status))
+                    .bind(receipt.verification.map(|value| enum_value(&value)))
+                    .bind(receipt.completed_at.to_rfc3339())
+                    .bind(serde_json::to_string(receipt)?)
+                    .bind(&receipt.action_id)
+                    .execute(&mut *transaction)
+                    .await?;
+            }
+            None => {
+                sqlx::query("INSERT INTO mobile_action_receipts (id,session_id,snapshot_id,status,verification,completed_at,domain_json) VALUES (?,?,?,?,?,?,?)")
+                    .bind(&receipt.action_id)
+                    .bind(&receipt.session_id)
+                    .bind(&receipt.snapshot_id)
+                    .bind(enum_value(&receipt.status))
+                    .bind(receipt.verification.map(|value| enum_value(&value)))
+                    .bind(receipt.completed_at.to_rfc3339())
+                    .bind(serde_json::to_string(receipt)?)
+                    .execute(&mut *transaction)
+                    .await?;
+            }
+            Some(_) => return Err(AppError::InvalidData),
+        }
         let event_payload = json!({
             "actionId": receipt.action_id,
             "status": receipt.status,

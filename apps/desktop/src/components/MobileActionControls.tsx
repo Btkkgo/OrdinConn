@@ -100,8 +100,8 @@ export function MobileActionControls({ session, snapshot, selected, allowedApps,
       <dl>
         <div><dt>{t("mobile.receiptAction")}</dt><dd>{t(`mobile.actionKind.${receipt.target.kind}`)}</dd></div>
         <div><dt>{t("mobile.receiptTarget")}</dt><dd>{receiptTarget(receipt.target)}</dd></div>
-        <div><dt>{t("mobile.receiptPolicy")}</dt><dd>{receipt.decision.outcome === "allowed" ? t("mobile.policyAllowed") : `${t("mobile.policyDenied")}: ${receipt.decision.reason}`}</dd></div>
-        <div><dt>{t("mobile.receiptExecuted")}</dt><dd>{receipt.commandSent ? t("mobile.yes") : t("mobile.no")} · {receipt.status}</dd></div>
+        <div><dt>{t("mobile.receiptPolicy")}</dt><dd>{receipt.decision.outcome === "allowed" ? t("mobile.policyAllowed") : receipt.decision.outcome === "pending" ? t("mobile.policyPending") : `${t("mobile.policyDenied")}: ${receipt.decision.reason}`}</dd></div>
+        <div><dt>{t("mobile.receiptExecuted")}</dt><dd>{receipt.status === "pending" ? t("mobile.unknown") : receipt.commandSent ? t("mobile.yes") : t("mobile.no")} · {receipt.status}</dd></div>
         <div><dt>{t("mobile.receiptVerification")}</dt><dd>{receipt.verification ?? "—"}</dd></div>
         <div><dt>{t("mobile.receiptPreSnapshot")}</dt><dd>{receipt.snapshotId || "—"}</dd></div>
         <div><dt>{t("mobile.receiptPostSnapshot")}</dt><dd>{receipt.postSnapshotId ?? "—"}</dd></div>

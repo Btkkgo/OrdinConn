@@ -146,7 +146,10 @@ pub async fn execute_mobile_action(
         .record_mobile_action(&execution.receipt, execution.capture.as_ref())
         .await
     {
-        state.mobile_host.stop_session();
+        let session_id = state.mobile_host.session_id();
+        if state.mobile_host.stop_session() {
+            let _ = state.runtime.end_mobile_session(&session_id).await;
+        }
         return Err(IpcError::internal(error));
     }
     let mut workspace = state

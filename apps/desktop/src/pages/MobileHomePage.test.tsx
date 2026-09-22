@@ -70,5 +70,21 @@ describe("mobile home workspace", () => {
     expect(html).toContain("snapshot-2");
     expect(html).toContain("Timestamp");
     expect(html).not.toContain("Auto navigate");
+    const pending = {
+      ...active,
+      latestActionReceipt: {
+        ...active.latestActionReceipt,
+        decision: { outcome: "pending" as const },
+        status: "pending" as const,
+        commandSent: false,
+        verification: null,
+      },
+    } satisfies MobileWorkspaceDto;
+    const pendingHtml = renderToStaticMarkup(
+      <MobileHomePage workspace={pending} signals={signals} onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onOpenDetail={() => undefined} onAction={async () => undefined} t={createTranslator("en")} />,
+    );
+    expect(pendingHtml).toContain("Pending — result unknown");
+    expect(pendingHtml).toContain("Unknown · pending");
+    expect(pendingHtml).not.toContain("undefined");
   });
 });

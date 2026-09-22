@@ -97,6 +97,7 @@ pub enum MobileActionDenyReason {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", content = "reason", rename_all = "snake_case")]
 pub enum MobileActionDecision {
+    Pending,
     Allowed,
     Denied(MobileActionDenyReason),
 }
@@ -104,6 +105,7 @@ pub enum MobileActionDecision {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MobileActionStatus {
+    Pending,
     Blocked,
     Executed,
     Failed,

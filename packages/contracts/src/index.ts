@@ -322,6 +322,7 @@ export type MobileActionDenyReasonDto =
   | "TARGET_NOT_FOCUSED" | "INVALID_BOUNDS" | "UNSAFE_TEXT" | "INVALID_ACTION";
 
 export type MobileActionDecisionDto =
+  | { outcome: "pending" }
   | { outcome: "allowed" }
   | { outcome: "denied"; reason: MobileActionDenyReasonDto };
 
@@ -331,7 +332,7 @@ export interface MobileActionReceiptDto {
   snapshotId: string;
   target: MobileActionTargetDto;
   decision: MobileActionDecisionDto;
-  status: "blocked" | "executed" | "failed";
+  status: "pending" | "blocked" | "executed" | "failed";
   requestedAt: string;
   completedAt: string;
   prePackage: string;

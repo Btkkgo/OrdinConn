@@ -69,9 +69,8 @@ fn fixture_capture() -> MobileCapture {
 #[tokio::test]
 async fn mobile_action_intent_is_durable_before_input_and_excludes_text() {
     let directory = tempfile::tempdir().unwrap();
-    let runtime = AppRuntime::initialize(&directory.path().join("intent.sqlite3"))
-        .await
-        .unwrap();
+    let database = directory.path().join("intent.sqlite3");
+    let runtime = AppRuntime::initialize(&database).await.unwrap();
     let capture = fixture_capture();
     let request = MobileActionRequest {
         action_id: "mobile-action-intent-1".into(),
@@ -98,7 +97,49 @@ async fn mobile_action_intent_is_durable_before_input_and_excludes_text() {
         .fetch_one(runtime.pool())
         .await
         .unwrap();
-    assert_eq!(receipts, 0);
+    assert_eq!(receipts, 1);
+    let pending_json: String =
+        sqlx::query_scalar("SELECT domain_json FROM mobile_action_receipts WHERE id=?")
+            .bind(&request.action_id)
+            .fetch_one(runtime.pool())
+            .await
+            .unwrap();
+    let pending: MobileActionReceipt = serde_json::from_str(&pending_json).unwrap();
+    assert_eq!(pending.status, MobileActionStatus::Pending);
+    assert_eq!(pending.decision, MobileActionDecision::Pending);
+    assert!(!pending.command_sent);
+    assert_eq!(pending.session_id, "");
+    assert!(!pending_json.contains("wifi"));
+    let reopened = AppRuntime::initialize(&database).await.unwrap();
+    assert_eq!(
+        reopened
+            .mobile_workspace_data()
+            .await
+            .unwrap()
+            .latest_action_receipt
+            .unwrap()
+            .status,
+        MobileActionStatus::Pending
+    );
+    let capture = fixture_capture();
+    let mut final_receipt = mobile_action_receipt(&capture, MobileActionStatus::Blocked);
+    final_receipt.action_id = request.action_id;
+    reopened
+        .record_mobile_action(&final_receipt, None)
+        .await
+        .unwrap();
+    let completed_status: String =
+        sqlx::query_scalar("SELECT status FROM mobile_action_receipts WHERE id=?")
+            .bind(&final_receipt.action_id)
+            .fetch_one(reopened.pool())
+            .await
+            .unwrap();
+    assert_eq!(completed_status, "blocked");
+    let receipt_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_action_receipts")
+        .fetch_one(reopened.pool())
+        .await
+        .unwrap();
+    assert_eq!(receipt_count, 1);
 }
 
 fn mobile_action_receipt(

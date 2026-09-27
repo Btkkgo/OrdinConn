@@ -57,6 +57,8 @@
 
 最后真实 Executor 回归在动作发出前因测试准备使用 Android 16 不支持的 `--activity-new-task` 而失败。移除该测试专用参数后沿用已验证的 clear-top 启动，修正后真实 Gate 1/1 PASS（78.04 秒），BACK/SCROLL_DOWN/EXTRACT 及重复执行拒绝均通过。此 Gate 的通用页面无输入表面；独立 Search Gate 的 3/3 精确输入结果单独记录。保留失败记录；生产执行代码、超时和打包产物不受影响。
 
+首次正常推送因当前分支缺少已安装 pre-push hook 引用的身份脚本而失败。五个现有 identity/history/hook/installer/test 文件从同一仓库 `5056389` 安全提交逐字节恢复。已安装 hook 未改，且与 canonical 版本一致。身份夹具测试、本地 noreply 身份和 HEAD 可达历史均 PASS。未绕过安全门、改写历史或强推。
+
 ## 真实输入表面与剩余验收
 
 专用 Android emulator 的 Settings 提供搜索入口。预装系统搜索 activity 为 `com.google.android.settings.intelligence.modules.search.SearchActivity`，已聚焦非密码输入 resource 为 `com.google.android.settings.intelligence:id/open_search_view_edit_text`。显式启用的 Gate 通过系统 intent 准备已观察到的预装搜索 activity，Observe 并解析输入字段，再通过真实 typed Executor 输入无敏感随机值 `M3 <nonce>`，检查精确 Receipt attestation，并独立 Observe 实际字段值，随后返回。测试使用空格以保留已验收输入策略，不安装辅助 App，不操作个人或账号字段。

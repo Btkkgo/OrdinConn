@@ -2,6 +2,9 @@
 
 [English](MOBILE_INTELLIGENCE.md) | [简体中文](MOBILE_INTELLIGENCE.zh-CN.md)
 
+> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](M3_PHASE5.zh-CN.md)。
+
+
 ## 产品角色
 
 Mobile Intelligence Runtime 是 OrdinConn 的一等 Collection Surface。它观察用户授权的 Android Application，生成 Structured Observation，并进入与 API、WebSocket、RSS、HTML、Browser 与 Desktop Source 相同的 Evidence/Strategy Path。
@@ -45,4 +48,4 @@ UI 不显示 OrdinConn Product Name、Version Copy 或 Logo Wordmark，只在 Na
 
 ## 验收边界
 
-M1.5 Observe-only 支持通过 `ORDINCONN_MOBILE_SMOKE=1` 验证；M2 Action 需要单独的 `ORDINCONN_MOBILE_M2_SMOKE=1` Gate。两者均在专用 AVD 上执行。Android SDK、ADB、Online Emulator 或 Allowed Application 缺失时如实报告 Unavailable，不伪造成功。M3 尚未开始。
+M1.5 Observe-only 支持通过 `ORDINCONN_MOBILE_SMOKE=1` 验证；M2 Action 需要单独的 `ORDINCONN_MOBILE_M2_SMOKE=1` Gate。两者均在专用 AVD 上执行。Android SDK、ADB、Online Emulator 或 Allowed Application 缺失时如实报告 Unavailable，不伪造成功。M3 有界单步执行已在本地 [Phase 4](M3_EXECUTOR.zh-CN.md) 实现；完整自主验收仍为 NOT_COMPLETE（Provider 0、Phase 5 集成已实现待验收）。

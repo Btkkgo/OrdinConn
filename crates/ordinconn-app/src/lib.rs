@@ -2,7 +2,11 @@ pub mod continuous_intelligence;
 pub mod core_intelligence;
 pub mod db;
 pub mod events;
+pub mod mobile_executor;
+pub mod mobile_goal_runner;
+pub mod mobile_goals;
 pub mod mobile_intelligence;
+pub mod mobile_planner;
 pub mod services;
 
 pub use mobile_intelligence::*;

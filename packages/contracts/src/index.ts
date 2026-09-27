@@ -348,6 +348,7 @@ export interface MobileActionReceiptDto {
   textLength?: number | null;
   textSha256?: string | null;
   commandSent: boolean;
+  inputValueVerified?: boolean | null;
 }
 
 export interface MobileActionResultDto {
@@ -483,7 +484,13 @@ export interface AndroidEnvironmentDiagnosticsDto {
   onlineDevices: AndroidDeviceInfoDto[];
 }
 
+export interface MobileResearchTaskDto {
+  id: string; query: string; status: string; allowedApps: string[];
+  budget: MobileResearchBudgetDto; createdAt: string;
+}
+
 export interface MobileWorkspaceDto {
+  researchTasks?: MobileResearchTaskDto[];
   runtimeStatus: MobileRuntimeStatus;
   adbStatus: "ready" | "missing" | "offline" | "error";
   androidEnvironment: AndroidEnvironmentDiagnosticsDto;
@@ -524,4 +531,73 @@ export function parseRuntimeEventEnvelope(value: unknown): RuntimeEventEnvelope 
     throw new Error("Invalid runtime event envelope");
   }
   return event as unknown as RuntimeEventEnvelope;
+}
+
+// Canonical M3 execution DTOs mirror mobile-runtime::execution. Rust owns state transitions.
+export const MOBILE_GOAL_STATUSES = ["PENDING", "PLANNING", "RUNNING", "WAITING_APPROVAL", "COMPLETED", "FAILED", "STOPPED"] as const;
+export const MOBILE_PLAN_STATUSES = ["DRAFT", "ACTIVE", "COMPLETED", "SUPERSEDED", "FAILED"] as const;
+export const MOBILE_STEP_STATUSES = ["PENDING", "EXECUTING", "WAITING_APPROVAL", "VERIFIED", "FAILED", "SKIPPED", "STOPPED"] as const;
+export const MOBILE_STEP_TYPES = ["OBSERVE", "SCROLL_DOWN", "SCROLL_UP", "TAP_ELEMENT", "INPUT_TEXT", "BACK", "WAIT", "EXTRACT", "COMPLETE", "STOP"] as const;
+export const MOBILE_STEP_RISKS = ["READ_ONLY", "REVERSIBLE", "APPROVAL_REQUIRED", "FORBIDDEN"] as const;
+export const MOBILE_GOAL_ERROR_CODES = ["DEVICE_DISCONNECTED", "MODEL_NOT_CONFIGURED", "MODEL_NOT_SELECTED", "INVALID_MODEL_OUTPUT", "MODEL_ERROR", "OBSERVE_FAILED", "TARGET_NOT_FOUND", "ACTION_FAILED", "VERIFY_FAILED", "APPROVAL_REQUIRED", "APPROVAL_REJECTED", "POLICY_BLOCKED", "STEP_LIMIT_REACHED", "TIME_LIMIT_REACHED", "STALLED", "USER_STOPPED", "INTERRUPTED_BY_RESTART", "INVALID_PLAN", "INVALID_STEP", "INVALID_STATE_TRANSITION"] as const;
+export type MobileGoalStatusDto = (typeof MOBILE_GOAL_STATUSES)[number];
+export type MobilePlanStatusDto = (typeof MOBILE_PLAN_STATUSES)[number];
+export type MobileStepStatusDto = (typeof MOBILE_STEP_STATUSES)[number];
+export type MobileStepTypeDto = (typeof MOBILE_STEP_TYPES)[number];
+export type MobileStepRiskDto = (typeof MOBILE_STEP_RISKS)[number];
+export type MobileGoalErrorCodeDto = (typeof MOBILE_GOAL_ERROR_CODES)[number];
+export interface MobileGoalErrorDto { code: MobileGoalErrorCodeDto; message: string }
+export interface MobileGoalBudgetDto { maxSteps: number; maxModelCalls?: number; maxExecutionActions?: number; maxRuntimeMs: number; maxConsecutiveFailures: number; maxIdenticalObservations: number }
+export type MobileCompletionTargetDto = { kind: "ACTIVITY_EQUALS"; package: string; activity: string } | { kind: "INPUT_TEXT_EQUALS"; package: string; activity: string; resourceId: string; value: string };
+export interface CreateMobileGoalInputDto { objective: string; budget?: MobileGoalBudgetDto; completionTarget?: MobileCompletionTargetDto }
+export interface MobileGoalDto {
+  id: string; objective: string; normalizedObjective?: string | null; status: MobileGoalStatusDto;
+  createdAt: string; updatedAt: string; startedAt?: string | null; completedAt?: string | null; stoppedAt?: string | null; failedAt?: string | null;
+  activePlanId?: string | null; stepBudget: MobileGoalBudgetDto; runtimeDeadline?: string | null;
+  consecutiveFailureCount: number; identicalObservationCount: number; lastErrorCode?: MobileGoalErrorCodeDto | null; lastErrorMessage?: string | null;
+}
+export interface MobilePlanDto {
+  id: string; goalId: string; revision: number; objective: string; status: MobilePlanStatusDto;
+  createdAt: string; activatedAt?: string | null; completedAt?: string | null; supersededAt?: string | null;
+}
+export type ExpectedStepResultDto =
+  | { kind: "UI_CHANGED" | "ACTIVITY_CHANGED" | "NEW_DATA_OBJECT" | "NO_CHANGE_EXPECTED" }
+  | { kind: "ELEMENT_VISIBLE"; elementRef: string }
+  | { kind: "TEXT_EQUALS"; elementRef: string; value: string }
+  | { kind: "ACTIVITY_EQUALS"; package: string; activity: string };
+export interface MobilePlanStepDto {
+  id: string; planId: string; sequence: number; stepType: MobileStepTypeDto; status: MobileStepStatusDto; reason: string; risk: MobileStepRiskDto;
+  targetRef?: string | null; inputText?: string | null; expectedResult?: ExpectedStepResultDto | null;
+  waitMs?: number | null; extractionIntent?: string | null;
+  createdAt: string; startedAt?: string | null; finishedAt?: string | null;
+  observationBeforeId?: string | null; observationAfterId?: string | null; actionId?: string | null; evidenceId?: string | null;
+  errorCode?: MobileGoalErrorCodeDto | null; errorMessage?: string | null;
+}
+export interface MobileStepResultDto {
+  stepId: string; outcome: "VERIFIED" | "FAILED" | "STOPPED"; verified: boolean;
+  observationBeforeId?: string | null; observationAfterId?: string | null; actionReceiptId?: string | null;
+  evidenceIds: string[]; error?: MobileGoalErrorDto | null; createdAt: string;
+}
+export interface MobileGoalPlanDto { plan: MobilePlanDto; steps: MobilePlanStepDto[] }
+export interface MobileExecutionReferencesDto { goalId?: string | null; planId?: string | null; stepId?: string | null; observationId?: string | null; actionId?: string | null; evidenceId?: string | null }
+export interface MobileApprovalSubjectDto { goalId: string; planId: string; stepId: string; actionType: MobileStepTypeDto; targetHash?: string | null; observationId?: string | null }
+export function isMobileGoalStatus(value: unknown): value is MobileGoalStatusDto { return typeof value === "string" && MOBILE_GOAL_STATUSES.includes(value as MobileGoalStatusDto); }
+export function isMobileStepStatus(value: unknown): value is MobileStepStatusDto { return typeof value === "string" && MOBILE_STEP_STATUSES.includes(value as MobileStepStatusDto); }
+export function isMobileGoalErrorCode(value: unknown): value is MobileGoalErrorCodeDto { return typeof value === "string" && MOBILE_GOAL_ERROR_CODES.includes(value as MobileGoalErrorCodeDto); }
+
+export interface PlanMobileGoalInputDto { goalId: string; observationId?: string }
+export interface MobileCompletionProposalDto { reason: string; supporting_observation_ids: string[] }
+export type MobilePlannerFailureCodeDto = "NEEDS_NEW_OBSERVATION" | "TARGET_NOT_FOUND" | "INSUFFICIENT_CONTEXT" | "GOAL_UNSUPPORTED" | "SAFETY_BLOCKED";
+export interface MobilePlannerOutcomeDto {
+  decision: "NEXT_ACTION" | "COMPLETION_PROPOSAL" | "CANNOT_PROCEED";
+  goalId: string; planId: string | null; stepId: string | null; waitingExecutor: boolean;
+  completion: MobileCompletionProposalDto | null;
+  failure: { code: MobilePlannerFailureCodeDto; reason: string } | null;
+}
+
+export interface MobileStepExecutionOutcomeDto {
+  goalId: string; planId: string; stepId: string; executionId?: string | null;
+  status: MobileStepStatusDto; verified: boolean; error?: MobileGoalErrorDto | null;
+  observationBeforeId?: string | null; observationAfterId?: string | null;
+  actionReceiptId?: string | null; evidenceIds: string[]; dataObjectId?: string | null;
 }

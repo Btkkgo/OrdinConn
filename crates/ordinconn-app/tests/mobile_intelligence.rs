@@ -174,6 +174,7 @@ fn mobile_action_receipt(
         text_length: Some(4),
         text_sha256: Some("sha256:dummy".into()),
         command_sent: status == MobileActionStatus::Executed,
+        input_value_verified: None,
     }
 }
 
@@ -362,8 +363,29 @@ async fn mobile_settings_budget_and_strategy_state_are_persisted() {
         .await
         .unwrap();
 
+    // Non-mobile tasks have the migration defaults [] / {}; they are not mobile plans.
+    sqlx::query("INSERT INTO research_tasks (id,query,reason,status,discovered_urls_json,created_at) VALUES ('web-task','public web query','web discovery','pending','[]',?)")
+        .bind(Utc::now().to_rfc3339()).execute(runtime.pool()).await.unwrap();
     let workspace = runtime.mobile_workspace_data().await.unwrap();
+    assert!(
+        !workspace
+            .research_tasks
+            .iter()
+            .any(|task| task.id == "web-task")
+    );
     assert_eq!(workspace.settings.allowed_apps, settings.allowed_apps);
+    assert!(
+        workspace
+            .research_tasks
+            .iter()
+            .any(|stored| stored.id == task.id
+                && stored.query == task.query
+                && stored.status == "pending")
+    );
+    let task_event: String = sqlx::query_scalar("SELECT payload_json FROM runtime_events WHERE event_type='mobile.research_task_created' AND aggregate_id=?")
+        .bind(&task.id).fetch_one(runtime.pool()).await.unwrap();
+    assert!(task_event.contains(&task.id));
+    assert!(!task_event.contains(&task.query));
     assert!(
         workspace
             .strategies
@@ -447,5 +469,40 @@ async fn mobile_session_shutdown_is_persisted_and_audited_once() {
         .await
         .unwrap(),
         1
+    );
+}
+
+#[tokio::test]
+async fn mobile_session_shutdown_waits_for_an_existing_writer() {
+    let directory = tempfile::tempdir().unwrap();
+    let runtime = AppRuntime::initialize(&directory.path().join("shutdown-writer.sqlite3"))
+        .await
+        .unwrap();
+    let capture = fixture_capture();
+    runtime.record_mobile_capture(&capture).await.unwrap();
+    let mut writer = runtime.pool().begin().await.unwrap();
+    sqlx::query("UPDATE mobile_device_sessions SET status=status WHERE id=?")
+        .bind(&capture.session.session_id)
+        .execute(&mut *writer)
+        .await
+        .unwrap();
+    let release = async move {
+        tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+        writer.commit().await.unwrap();
+    };
+    let (result, ()) = tokio::join!(
+        runtime.end_mobile_session(&capture.session.session_id),
+        release
+    );
+    assert!(
+        result.is_ok(),
+        "Stop must wait for a writer rather than fail its read-to-write lock upgrade: {result:?}"
+    );
+    assert!(result.unwrap());
+    assert!(
+        !runtime
+            .end_mobile_session(&capture.session.session_id)
+            .await
+            .unwrap()
     );
 }

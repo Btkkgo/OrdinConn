@@ -62,12 +62,27 @@ impl ModelTool {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct StructuredOutputRequest {
+    pub name: String,
+    pub schema: Value,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UnifiedModelRequest {
     pub model: String,
     pub messages: Vec<UnifiedMessage>,
     pub tools: Vec<ModelTool>,
     pub context: std::collections::BTreeMap<String, String>,
     pub temperature: f32,
+    #[serde(default)]
+    pub structured_output: Option<StructuredOutputRequest>,
+    #[serde(default)]
+    pub max_output_tokens: Option<u32>,
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub max_response_bytes: Option<usize>,
 }
 
 impl UnifiedModelRequest {
@@ -81,6 +96,10 @@ impl UnifiedModelRequest {
             tools: Vec::new(),
             context: Default::default(),
             temperature: 0.2,
+            structured_output: None,
+            max_output_tokens: None,
+            timeout_ms: None,
+            max_response_bytes: None,
         }
     }
 

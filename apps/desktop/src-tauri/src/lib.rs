@@ -2,6 +2,8 @@ mod commands;
 mod credential_store;
 mod events;
 mod mobile;
+mod mobile_executor;
+mod mobile_goal_commands;
 mod state;
 
 use std::sync::Arc;
@@ -27,6 +29,15 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_snapshot,
+            mobile_goal_commands::create_mobile_goal,
+            mobile_goal_commands::get_mobile_goal,
+            mobile_goal_commands::list_mobile_goals,
+            mobile_goal_commands::get_mobile_goal_plan,
+            mobile_goal_commands::plan_mobile_goal,
+            mobile_goal_commands::execute_mobile_goal_step,
+            mobile_goal_commands::run_mobile_goal,
+            mobile_goal_commands::get_mobile_step_approval,
+            mobile_goal_commands::approve_mobile_goal_step,
             commands::start_agent_turn,
             commands::get_thread_items,
             commands::cancel_agent_turn,
@@ -90,3 +101,6 @@ mod tests {
         assert!(message.contains("[REDACTED]"));
     }
 }
+
+#[cfg(test)]
+mod mobile_executor_real_gate;

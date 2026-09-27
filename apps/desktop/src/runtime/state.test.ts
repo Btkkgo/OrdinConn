@@ -54,4 +54,11 @@ describe("runtime UI state", () => {
     expect(next.feed).toBe(workspace.feed);
     expect(next.settings).toBe(workspace.settings);
   });
+  it("does not mark the device observing when a pending research goal is saved", () => {
+    const workspace = { runtimeStatus: "disconnected" } as import("@ordinconn/contracts").MobileWorkspaceDto;
+    expect(reduceMobileWorkspaceEvent(workspace, {
+      id: "task-event", family: "mobile", type: "mobile.research_task_created", aggregateId: "task-1",
+      occurredAt: "2026-09-27T03:00:00Z", payload: { taskId: "task-1", status: "pending" },
+    })).toBe(workspace);
+  });
 });

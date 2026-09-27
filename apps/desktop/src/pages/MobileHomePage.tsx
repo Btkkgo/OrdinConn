@@ -1,34 +1,57 @@
 import { useMemo, useState } from "react";
-import type { IntelligenceItemDto, MobileActionInputDto, MobileWorkspaceDto, SignalDto } from "@ordinconn/contracts";
+import type { ReactNode } from "react";
+import type { IntelligenceItemDto, MobileGoalDto, MobileGoalPlanDto, MobileActionInputDto, MobileWorkspaceDto, SignalDto } from "@ordinconn/contracts";
 import type { Translator } from "../i18n";
 import { MobileDeviceView } from "../components/MobileDeviceView";
-import { matchRelatedSignals, signalReadiness, sortIntelligenceItems, sourceLabel } from "./mobileIntelligence";
+import { WorkbenchDataBrowser } from "../workbench/WorkbenchDataBrowser";
+import { useWorkbenchCommands } from "../workbench/useWorkbenchCommands";
+import { type WorkbenchRuntimePort } from "../workbench/commands";
+import { buildWorkbenchModel, type WorkbenchViewModel } from "../workbench/model";
+import { WorkbenchHeader, WorkbenchLegend } from "../workbench/WorkbenchHeader";
+import { RealtimeDataPanel } from "../workbench/RealtimeDataPanel";
+import { AgentPlanPanel } from "../workbench/AgentPlanPanel";
+import { AgentCommandPanel } from "../workbench/AgentCommandPanel";
 
-interface MobileHomePageProps {
-  workspace: MobileWorkspaceDto;
-  signals: SignalDto[];
-  selectedItemId?: string;
-  onSelectItem: (id: string) => void;
-  onObserve: () => void;
-  onStop: () => void;
+export interface MobileHomePageProps {
+  workspace: MobileWorkspaceDto; signals: SignalDto[]; selectedItemId?: string;
+  onSelectItem: (id: string) => void; onObserve: () => void; onStop: () => void;
   onAction: (input: MobileActionInputDto) => Promise<void>;
-  onOpenDetail: (item: IntelligenceItemDto) => void;
-  t: Translator;
+  onOpenDetail: (item: IntelligenceItemDto) => void; t: Translator;
+  goals?: MobileGoalDto[];
+  goalPlans?: Record<string, MobileGoalPlanDto | null>;
+  runtime?: WorkbenchRuntimePort;
+  visualModel?: WorkbenchViewModel; fixtureScreen?: ReactNode;
 }
-
-export function MobileHomePage({ workspace, signals, selectedItemId, onSelectItem, onObserve, onStop, onAction, onOpenDetail, t }: MobileHomePageProps) {
+export function MobileHomePage({ workspace, onSelectItem, onObserve, onStop, onAction, onOpenDetail, t, visualModel, fixtureScreen, runtime, goals = [], goalPlans = {} }: MobileHomePageProps) {
+  const controller = useWorkbenchCommands(runtime);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const [browse, setBrowse] = useState(false);
   const [inspect, setInspect] = useState(false);
-  const feed = useMemo(() => sortIntelligenceItems(workspace.feed), [workspace.feed]);
-  const selected = feed.find((item) => item.id === selectedItemId) ?? feed[0];
-  const related = selected ? matchRelatedSignals(selected, signals) : [];
-  return (
-    <section className="mobile-home">
-      <header className="runtime-strip"><div><span className={`status-dot ${workspace.runtimeStatus}`} /><strong>{workspace.runtimeStatus}</strong></div><span>ADB {workspace.adbStatus}</span><span>{workspace.session?.deviceId ?? "No device"}</span><span>{workspace.uiSnapshot?.packageName ?? "No active app"}</span><span>Task: none</span><span>Agent: observe-only</span><span>Verify: {workspace.observations[0]?.verificationStatus ?? "waiting"}</span></header>
-      <div className="intelligence-columns">
-        <section className="intelligence-column feed-column" aria-label={t("mobile.feed")}><header><div><span className="eyebrow">{t("mobile.observe")}</span><h1>{t("mobile.feed")}</h1></div><span>{feed.length}</span></header><div className="feed-list">{feed.length ? feed.map((item) => <button className={selected?.id === item.id ? "feed-item selected" : "feed-item"} type="button" key={item.id} onClick={() => { onSelectItem(item.id); onOpenDetail(item); }}><span className="source-chip">{sourceLabel(item.sourceMethod)}</span><strong>{item.title}</strong><p>{item.summary}</p><footer><span>{item.assets.join(" · ") || "General"}</span><span>{item.evidenceStatus}</span></footer></button>) : <p className="empty-copy">{t("mobile.noObservations")}</p>}</div></section>
-        <section className="intelligence-column device-column" aria-label={t("mobile.liveView")}><header><div><span className="eyebrow">{t("mobile.runtime")}</span><h2>{t("mobile.liveView")}</h2></div></header><MobileDeviceView frame={workspace.frame} snapshot={workspace.uiSnapshot} session={workspace.session} allowedApps={workspace.settings.allowedApps} latestActionReceipt={workspace.latestActionReceipt} adbStatus={workspace.adbStatus} inspect={inspect} onInspectChange={setInspect} onObserve={onObserve} onStop={onStop} onAction={onAction} t={t} /></section>
-        <section className="intelligence-column signal-column" aria-label={t("mobile.relatedSignals")}><header><div><span className="eyebrow">{t("mobile.interpret")}</span><h2>{t("mobile.relatedSignals")}</h2></div></header>{selected ? <><article className="selected-observation"><span className="state-chip">{signalReadiness(selected, signals)}</span><h3>{selected.title}</h3><p>{selected.summary}</p><button className="secondary-button" type="button" onClick={() => onOpenDetail(selected)}>{t("mobile.openDetail")}</button></article><div className="related-signals">{related.length ? related.map((signal) => <article className="signal-preview" key={signal.id}><span>{signal.asset}</span><strong>{signal.title}</strong><p>{signal.summary}</p></article>) : <p className="empty-copy">{t("mobile.noSignal")}</p>}</div></> : <p className="empty-copy">{t("mobile.selectObservation")}</p>}</section>
-      </div>
-    </section>
-  );
+  const [selectedMetric, setSelectedMetric] = useState("other");
+  const model = useMemo(() => {
+    if (visualModel) return { ...visualModel, selectedMetric };
+    const plans = [...new Map(controller.plans.map(plan => [plan.id, plan])).values()]
+      .filter(plan => !dismissed.includes(plan.id)).map(plan => ({ ...plan, title: plan.title.startsWith("workbench.") ? t(plan.title) : plan.title }));
+    const live = buildWorkbenchModel(workspace, selectedMetric, plans);
+    return { ...live, agentState: controller.phase && live.device.connected ? controller.phase : live.agentState };
+  }, [workspace, selectedMetric, visualModel, controller.plans, controller.phase, dismissed, t]);
+  const categoryItems = workspace.feed.filter(item => model.objects.some(object => object.id === item.id && object.category === model.selectedMetric));
+  const openData = () => setBrowse(true);
+  return <section className="realtime-workbench" data-data-mode={model.mode}>
+    {model.mode === "visual_fixture" ? <span className="fixture-badge">{t("workbench.fixture")}</span> : null}
+    <WorkbenchHeader model={model} t={t}/>
+    <div className="workbench-columns">
+      <RealtimeDataPanel model={model} onSelect={setSelectedMetric} onOpenData={openData} t={t}/>
+      <section className="workbench-panel mobile-operation-panel" aria-label={t("workbench.mobile")}>
+        <header className="workbench-panel-header"><div><h2>{t("workbench.mobile")}</h2><p>{model.device.name ?? t("workbench.noDevice")} · {t("workbench.capabilities")}</p></div><span className="workbench-agent-state">{t(`workbench.agent.${model.agentState}`)}</span></header>
+        <MobileDeviceView compact fixtureScreen={fixtureScreen} frame={workspace.frame} snapshot={workspace.uiSnapshot} session={workspace.session} allowedApps={workspace.settings.allowedApps} latestActionReceipt={workspace.latestActionReceipt} adbStatus={workspace.adbStatus} inspect={inspect} onInspectChange={setInspect} onObserve={onObserve} onStop={onStop} onAction={onAction} t={t}>
+          <AgentCommandPanel disabled={!model.device.connected || model.mode === "visual_fixture"} busy={controller.busy} onCommand={command => { if(runtime) void controller.command(command); else { if(command === "observe") onObserve(); if(command === "stop") onStop(); } }} onSubmit={goal => void controller.submit(goal)} t={t}/>
+        </MobileDeviceView>
+      </section>
+      <AgentPlanPanel goalPlans={goalPlans} fixtureHandledNote={model.mode === "visual_fixture"} plans={model.plans} goals={visualModel ? [] : [...new Map([...controller.goals, ...goals].map(goal => [goal.id, goal])).values()]} onDismiss={model.mode === "live" ? id => setDismissed(current => [...current, id]) : undefined} t={t}/>
+    </div>
+    {controller.notice ? <p className={["workbench.extracted", "workbench.collected", "workbench.stopped"].includes(controller.notice) ? "sr-only" : "workbench-notice"} role="status">{controller.notice.startsWith("workbench.") ? t(controller.notice) : controller.notice}</p> : null}
+    <WorkbenchLegend t={t}/>
+    {browse ? <WorkbenchDataBrowser items={categoryItems} onClose={() => setBrowse(false)} onSelect={item => { setBrowse(false); onSelectItem(item.id); onOpenDetail(item); }} t={t}/> : null}
+  </section>;
 }

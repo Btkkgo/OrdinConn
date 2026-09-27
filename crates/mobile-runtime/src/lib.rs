@@ -1,3 +1,5 @@
+pub mod executor;
+pub mod planner;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -7,6 +9,7 @@ use std::collections::{HashSet, VecDeque};
 use uuid::Uuid;
 
 pub mod action;
+pub mod execution;
 pub use action::*;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -255,7 +258,13 @@ impl MobileUiSnapshot {
                     redactions.push(format!("element:{element_ref}:sensitive"));
                     (Some("[REDACTED]".into()), None)
                 } else {
-                    (clean(raw.text), clean(raw.content_description))
+                    // Editable value verification is exact; label normalization must not alter it.
+                    let text = if raw.class_name.ends_with("EditText") {
+                        raw.text
+                    } else {
+                        clean(raw.text)
+                    };
+                    (text, clean(raw.content_description))
                 };
                 MobileElement {
                     element_ref,
@@ -724,4 +733,10 @@ mod tests {
         assert!(skill.blocked_actions.contains(&"tap".to_string()));
         assert!(skill.blocked_actions.contains(&"type".to_string()));
     }
+}
+
+/// Existing runtime privacy vocabulary, shared by planner minimization.
+pub fn is_sensitive_mobile_text(value: &str) -> bool {
+    let lower = value.to_lowercase();
+    contains_any(&lower, SENSITIVE_TERMS) || contains_any(&lower, FINANCIAL_TERMS)
 }

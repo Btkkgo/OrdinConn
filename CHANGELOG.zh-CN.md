@@ -8,6 +8,8 @@
 
 ### 新增
 
+- M3 有界 Planner/Executor 集成：持久化预算、Stop 优先级、绑定 Approval 和 Owner 条件验证。真实模型验收仍 BLOCKED_MODEL_NOT_CONFIGURED，Full Autonomous M3 为 NOT_COMPLETE。见 [Phase 5](docs/mobile/M3_PHASE5.zh-CN.md)。
+
 - Issue-first 的公开开发流程和 GitHub 模板。
 - 英文与中文项目入口文档。
 - 公开状态、DevLog、ADR、安全规则和 Codex Field Notes 结构。

@@ -66,7 +66,7 @@ export function reduceMobileWorkspaceEvent(
   workspace: MobileWorkspaceDto,
   event: RuntimeEventEnvelope,
 ): MobileWorkspaceDto {
-  if (event.family !== "mobile") return workspace;
+  if (event.family !== "mobile" || event.type === "mobile.research_task_created" || /^mobile\.(goal|plan|step|executor|planner|model_call|approval|completion)_/.test(event.type)) return workspace;
   if (event.type === "mobile.task_failed") return { ...workspace, runtimeStatus: "error" };
   if (event.type === "mobile.task_complete") return { ...workspace, runtimeStatus: "paused" };
   return { ...workspace, runtimeStatus: "observing" };

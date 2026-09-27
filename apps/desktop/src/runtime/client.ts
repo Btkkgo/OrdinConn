@@ -8,6 +8,12 @@ import type {
   ExecutionRecordDto,
   ModelProviderDto,
   MobileResearchBudgetDto,
+  MobileGoalDto,
+  MobileGoalPlanDto,
+  CreateMobileGoalInputDto,
+  PlanMobileGoalInputDto,
+  MobilePlannerOutcomeDto,
+  MobileResearchTaskDto,
   MobileActionInputDto,
   MobileActionResultDto,
   MobileRuntimeSettingsDto,
@@ -43,6 +49,15 @@ export interface ConnectionTestResult {
 }
 
 export const runtimeClient = {
+  runMobileGoal: (goalId: string) => invoke<MobileGoalDto>("run_mobile_goal", { input: { goalId } }),
+  getMobileStepApproval: (stepId: string) => invoke<ApprovalRequestDto | null>("get_mobile_step_approval", { stepId }),
+  approveMobileGoalStep: (goalId: string, stepId: string, approvalId: string) => invoke<MobileGoalDto>("approve_mobile_goal_step", { input: { goalId, stepId, approvalId } }),
+  createMobileGoal: (input: CreateMobileGoalInputDto) => invoke<MobileGoalDto>("create_mobile_goal", { input }),
+  getMobileGoal: (goalId: string) => invoke<MobileGoalDto>("get_mobile_goal", { goalId }),
+  listMobileGoals: () => invoke<MobileGoalDto[]>("list_mobile_goals"),
+  executeMobileGoalStep: (goalId: string) => invoke<import("@ordinconn/contracts").MobileStepExecutionOutcomeDto>("execute_mobile_goal_step", { input: { goalId } }),
+  planMobileGoal: (input: PlanMobileGoalInputDto) => invoke<MobilePlannerOutcomeDto>("plan_mobile_goal", { input }),
+  getMobileGoalPlan: (goalId: string) => invoke<MobileGoalPlanDto | null>("get_mobile_goal_plan", { goalId }),
   getSnapshot: () => invoke<AppSnapshotDto>("get_snapshot"),
   startAgentTurn: (threadId: string | undefined, question: string, context: PageContext) =>
     invoke<AgentTaskStarted>("start_agent_turn", { threadId, question, context }),
@@ -68,7 +83,7 @@ export const runtimeClient = {
   setWarehouseEntry: (itemId: string, favorite: boolean, saved: boolean, tags: string[]) =>
     invoke<WarehouseEntryDto>("set_warehouse_entry", { itemId, favorite, saved, tags }),
   createMobileResearchTask: (query: string, allowedApps: string[], budget: MobileResearchBudgetDto) =>
-    invoke("create_mobile_research_task", { query, allowedApps, budget }),
+    invoke<MobileResearchTaskDto>("create_mobile_research_task", { query, allowedApps, budget }),
   saveMobileSettings: (settings: MobileRuntimeSettingsDto) =>
     invoke<void>("save_mobile_settings", { settings }),
   setStrategyEnabled: (strategyId: string, enabled: boolean) =>

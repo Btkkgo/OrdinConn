@@ -1,5 +1,7 @@
 # OrdinConn Product Baseline — V0.1 Foundation
 
+[English](PRODUCT_BASELINE.md) | [简体中文](PRODUCT_BASELINE.zh-CN.md)
+
 > All previous OrdinConn product baselines are obsolete.
 
 This document is the only product baseline for OrdinConn V0.1.
@@ -16,9 +18,9 @@ The two markets are Traditional Finance and Crypto. The shared workflow is:
 
 V0.1 contains the desktop shell, Agent Runtime, Model Gateway, Tool Runtime, Approval Engine, Evidence and Signal domains, Traditional Finance and Crypto experiences, contextual Agent Dock, SQLite persistence, mock connectors, public-data Collector Runtime, Source Registry, deterministic Strategy Engine, at least 18 demo signals, Agent Reports, Trade Proposals, Approval Capability, and Paper Execution.
 
-The Mobile Intelligence M0/M1 extension adds an observe-only Android Emulator collection surface, semantic UI snapshots, sanitized Mobile Observations, and the Home/Warehouse/Settings shell. It does not add mobile action execution. Mobile data remains subject to the same Source Registry, Evidence, Strategy, and Signal gates as every other source.
+The Mobile Intelligence extension adds Android Emulator observation, semantic UI snapshots, sanitized Mobile Observations, and the Home/Warehouse/Settings shell. Verified M2 navigation adds six human-triggered, snapshot-bound actions (Tap, Swipe, safe Type, Back, Home, OpenApp), with deny-all/allowlist policy, sensitive/financial target rejection, write-ahead audit, post-observation, and receipts. M2 does not add autonomous mobile execution. Mobile data remains subject to the same Source Registry, Evidence, Strategy, and Signal gates as every other source.
 
-It does not contain real brokerage or exchange execution, real-money trading, deposits, withdrawals, transfers, wallet signing, private-key or seed-phrase access, subscriptions, a cloud platform, high-frequency background automation, advanced computer vision, or automatic mobile clicking, swiping, typing, login, posting, messaging, or ordering.
+It does not contain real brokerage or exchange execution, real-money trading, deposits, withdrawals, transfers, wallet signing, private-key or seed-phrase access, subscriptions, a cloud platform, high-frequency background automation, advanced computer vision, or autonomous login, posting, messaging, ordering, or operations outside the bounded M3 Settings goal scope.
 
 ## Markets and ABC lanes
 
@@ -72,8 +74,12 @@ Paper Execution is the only V0.1 execution adapter and it must pass through the 
 
 The primary desktop shell provides Home, Warehouse, and Settings. Home integrates the Intelligence Feed, Mobile Live View, related Signals, and contextual data discussion. Existing market, signal, agent, automation, model, source, and approval capabilities remain available through those consolidated workspaces rather than separate primary navigation entries.
 
-The final visual direction is derived from the user-provided `Conor右1.0.jpg`: its black-and-yellow geometric pattern is the OrdinConn mark, its purple background defines the new interface family, deep-purple surfaces preserve financial readability, black anchors navigation and Agent chrome, and yellow is reserved for selection, signals, approvals, and primary actions. The system remains minimal, professional, and restrained; it avoids casino styling and excessive motion.
+The approved Home direction is the user-provided realtime workbench Reference A (visual target) and Reference B (structure), replacing the previous Home visual baseline. Home uses restrained black/gray surfaces, thin rounded borders, white/secondary text, blue selection, and green device connectivity. Its three columns are Realtime Data, Mobile Operation with Agent Commands, and Agent Plans. No category icons, colored KPI dashboards, gradients, logos, or decorative charts are added. Warehouse/Settings and existing navigation remain available. All formal copy still uses English and Simplified Chinese locale keys. Other workspaces retain their existing brand system. A separately opted-in development visual fixture must never populate production state.
+
+## M3 bounded goal extension
+
+Owner-authorized M3 Phase 5 connects the real Model Gateway Planner to the existing real single-step Executor for Android Settings and its preinstalled search only. Typed next actions retain deny-all policy, latest Observation binding, explicit Approval, canonical step/model/action/time budgets, exact verification, Stop and fail-closed restart recovery. Owner-supplied immutable Activity/Text completion targets are required for verifiable general goals; model claims alone never complete a Goal. Existing Home submission uses the Rust runner without a UI redesign. No configured production provider means MODEL_NOT_CONFIGURED and no model/device action. Live acceptance remains BLOCKED_MODEL_NOT_CONFIGURED; Full Autonomous M3 remains NOT_COMPLETE. M4, accounts, external apps, real funds and commercial licensing are outside scope.
 
 ## Acceptance
 
-The app must launch and show the approved purple, black, and yellow interface with the user-provided mark. The user can switch between English and Simplified Chinese, navigate both markets and six ABC lanes, open a Signal, inspect Evidence, chat in a context-aware Agent Dock, create a Report, create a Paper Trade Proposal, request approval, approve it, and receive a Paper Execution Record. Model Settings can configure an OpenAI-compatible provider. Tests and builds must pass before the final local commit.
+The app must launch and show the approved dark realtime Home workbench while retaining Warehouse and Settings. Acceptance requires actual Tauri screenshots and reference comparison, real device diagnostics/frames, evidence-linked deduplicated loaded-object metrics, typed manual commands, and preserved Approval/Safety. Pending research goals are not autonomous plans or executed actions; unsupported mobile autonomy must remain explicit. The user can switch between English and Simplified Chinese, navigate both markets and six ABC lanes, open a Signal, inspect Evidence, chat in a context-aware Agent Dock, create a Report, create a Paper Trade Proposal, request approval, approve it, and receive a Paper Execution Record. Model Settings can configure an OpenAI-compatible provider. Tests and builds must pass before the final local commit.

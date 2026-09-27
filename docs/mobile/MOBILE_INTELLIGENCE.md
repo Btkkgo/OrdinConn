@@ -2,6 +2,9 @@
 
 [English](MOBILE_INTELLIGENCE.md) | [简体中文](MOBILE_INTELLIGENCE.zh-CN.md)
 
+> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](M3_PHASE5.md) for current validation.
+
+
 ## Product role
 
 Mobile Intelligence Runtime is a first-class OrdinConn collection surface. It observes user-authorized Android applications and produces structured observations that enter the same evidence and strategy path as API, WebSocket, RSS, HTML, browser, and desktop sources.
@@ -45,4 +48,4 @@ The UI never displays the OrdinConn product name, version copy, or a logo wordma
 
 ## Acceptance boundary
 
-M1.5 observe-only support is verified by `ORDINCONN_MOBILE_SMOKE=1`; M2 actions require the separate `ORDINCONN_MOBILE_M2_SMOKE=1` gate. Both ran on the dedicated AVD. Missing SDK, ADB, online emulator, or allowlisted application is reported as unavailable, never replaced with fabricated success. M3 remains not started.
+M1.5 observe-only support is verified by `ORDINCONN_MOBILE_SMOKE=1`; M2 actions require the separate `ORDINCONN_MOBILE_M2_SMOKE=1` gate. Both ran on the dedicated AVD. Missing SDK, ADB, online emulator, or allowlisted application is reported as unavailable, never replaced with fabricated success. M3 bounded single-step execution is now implemented locally in [Phase 4](M3_EXECUTOR.md); full autonomous acceptance remains NOT_COMPLETE (Provider 0, Phase 5 implementation ready for validation).

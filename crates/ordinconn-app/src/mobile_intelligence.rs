@@ -125,6 +125,7 @@ pub struct MobileResearchTaskView {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MobileWorkspaceData {
+    pub research_tasks: Vec<MobileResearchTaskView>,
     pub runtime_status: String,
     pub adb_status: String,
     pub android_environment: AndroidEnvironmentDiagnostics,
@@ -275,6 +276,7 @@ impl AppRuntime {
             text_length: request.text.as_ref().map(|value| value.len()),
             text_sha256: request.text.as_ref().map(|value| value.sha256()),
             command_sent: false,
+            input_value_verified: None,
         };
         let mut transaction = self.pool().begin().await?;
         sqlx::query("INSERT INTO mobile_action_receipts (id,session_id,snapshot_id,status,verification,completed_at,domain_json) VALUES (?,?,?,?,?,?,?)")
@@ -466,7 +468,9 @@ impl AppRuntime {
     }
 
     pub async fn end_mobile_session(&self, session_id: &str) -> Result<bool, AppError> {
-        let mut transaction = self.pool().begin().await?;
+        // Acquire the writer reservation before reading. A deferred WAL transaction cannot
+        // upgrade its snapshot while another collector is writing, even with busy_timeout.
+        let mut transaction = self.pool().begin_with("BEGIN IMMEDIATE").await?;
         let row = sqlx::query("SELECT status,domain_json FROM mobile_device_sessions WHERE id=?")
             .bind(session_id)
             .fetch_optional(&mut *transaction)
@@ -550,6 +554,7 @@ impl AppRuntime {
         }
         let id = format!("research_task_{}", Uuid::now_v7());
         let created_at = Utc::now().to_rfc3339();
+        let mut transaction = self.pool().begin().await?;
         sqlx::query("INSERT INTO research_tasks (id,query,reason,status,discovered_urls_json,created_at,mobile_packages_json,mobile_budget_json) VALUES (?,?,?,'pending','[]',?,?,?)")
             .bind(&id)
             .bind(query.trim())
@@ -557,8 +562,21 @@ impl AppRuntime {
             .bind(&created_at)
             .bind(serde_json::to_string(&allowed_apps)?)
             .bind(serde_json::to_string(&budget)?)
-            .execute(self.pool())
+            .execute(&mut *transaction)
             .await?;
+        let event = append_event(
+            &mut transaction,
+            "mobile.research_task_created",
+            "mobile_task",
+            &id,
+            None,
+            None,
+            Some(&id),
+            &json!({"taskId": id, "status": "pending"}),
+        )
+        .await?;
+        transaction.commit().await?;
+        self.event_bus.publish(event);
         Ok(MobileResearchTaskView {
             id,
             query: query.trim().into(),
@@ -627,8 +645,42 @@ impl AppRuntime {
             });
         }
         feed.extend(self.evidence_feed(&warehouse_by_item).await?);
+        let objects: Vec<String> = sqlx::query_scalar(
+            "SELECT domain_json FROM mobile_extracted_objects ORDER BY captured_at DESC LIMIT 200",
+        )
+        .fetch_all(self.pool())
+        .await?;
+        for json in objects {
+            let object: crate::mobile_executor::MobileExtractedObject =
+                serde_json::from_str(&json)?;
+            let stored = warehouse_by_item.get(&object.id);
+            feed.push(IntelligenceItemView {
+                id: object.id,
+                source_method: "MOBILE".into(),
+                source_app: object.source_id,
+                source_account: None,
+                title: "Observed Android Settings labels".into(),
+                summary: object.facts.join(" · "),
+                observed_at: object.captured_at.to_rfc3339(),
+                data_type: object.category,
+                evidence_status: "validated".into(),
+                evidence_quality: Some(0.35),
+                confidence: 1.0,
+                assets: Vec::new(),
+                favorite: stored.is_some_and(|e| e.favorite),
+                saved: stored.is_some_and(|e| e.saved),
+                official_source: false,
+                has_contradiction: false,
+                mobile_observation_id: Some(object.observation_id),
+                evidence_ids: vec![object.evidence_id],
+                related_signal_ids: Vec::new(),
+                source_locator: Some(object.source_locator),
+                visible_facts: object.facts,
+            });
+        }
         feed.sort_by(|left, right| right.observed_at.cmp(&left.observed_at));
         Ok(MobileWorkspaceData {
+            research_tasks: self.mobile_research_tasks().await?,
             runtime_status: if observations.is_empty() {
                 "disconnected"
             } else {
@@ -649,7 +701,26 @@ impl AppRuntime {
         })
     }
 
-    async fn load_mobile_settings(&self) -> Result<MobileRuntimeSettings, AppError> {
+    async fn mobile_research_tasks(&self) -> Result<Vec<MobileResearchTaskView>, AppError> {
+        let rows = sqlx::query("SELECT id,query,status,mobile_packages_json,mobile_budget_json,created_at FROM research_tasks WHERE reason='User-authorized mobile intelligence research' ORDER BY created_at DESC LIMIT 50")
+            .fetch_all(self.pool()).await?;
+        rows.into_iter()
+            .map(|row| {
+                Ok(MobileResearchTaskView {
+                    id: row.get("id"),
+                    query: row.get("query"),
+                    status: row.get("status"),
+                    allowed_apps: serde_json::from_str(
+                        &row.get::<String, _>("mobile_packages_json"),
+                    )?,
+                    budget: serde_json::from_str(&row.get::<String, _>("mobile_budget_json"))?,
+                    created_at: row.get("created_at"),
+                })
+            })
+            .collect()
+    }
+
+    pub(crate) async fn load_mobile_settings(&self) -> Result<MobileRuntimeSettings, AppError> {
         let value: Option<String> =
             sqlx::query_scalar("SELECT value_json FROM settings WHERE key='mobile_runtime'")
                 .fetch_optional(self.pool())
@@ -725,7 +796,7 @@ impl AppRuntime {
         &self,
         warehouse: &HashMap<String, &WarehouseEntryView>,
     ) -> Result<Vec<IntelligenceItemView>, AppError> {
-        let rows = sqlx::query("SELECT id,source,source_type,asset,title,content,captured_at,reliability,confidence,raw_reference FROM evidence ORDER BY captured_at DESC LIMIT 200")
+        let rows = sqlx::query("SELECT id,source,source_type,asset,title,content,captured_at,reliability,confidence,raw_reference FROM evidence WHERE id NOT IN (SELECT evidence_id FROM mobile_extracted_objects) ORDER BY captured_at DESC LIMIT 200")
             .fetch_all(self.pool())
             .await?;
         Ok(rows

@@ -43,6 +43,10 @@ pub fn build_contextual_request(
         values.insert("mobileSourceLocator".into(), source_locator.clone());
     }
     UnifiedModelRequest {
+        structured_output: None,
+        max_output_tokens: None,
+        timeout_ms: None,
+        max_response_bytes: None,
         model: "mock-model".into(),
         messages: vec![
             UnifiedMessage {

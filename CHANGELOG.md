@@ -8,6 +8,7 @@ All notable public changes to OrdinConn will be recorded here from the open-sour
 
 ### Added
 
+- M3 bounded Planner/Executor integration with persistent budgets, Stop priority, bound Approval and owner-verified completion. Live-model acceptance remains BLOCKED_MODEL_NOT_CONFIGURED; Full Autonomous M3 is NOT_COMPLETE. See [Phase 5](docs/mobile/M3_PHASE5.md).
 - Public issue-first development workflow and GitHub templates.
 - English and Chinese project entry documentation.
 - Public status, DevLog, ADR, security, and Codex field-note structure.

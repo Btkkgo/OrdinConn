@@ -2,6 +2,9 @@
 
 [English](ARCHITECTURE.md) | [简体中文](ARCHITECTURE.zh-CN.md)
 
+> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](mobile/M3_PHASE5.zh-CN.md)。
+
+
 OrdinConn V0.1 使用单进程嵌入式 Tauri Runtime，并保持严格分层：
 
 `Core crates -> Application services -> Tauri adapter -> Typed IPC contracts -> React UI`
@@ -47,3 +50,7 @@ Evidence Cluster 持久化 Original、Syndicated、Independent 和 Contradicting
 ## UI 与本地化
 
 React 的所有正式 UI Label 都使用 Locale Key。`en` 与 `zh-CN` Dictionary 的 Key Coverage 完全一致；英文为默认语言，非法的已存偏好回退到英文，Settings 可立即切换语言，无需改变 Component 或 Runtime。视觉系统从用户提供的 OrdinConn 标识中提取紫色背景、黑色结构和黄色 Action Accent。原始图片保存在 `apps/desktop/src/assets/ordinconn-logo-source.jpg`，桌面 Icon 是同一素材转换得到的 PNG。
+
+## M3 手机执行基础
+
+[Phase 4](mobile/M3_EXECUTOR.zh-CN.md) 经现有 Rust/Tauri Mobile Host 与 typed IPC，每次显式调用只执行一个持久化 Step。Rust Device Lease、新前后观察、语义策略、验证和不可变 Evidence link 约束每次调用。生产 Executor 已用 TEST_ONLY Planner 在真实 Settings AVD 验证；Provider 0 阻止 Live Planner + Executor 验收，完整自主 M3 仍为 NOT_COMPLETE，Phase 5 Stop/Approval 已集成。本基础不启用真钱执行。

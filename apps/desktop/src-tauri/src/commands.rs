@@ -29,6 +29,22 @@ pub struct IpcError {
 }
 
 impl IpcError {
+    pub(crate) fn mobile_goal(error: ordinconn_app::AppError) -> Self {
+        if let ordinconn_app::AppError::MobileGoal(error) = error {
+            Self {
+                code: serde_json::to_value(error.code)
+                    .expect("enum serialization")
+                    .as_str()
+                    .expect("enum string")
+                    .into(),
+                message: error.message,
+                retryable: false,
+            }
+        } else {
+            Self::internal(error)
+        }
+    }
+
     pub(crate) fn internal(error: impl std::fmt::Display) -> Self {
         Self {
             code: "internal_error".into(),
@@ -126,6 +142,17 @@ pub async fn execute_mobile_action(
         target: input.target,
         text: input.text,
     };
+    let device_id = state
+        .mobile_host
+        .current_capture()
+        .ok_or_else(|| IpcError::internal("Mobile session is unavailable"))?
+        .session
+        .device_id;
+    let lease = state
+        .runtime
+        .device_execution_leases()
+        .acquire(&device_id, None, &request.action_id)
+        .map_err(IpcError::internal)?;
     state
         .runtime
         .record_mobile_action_intent(&request)
@@ -133,6 +160,7 @@ pub async fn execute_mobile_action(
         .map_err(IpcError::internal)?;
     let (execution, environment, current_capture) =
         tauri::async_runtime::spawn_blocking(move || {
+            let _lease = lease;
             let execution =
                 mobile_host.execute_action(request, configured_sdk.as_deref(), &allowed_apps);
             let environment = mobile_host.environment_diagnostics(configured_sdk.as_deref());
@@ -202,6 +230,10 @@ pub(crate) async fn stop_mobile_workspace(
     runtime: &AppRuntime,
     mobile_host: &crate::mobile::MobileHost,
 ) -> Result<MobileWorkspaceData, IpcError> {
+    runtime
+        .stop_mobile_goals()
+        .await
+        .map_err(IpcError::mobile_goal)?;
     let session_id = mobile_host.session_id();
     if mobile_host.stop_session() {
         runtime

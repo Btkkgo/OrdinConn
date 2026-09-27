@@ -52,6 +52,16 @@ pub fn build_chat_request(
                 .collect(),
         );
     }
+    if let Some(output) = &request.structured_output {
+        if capabilities.structured_output {
+            body["response_format"] = json!({"type":"json_schema","json_schema":{"name":output.name,"strict":true,"schema":output.schema}});
+        } else if capabilities.json_mode {
+            body["response_format"] = json!({"type":"json_object"});
+        }
+    }
+    if let Some(limit) = request.max_output_tokens {
+        body["max_tokens"] = json!(limit);
+    }
     Ok(body)
 }
 
@@ -232,16 +242,13 @@ impl OpenAiCompatibleChatAdapter {
         if status.is_success() {
             return Ok(response);
         }
-        let message = response
-            .text()
-            .await
-            .unwrap_or_else(|_| "provider request failed".into());
         if status.as_u16() == 401 || status.as_u16() == 403 {
             Err(ModelError::Authentication)
         } else if status.as_u16() == 429 {
             Err(ModelError::RateLimited)
         } else {
-            Err(ModelError::Provider(redact_provider_error(&message)))
+            // Provider error bodies are untrusted and may echo credentials/prompts.
+            Err(ModelError::Provider("provider rejected the request".into()))
         }
     }
 }
@@ -261,14 +268,56 @@ impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
         let response = self
             .request_builder(api_key)
             .json(&body)
+            .timeout(std::time::Duration::from_millis(
+                request.timeout_ms.unwrap_or(30_000).clamp(1, 120_000),
+            ))
             .send()
             .await
             .map_err(normalize_reqwest_error)?;
         let response = Self::validate_response(response).await?;
-        let value = response
-            .json::<Value>()
-            .await
-            .map_err(|error| ModelError::MalformedResponse(error.to_string()))?;
+        let limit = request
+            .max_response_bytes
+            .unwrap_or(1_048_576)
+            .clamp(1, 1_048_576);
+        if response
+            .content_length()
+            .is_some_and(|size| size > limit as u64)
+        {
+            return Err(ModelError::MalformedResponse(
+                "response exceeds byte limit".into(),
+            ));
+        }
+        let mut bytes = Vec::new();
+        let mut chunks = response.bytes_stream();
+        while let Some(chunk) = chunks.next().await {
+            let chunk = chunk.map_err(normalize_reqwest_error)?;
+            if chunk.len() > limit.saturating_sub(bytes.len()) {
+                return Err(ModelError::MalformedResponse(
+                    "response exceeds byte limit".into(),
+                ));
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        let value: Value = serde_json::from_slice(&bytes)
+            .map_err(|_| ModelError::MalformedResponse("invalid response JSON".into()))?;
+        if request.structured_output.is_some() {
+            let choices = value["choices"]
+                .as_array()
+                .ok_or_else(|| ModelError::MalformedResponse("missing choice".into()))?;
+            if choices.len() != 1
+                || choices[0]["finish_reason"] != "stop"
+                || choices[0]["message"]
+                    .get("refusal")
+                    .is_some_and(|v| !v.is_null())
+                || choices[0]["message"]
+                    .get("tool_calls")
+                    .is_some_and(|v| !v.is_null())
+            {
+                return Err(ModelError::MalformedResponse(
+                    "structured response rejected".into(),
+                ));
+            }
+        }
         normalize_chat_completion(&value)
     }
 
@@ -286,6 +335,9 @@ impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
         let response = self
             .request_builder(api_key)
             .json(&body)
+            .timeout(std::time::Duration::from_millis(
+                request.timeout_ms.unwrap_or(30_000).clamp(1, 120_000),
+            ))
             .send()
             .await
             .map_err(normalize_reqwest_error)?;
@@ -329,14 +381,5 @@ fn normalize_reqwest_error(error: reqwest::Error) -> ModelError {
         ModelError::Timeout
     } else {
         ModelError::Network(error.without_url().to_string())
-    }
-}
-
-fn redact_provider_error(message: &str) -> String {
-    let shortened: String = message.chars().take(240).collect();
-    if shortened.to_ascii_lowercase().contains("api key") {
-        "provider rejected the request; credentials were redacted".into()
-    } else {
-        shortened
     }
 }

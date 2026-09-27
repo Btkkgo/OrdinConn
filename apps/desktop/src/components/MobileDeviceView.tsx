@@ -1,10 +1,13 @@
 import type { MobileActionInputDto, MobileActionReceiptDto, MobileDeviceSessionDto, MobileFrameDto, MobileUiSnapshotDto } from "@ordinconn/contracts";
 import { Crosshair, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Translator } from "../i18n";
 import { MobileActionControls } from "./MobileActionControls";
 
 interface MobileDeviceViewProps {
+  compact?: boolean;
+  children?: ReactNode;
+  fixtureScreen?: ReactNode;
   frame?: MobileFrameDto;
   snapshot?: MobileUiSnapshotDto;
   session?: MobileDeviceSessionDto;
@@ -19,21 +22,32 @@ interface MobileDeviceViewProps {
   t: Translator;
 }
 
-export function MobileDeviceView({ frame, snapshot, session, allowedApps, latestActionReceipt, adbStatus, inspect, onInspectChange, onObserve, onStop, onAction, t }: MobileDeviceViewProps) {
+export function frameSurfaceStyle(frame: MobileFrameDto | undefined) {
+  const outerAspect = 9 / 16;
+  const imageAspect = frame ? frame.width / frame.height : outerAspect;
+  return imageAspect <= outerAspect
+    ? { width: `${imageAspect / outerAspect * 100}%`, height: "100%" }
+    : { width: "100%", height: `${outerAspect / imageAspect * 100}%` };
+}
+
+export function MobileDeviceView({ compact = false, children, fixtureScreen, frame, snapshot, session, allowedApps, latestActionReceipt, adbStatus, inspect, onInspectChange, onObserve, onStop, onAction, t }: MobileDeviceViewProps) {
   const aligned = frame && snapshot && frame.width === snapshot.screenWidth && frame.height === snapshot.screenHeight;
   const [selection, setSelection] = useState<{ snapshotId: string; elementRef: string }>();
   const selected = snapshot && selection?.snapshotId === snapshot.snapshotId ? snapshot.elements.find((element) => element.ref === selection.elementRef) : undefined;
   return (
-    <div className="device-stage">
+    <div className={compact ? "device-stage workbench-device" : "device-stage"}>
+      {!compact ? <>
       <div className="device-toolbar">
         <button className="secondary-button" type="button" onClick={onObserve}>{t("mobile.observeNow")}</button>
         <button className="secondary-button" type="button" onClick={onStop}>{t("mobile.stopSession")}</button>
         <button className={inspect ? "icon-button active" : "icon-button"} type="button" onClick={() => onInspectChange(!inspect)} aria-pressed={inspect} aria-label={t("mobile.inspectElements")}><Crosshair size={16} /></button>
       </div>
-      <div className="phone-frame" style={{ "--phone-aspect": frame ? `${frame.width} / ${frame.height}` : "9 / 20" } as React.CSSProperties}>
-        {frame ? <img src={frame.dataUrl} alt={t("mobile.currentScreen")} /> : (
-          <div className="device-empty"><Smartphone size={36} /><strong>{adbStatus === "missing" ? t("mobile.adbUnavailable") : t("mobile.noLiveFrame")}</strong><span>{adbStatus === "missing" ? t("mobile.installAdb") : t("mobile.connectEmulator")}</span></div>
-        )}
+      </> : null}
+      <div className="phone-frame" style={{ "--phone-aspect": compact ? "9 / 16" : frame ? `${frame.width} / ${frame.height}` : "9 / 20" } as React.CSSProperties}>
+        <div className="device-frame-surface" style={compact ? frameSurfaceStyle(frame) : { width: "100%", height: "100%" }}>
+        {fixtureScreen ?? (frame ? <img src={frame.dataUrl} alt={t("mobile.currentScreen")} /> : (
+          <div className="device-empty">{!compact ? <Smartphone size={36} /> : null}<strong>{adbStatus === "missing" ? t("mobile.adbUnavailable") : t("mobile.noLiveFrame")}</strong><span>{adbStatus === "missing" ? t("mobile.installAdb") : t("mobile.connectEmulator")}</span></div>
+        ))}
         {inspect && aligned ? <div className="element-overlay" aria-label="UI element inspector">{snapshot.elements.map((element) => (
           <button
             className="element-box"
@@ -44,10 +58,15 @@ export function MobileDeviceView({ frame, snapshot, session, allowedApps, latest
             type="button"
           ><span>{element.ref}</span></button>
         ))}</div> : null}
+        </div>
       </div>
+      {children}
+      {compact ? <details className="workbench-inspector"><summary>{t("workbench.deviceTools")}</summary><button type="button" onClick={() => onInspectChange(!inspect)} aria-pressed={inspect}>{t("mobile.inspectElements")}</button></details> : null}
+      <div className={compact ? "workbench-device-details" : "device-details"} hidden={compact && !inspect}>
       <div className="device-meta"><span>{snapshot?.packageName ?? t("mobile.noForegroundApp")}</span><span>{snapshot ? t("mobile.uiElements", { count: snapshot.elements.length }) : t("mobile.uiTreeUnavailable")}</span></div>
       {inspect && selected ? <dl className="inspector-detail"><div><dt>Ref</dt><dd>{selected.ref}</dd></div><div><dt>Text</dt><dd>{selected.text ?? "—"}</dd></div><div><dt>Role / Class</dt><dd>{selected.role} · {selected.className}</dd></div><div><dt>Content Description</dt><dd>{selected.contentDescription ?? "—"}</dd></div><div><dt>Bounds</dt><dd>{selected.bounds.x},{selected.bounds.y} {selected.bounds.width}×{selected.bounds.height}</dd></div><div><dt>State</dt><dd>{selected.clickable ? "clickable" : "not clickable"} · {selected.scrollable ? "scrollable" : "fixed"} · {selected.enabled ? "enabled" : "disabled"}</dd></div><div><dt>Resource ID</dt><dd>{selected.resourceId ?? "—"}</dd></div><div><dt>Extraction</dt><dd>{selected.extractionSource} · {Math.round(selected.confidence * 100)}%</dd></div></dl> : null}
       <MobileActionControls session={session} snapshot={snapshot} selected={selected} allowedApps={allowedApps} receipt={latestActionReceipt} onAction={onAction} t={t} />
+      </div>
     </div>
   );
 }

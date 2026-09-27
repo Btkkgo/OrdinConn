@@ -2,6 +2,9 @@
 
 [English](OVERVIEW.md) | [简体中文](OVERVIEW.zh-CN.md)
 
+> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](../mobile/M3_PHASE5.md) for current validation.
+
+
 ## Product boundary
 
 OrdinConn is an open-source, model-agnostic Agent Runtime direction. V0.1 applies that runtime to an AI Financial Intelligence and Execution Agent; the current product is not yet a general-purpose computer-control platform.
@@ -43,7 +46,7 @@ Later phases may add:
 
 `Agent decision -> Action -> Post-action observation -> Verification -> Evidence -> Strategy -> SignalCandidate`
 
-Current M1 code is observe-only. Android-specific process execution stays in the Tauri adapter; platform-independent mobile contracts stay in `mobile-runtime`; persistence and workspace projection stay in `ordinconn-app`.
+Current mobile behavior includes verified M1.5 observation and M2 manual navigation. The local [M3 Phase 4 foundation](../mobile/M3_EXECUTOR.md) adds explicit single-step execution, device leases, real before/after observation, typed verification and source-backed extraction. TEST_ONLY planning verifies the production executor on Settings AVD; Provider 0 and blocked live model acceptance keep full autonomous M3 NOT_COMPLETE. Android process execution remains in the Tauri host; transport-independent contracts/verification remain in `mobile-runtime`; persistence/orchestration and projection remain in `ordinconn-app`.
 
 ## Perception direction
 

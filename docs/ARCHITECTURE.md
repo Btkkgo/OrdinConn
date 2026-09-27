@@ -2,6 +2,9 @@
 
 [English](ARCHITECTURE.md) | [简体中文](ARCHITECTURE.zh-CN.md)
 
+> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](mobile/M3_PHASE5.md) for current validation.
+
+
 OrdinConn V0.1 uses a single-process embedded Tauri runtime with strict layers:
 
 `Core crates -> Application services -> Tauri adapter -> Typed IPC contracts -> React UI`
@@ -47,3 +50,7 @@ Catalog initialization registers validated sources and immutable strategy versio
 ## UI and localization
 
 React uses locale keys for every formal UI label. The `en` and `zh-CN` dictionaries have identical key coverage; English is the default, invalid stored preferences fail back to English, and Settings can switch languages immediately without component or runtime changes. The visual system derives its purple background, black structure, and yellow action accent from the user-provided OrdinConn mark. The exact source image is retained at `apps/desktop/src/assets/ordinconn-logo-source.jpg`, and the desktop icon is a PNG conversion of the same asset.
+
+## M3 mobile execution foundation
+
+[Phase 4](mobile/M3_EXECUTOR.md) implements one explicit persisted Step through the existing Rust/Tauri mobile host and typed IPC. Rust device leases, fresh before/after observations, semantic policy, verification and immutable evidence links bound each invocation. The production executor has real Settings AVD evidence with a TEST_ONLY planner. Provider 0 prevents Live Planner + Executor acceptance; full autonomous M3 remains NOT_COMPLETE, and Phase 5 Stop/Approval integration is implemented. This foundation does not enable real-money execution.

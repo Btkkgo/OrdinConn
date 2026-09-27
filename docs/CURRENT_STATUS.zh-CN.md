@@ -2,21 +2,30 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-- 日期：2026-09-22
+> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](mobile/M3_PHASE5.zh-CN.md)。
+
+
+- 日期：2026-09-27
 - 版本：0.1.0
 - 正式仓库：https://github.com/Btkkgo/OrdinConn
 - 当前 Mobile Gate：https://github.com/Btkkgo/OrdinConn/issues/1
 - 默认公开分支：`main`
-- 产品源码基线：`f8705c5`
+- 工作分支：`codex/realtime-workbench`，基线 `cc1d0c9`；包含保留的 Issue #11 前置修改及 Issue #12 Phase 2–5 集成。
 - Mobile 阶段：M1.5 真实环境验收完成
 - Gate：**M1.5 通过**
 - 强制验收项：**15 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**
 - Runtime Reliability 后续：**Issue #4 CLOSED / VERIFIED**
 - 当前阶段：**M2 已验证 — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN**（[Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7)；[验收记录](mobile/M2_ACCEPTANCE.zh-CN.md)）
+- 本地 M3 基础：**PHASE 5 IMPLEMENTED / NEEDS LIVE VALIDATION**；完整自主验收 **NOT_COMPLETE**；当前验证见 Phase 5 验收记录。
+
+- 工作台：**IMPLEMENTED / NEEDS VALIDATION**，[Issue #11](https://github.com/Btkkgo/OrdinConn/issues/11)。自定义手机目标接线已实现；真实模型验收为 `BLOCKED_MODEL_NOT_CONFIGURED`。
+- Operator Experience：**PENDING USER ACCEPTANCE**，[Issue #10](https://github.com/Btkkgo/OrdinConn/issues/10)。
 
 本文严格区分已实现、已验证、部分完成、受阻、已设计、已计划和尚未开始。设计文档不能替代运行证据。
 
 ## 已实现
+
+- 按参考图实现深色主页工作台、真实已加载对象统计、类型化指令、持久化 pending 手机研究任务投影，以及需显式启用的开发视觉 Fixture。仓库、设置、数据详情讨论和人工手机 Inspector 保留可访问。
 
 - 基于 Tauri、React 和类型化 IPC 的本地优先桌面应用。
 - 市场、Evidence、Signal、Strategy、Model、Agent、Approval、Execution、Connector 和 Tool 的 Rust 领域模块。
@@ -30,6 +39,8 @@
 - 独立于 Codex/ChatGPT 的 macOS 两小时 GitHub 同步 LaunchAgent；它通过专用 TCC 身份和 Application Support runner 工作。
 
 ## 已验证
+
+Issue #11 验证：60 项 TypeScript 测试/类型检查 PASS；165 项 Rust 测试串行 PASS，保留默认并行 AVD 夹具失败。真实桌面包 Observe/Collect/Stop PASS。详见[工作台验收记录](mobile/WORKBENCH_ACCEPTANCE.zh-CN.md)；这不等于自主任务执行或所有者 UX 通过。
 
 在产品源码基线 `c4f2d66` 上，最近一次完整记录为：126 个 Rust 测试通过、31 个 TypeScript 测试通过、Rust 格式与 Clippy 通过、TypeScript Typecheck 与 Vite Build 通过，并成功生成 macOS Tauri App Bundle。
 
@@ -61,7 +72,8 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 ## 受阻
 
 - M1.5 产品 Gate 已无受阻项。
-- 产品验收项已无受阻。Issue #4 的历史 Timeout Failure 保留在记录中；Reliability 分支上的重复默认并行验证现已通过。
+- Issue #11 所有者 UX 验收仍独立进行。Phase 5 已将 Home Goal 接入有界 Rust Runner，但 Provider 0 阻塞真实 Planner + Executor 验收；模型宣称不能代替类型化完成证据。
+- Issue #4 的历史失败仍保留；已完成的 Reliability 验证不变。
 
 ## 已设计
 
@@ -79,7 +91,7 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 
 ## 尚未开始
 
-- Mobile M3 生产 App Skills 与任何自主导航。
+- 完整自主 M3 导航及生产 App Skills（Phase 4 显式单步执行已单独实现）。
 - Mobile Observation 自动晋升为 Evidence。
 - 物理 Android 设备支持。
 - 真实资金执行。
@@ -90,4 +102,35 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 
 ## 下一步
 
-在验证过的分支合并后完成 Issue #7 公开收尾。停在 M2；未经所有者新请求，不进入 M3，也不创建或发布 X 内容。
+在现有 Settings 配置且仅启用一个生产 Provider/默认模型，再运行安全、至少两次决策的真实 Model/Planner/Executor Gate。Issue #11 工作台审查与 #10 所有者操作体验反馈单独处理。Full Autonomous M3 仍为 NOT_COMPLETE，#12 保持 OPEN / status:needs-validation。无 X 草稿或发布。
+
+## M3 Phase 2 — 持久化执行契约（历史）
+
+[Issue #12](https://github.com/Btkkgo/OrdinConn/issues/12) 跟踪完整 M3 foundation，保持 OPEN / NEEDS VALIDATION。Phase 1 审计完成，**Phase 2 Technical Acceptance PASS**，已接受的实时工作台视觉设计保持不变。
+
+已实现并验证：canonical Rust Goal/Plan/Step ID 与状态机、原始 objective 持久化、不可覆盖的 revision 历史、Budget/Error/Risk/ExpectedResult、Observation/Action/Evidence/Result 引用、事务化生命周期审计、fail-closed 启动恢复、确定性 MobileApprovalSubject hash，以及四个创建/读取 typed IPC。Home 输入创建持久化 PENDING MobileGoal，无 Plan 时显示“等待规划”，不制造假 Plan；其他 ResearchTask 保持不变。见 [M3 契约](mobile/M3_CONTRACTS.zh-CN.md)。
+
+Phase 2 历史验证：默认并发 **Rust 203 PASS / 0 FAIL**（新增 repository 30、domain 6、IPC 2；原 Trade Approval 回归保留），**Desktop TypeScript 59 PASS**、**Contracts 9 PASS**；typecheck、前端构建、Rust 全工作区构建、Tauri release 打包、rustfmt、公开安全 Gate、git diff --check PASS。旧数据库迁移保留审计、观察、收藏/保存的 mobile feed、ResearchTask 和设置。合成契约测试不代表真实设备执行证据。
+
+以上 Phase 2 记录为历史基线，Phase 3 为历史记录，当前 Phase 4 状态见下方。原聊天 MockModelAdapter 保持不变并排除在 M3 之外。此前 AVD 测试夹具时间问题保留为 KNOWN_TEST_INFRA_LIMITATION。#11 保持 OPEN。Commit NONE / Push NONE。
+
+## M3 Phase 3 — 显式真实 Gateway Planner（历史记录）
+
+已实现真实 Model Gateway 生产路径、唯一启用 Provider/默认模型解析、严格单 decision Schema、有界 Context/Output/Timeout/Retry、本地 Domain/Safety 校验和 Risk 重算、仅 Completion Proposal、同事务保存 Plan/单个 pending Step 与 metadata events。`plan_mobile_goal` 为显式 typed IPC；Home 提交不调用模型。保留视觉设计，现有面板显示等待执行。见 [M3 Planner](mobile/M3_PLANNER.zh-CN.md)。
+
+最新验证：最终串行工作区 **Rust 239 PASS / 0 FAIL**；**Desktop TypeScript 60 PASS**、**Contracts 9 PASS**、**Model Gateway 9 PASS**、**Phase 2 repository 30 PASS**、**Phase 2 domain 6 PASS**，原 Trade Approval 回归 PASS；typecheck、前端构建、Rust 工作区构建、rustfmt PASS。Tauri release 打包 PASS。四次默认并发工作区尝试及一次较早的完整串行尝试复现 `concurrent_avd_lifecycle_fixtures_remain_independent_during_slow_tool_startup`。最新默认并发另失败 `command_returns_after_success_when_descendant_keeps_stdout_open`，在剩余套件运行前以 **206 PASS / 2 FAIL** 结束。竞争编译结束后，最终完整串行 **239/239 PASS**，含桌面 **47/47**；此前默认并发 **236/236** 属于审计前代码。保留该已知夹具限制，不修改超时或永久串行化测试。未使用真实 AVD。
+
+只读共享 Planner Gate 核对生产 Provider Count **0**；**MODEL_NOT_CONFIGURED PASS**，没有 Provider 配置、凭据保存、生产迁移或假 Plan/Step。原生 Schema 与 JSON-only 经本地 HTTP/隔离 SQLite 测试通过；**Live Provider Gate NOT_RUN_MODEL_NOT_CONFIGURED**。完整 M3 在 Issue #12 保持 OPEN / status:needs-validation；自主执行 **NOT_IMPLEMENTED**、Mobile Action executed **NO**、Commit **NONE**、Push **NONE**。Phase 3 后停止，不启动 Phase 4 Executor 或 Phase 5 Approval execution。
+
+## M3 Phase 4 — 有界单步 Rust Executor（历史）
+
+已实现 Executor 与真实 Settings 验收，**Phase 4 Technical Acceptance PASS**；完整自主 M3 仍为 **NOT_COMPLETE**。生产 Rust `execute_mobile_goal_step` 每次只执行一个持久化 Pending Step。已实现 Device Lease、新 Observe-before、本地语义解析/策略、现有 M2 typed action、真实 Observe-after、类型化 Verification、不可变 Result/Trace，以及 fail-closed 重启和幂等保护。Approval-required Step 进入 WAITING_APPROVAL，不执行；Forbidden 返回 POLICY_BLOCKED。现有卡片刷新持久化 Step 与提取指标，不新增控制，也不自动调用 Executor。见 [M3 Executor](mobile/M3_EXECUTOR.zh-CN.md)。
+
+独立专用 AVD Gate **PASS**，使用隔离测试数据库和 **TEST_ONLY** 确定性 Planner，经同一个生产 Executor 验证：**BACK PASS / ACTIVITY_EQUALS**、**SCROLL_DOWN PASS**、真实 Observe → Action → Observe → Verify、受支持的单次滚动完成条件、重复保护，以及 **EXTRACT PASS** 的真实 Object/Evidence/Projection 关联。**INPUT_TEXT NOT_AVAILABLE_TEST_SURFACE**；精确值和防假成功合成输入验证 PASS。保留此前 Focus/Target/Harness 失败记录；有界 Focus 读取绝不重放动作。
+
+此前默认并发 Rust **272 PASS / 0 FAIL**，最终默认 **240 PASS / 1 FAIL / KNOWN_TEST_INFRA_LIMITATION**；最终完整串行 Rust **272 PASS / 0 FAIL**；桌面 **52/52**、Executor service **18/18**、Executor domain **9/9**、Source 注册 **1/1**、Phase 3 Planner service **20/20** 与 domain **10/10**、Model Gateway **9/9**、Phase 2 repository **30/30** 与 domain **6/6**、原 Trade Approval 回归 PASS。默认套件不启用真实 AVD Gate；真实 Gate 已另外显式运行并通过。保留此前 Phase 3 并发失败，本阶段不增加夹具超时，也不强制串行化正常套件。Desktop TypeScript **63/63**、Contracts **9/9**、typecheck 和前端构建 PASS。Rust 工作区构建、macOS Tauri release app 打包、rustfmt、公开安全/文档/Diff Gate PASS。
+
+生产 Provider Count **0**，最新只读核对，无生产迁移/配置修改/Key 读取；Live Planner + Executor 为 **NOT_RUN_MODEL_NOT_CONFIGURED**。#12 保持 OPEN / status:needs-validation，#11 OPEN，#10 所有者验收不变。Phase 4 后停止；Phase 5 Stop 优先级/Approval 消费与完整真实 AI 验收仍待实现。Commit **NONE**、Push **NONE**，无 X 草稿或发布。
+
+
+最终并发重跑说明：补齐 Lease panic/poison 和跳过下一 Step 的断言后，最终 `cargo test --workspace` 以 **240 PASS / 1 FAIL** 停止；失败为既有 `mobile::tests::concurrent_avd_lifecycle_fixtures_remain_independent_during_slow_tool_startup`（Fixture_AVD_3 AvdBootTimeout），剩余套件未运行。此前本阶段完整默认并发 **272/272 PASS** 为较早记录；当前默认并发结果为 **FAIL / KNOWN_TEST_INFRA_LIMITATION**，不是 PASS。无 Timeout 增大、强制串行化或真实 AVD 共享资源冲突。最终完整串行结果另行记录。

@@ -151,7 +151,17 @@ impl SourceDefinition {
     pub fn validate_public(&self) -> Result<(), CollectorError> {
         let url =
             Url::parse(&self.endpoint).map_err(|e| CollectorError::InvalidSource(e.to_string()))?;
-        if !matches!(url.scheme(), "http" | "https" | "ws" | "wss") {
+        let safe_local_settings = self.collector_kind == CollectorKind::Computer
+            && self.auth == AuthRequirement::None
+            && url.scheme() == "android"
+            && matches!(url.host_str(), Some("com.android.settings"))
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.port().is_none()
+            && matches!(url.path(), "" | "/")
+            && url.query().is_none()
+            && url.fragment().is_none();
+        if !safe_local_settings && !matches!(url.scheme(), "http" | "https" | "ws" | "wss") {
             return Err(CollectorError::Policy(
                 "only public HTTP(S)/WS(S) endpoints are allowed".into(),
             ));

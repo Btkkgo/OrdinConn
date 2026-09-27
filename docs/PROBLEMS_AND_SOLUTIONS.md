@@ -259,3 +259,11 @@ Verification must prove the action-specific target state, not merely that someth
 ## Problem 010 — Denied request identifiers could leak into action receipts
 
 A caller could put arbitrary text into a stale session ID, snapshot ID, element ref, or disallowed package string. The first receipt constructor copied those strings even when policy denied the action. A RED→GREEN test exposed this persistence route. Receipts now take session/snapshot IDs from the trusted capture and redact unrecognized refs or unapproved package targets; an approved target is restored only after policy permits it. The regression checks that caller-supplied sentinel strings are absent from serialized receipts.
+
+## Problem 011 — Successful dump exit was not a fresh observation
+
+The native Android dump command can return after an idle/root failure without writing XML. A shared path could then expose an old or concurrent host's dump. Each read now owns a unique path, requires its exact dump-success marker, and removes only its own artifact. A zero-exit failure regression proves no previous XML is read; production timeouts and freshness rules remain unchanged. See [M3 Phase 5](mobile/M3_PHASE5.md) for current real-device verification and retained failed attempts.
+
+## Problem 012 — Stop could lose to approved completion
+
+A new regression reproduced an approved final action completing its Goal after the owner requested Stop. The executor now settles the emitted action's Receipt and verification, then prioritizes STOPPED over owner completion or continuation. The regression failed before the fix and passed afterward, and belongs to the final default 287-test suite. Real-model acceptance is still BLOCKED_MODEL_NOT_CONFIGURED; Issue #12 remains open.

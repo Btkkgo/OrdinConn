@@ -896,22 +896,24 @@ impl MobileHost {
             ],
         )?;
         let size_output = run_text(adb, &["-s", &device_id, "shell", "wm", "size"])?;
-        let focus_output = run_text(adb, &["-s", &device_id, "shell", "dumpsys", "window"])?;
-        run_text(
-            adb,
-            &[
-                "-s",
-                &device_id,
-                "shell",
-                "uiautomator",
-                "dump",
-                "/sdcard/ordinconn-ui.xml",
-            ],
-        )?;
-        let ui_xml = run_text(
-            adb,
-            &["-s", &device_id, "shell", "cat", "/sdcard/ordinconn-ui.xml"],
-        )?;
+        let focus_deadline = Instant::now() + Duration::from_secs(10);
+        let focus_output = loop {
+            let output = run_command_text_until(
+                adb,
+                &["-s", &device_id, "shell", "dumpsys", "window"],
+                focus_deadline,
+            )
+            .ok_or(MobileHostError::FocusUnavailable)?;
+            if parse_focused_app(&output).is_some() {
+                break output;
+            }
+            if Instant::now() >= focus_deadline {
+                return Err(MobileHostError::FocusUnavailable);
+            }
+            // Observe a transient activity transition; never repeat the preceding action.
+            thread::sleep(Duration::from_millis(100));
+        };
+        let ui_xml = read_owned_ui_tree(adb, &device_id)?;
         let png = run_bytes(adb, &["-s", &device_id, "exec-out", "screencap", "-p"])?;
         let capture = bind_capture_to_session(
             capture_from_outputs(
@@ -944,6 +946,16 @@ impl MobileHost {
         request: MobileActionRequest,
         android_sdk: Option<&str>,
         allowed_apps: &[String],
+    ) -> MobileActionExecution {
+        self.execute_action_with_progress(request, android_sdk, allowed_apps, |_| {})
+    }
+
+    pub(crate) fn execute_action_with_progress(
+        &self,
+        request: MobileActionRequest,
+        android_sdk: Option<&str>,
+        allowed_apps: &[String],
+        mut progress: impl FnMut(ordinconn_app::mobile_executor::ExecutorActionStage),
     ) -> MobileActionExecution {
         let guard = self.operation_lock.lock();
         if guard.is_err() {
@@ -1095,27 +1107,7 @@ impl MobileHost {
             MobileActionTarget::Back | MobileActionTarget::Home
         ) {
             let live_tree = (|| -> Result<MobileUiSnapshot, MobileHostError> {
-                run_text(
-                    adb,
-                    &[
-                        "-s",
-                        &before.session.device_id,
-                        "shell",
-                        "uiautomator",
-                        "dump",
-                        "/sdcard/ordinconn-ui.xml",
-                    ],
-                )?;
-                let xml = run_text(
-                    adb,
-                    &[
-                        "-s",
-                        &before.session.device_id,
-                        "shell",
-                        "cat",
-                        "/sdcard/ordinconn-ui.xml",
-                    ],
-                )?;
+                let xml = read_owned_ui_tree(adb, &before.session.device_id)?;
                 Ok(MobileUiSnapshot::from_elements(
                     &before.session.session_id,
                     &live_package,
@@ -1179,6 +1171,14 @@ impl MobileHost {
         }
         let action = execute_adb_action(adb, &before, &request);
         if action.is_err() {
+            #[cfg(test)]
+            eprintln!(
+                "ADB_ACTION_FAILED timeout={}",
+                action
+                    .as_ref()
+                    .err()
+                    .is_some_and(|error| error.to_string().contains("timed out"))
+            );
             receipt.status = MobileActionStatus::Failed;
             receipt.verification = Some(VerificationResult::Interrupted);
             return MobileActionExecution {
@@ -1188,7 +1188,9 @@ impl MobileHost {
         }
         receipt.command_sent = true;
         receipt.status = MobileActionStatus::Executed;
+        progress(ordinconn_app::mobile_executor::ExecutorActionStage::ActionCompleted);
         thread::sleep(Duration::from_millis(300));
+        progress(ordinconn_app::mobile_executor::ExecutorActionStage::ObserveAfterStarted);
         match self.observe_unlocked(android_sdk, allowed_apps) {
             Ok(mut after) => {
                 if after.session.device_id != before.session.device_id {
@@ -1203,7 +1205,7 @@ impl MobileHost {
                         capture: None,
                     };
                 }
-                let action_verification =
+                let mut action_verification =
                     if after.observation.verification_status != VerificationResult::Verified {
                         after.observation.verification_status
                     } else {
@@ -1217,6 +1219,26 @@ impl MobileHost {
                 if matches!(request.target, MobileActionTarget::Type { .. })
                     && let Some(value) = request.text.as_ref()
                 {
+                    let matches = match &request.target {
+                        MobileActionTarget::Type { element_ref } => before
+                            .snapshot
+                            .elements
+                            .iter()
+                            .find(|e| &e.element_ref == element_ref)
+                            .and_then(|e| {
+                                mobile_runtime::executor::matching_element(e, &after.snapshot)
+                            })
+                            .is_some_and(|e| {
+                                e.enabled
+                                    && e.class_name.ends_with("EditText")
+                                    && e.text.as_deref() == Some(value.as_str())
+                            }),
+                        _ => false,
+                    };
+                    receipt.input_value_verified = Some(matches);
+                    if !matches {
+                        action_verification = VerificationResult::UnexpectedState;
+                    }
                     redact_typed_post_capture(&mut after, value.as_str());
                     if let Ok(mut state) = self.action_state.lock() {
                         state.latest_capture = Some(after.clone());
@@ -1260,7 +1282,7 @@ fn pre_action_ui_matches(before: &MobileUiSnapshot, live: &MobileUiSnapshot) -> 
         && before.screen_width == live.screen_width
         && before.screen_height == live.screen_height
         && live.sensitive_state.is_none()
-        && serde_json::to_vec(&before.elements).ok() == serde_json::to_vec(&live.elements).ok()
+        && mobile_runtime::executor::same_app_ui(before, live)
 }
 
 fn verify_executed_action(
@@ -1408,6 +1430,7 @@ fn action_receipt(
         text_length: request.text.as_ref().map(|text| text.len()),
         text_sha256: request.text.as_ref().map(|text| text.sha256()),
         command_sent: false,
+        input_value_verified: None,
     }
 }
 
@@ -1587,6 +1610,27 @@ fn bind_capture_to_session(mut capture: MobileCapture, session_id: &str) -> Mobi
 fn run_text(adb: &Path, args: &[&str]) -> Result<String, MobileHostError> {
     run_command_bytes_with_timeout(adb, args, Duration::from_secs(10))
         .map(|output| String::from_utf8_lossy(&output).into_owned())
+}
+
+/// A zero process exit is insufficient: Android's dump command can report failure and exit 0.
+/// Never reuse the previous dump or a concurrent host's file as a fresh observation.
+fn read_owned_ui_tree(adb: &Path, device: &str) -> Result<String, MobileHostError> {
+    let path = format!("/sdcard/ordinconn-ui-{}.xml", Uuid::now_v7());
+    let result = (|| {
+        let output = run_text(adb, &["-s", device, "shell", "uiautomator", "dump", &path])?;
+        if !output
+            .lines()
+            .any(|line| line.trim() == format!("UI hierchary dumped to: {path}"))
+        {
+            return Err(MobileHostError::InvalidUiTree(
+                "fresh UI dump was not confirmed".into(),
+            ));
+        }
+        run_text(adb, &["-s", device, "shell", "cat", &path])
+    })();
+    // Only this call's generated file is eligible for cleanup, including on failed reads.
+    let _ = run_text(adb, &["-s", device, "shell", "rm", "-f", &path]);
+    result
 }
 
 fn run_bytes(adb: &Path, args: &[&str]) -> Result<Vec<u8>, MobileHostError> {
@@ -1787,7 +1831,36 @@ mod tests {
         "mCurrentFocus=Window{123 u0 com.example.news/com.example.news.MainActivity}";
     const XML: &str = r#"<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node index="0" text="BTC ETF inflows" resource-id="com.example.news:id/title" class="android.widget.TextView" package="com.example.news" content-desc="headline" clickable="false" enabled="true" bounds="[10,20][900,100]"/><node index="1" text="secret" password="true" resource-id="com.example.news:id/password" class="android.widget.EditText" package="com.example.news" clickable="true" enabled="true" bounds="[10,120][900,200]"/></hierarchy>"#;
 
-    fn mobile_action_fixture() -> (TempDir, PathBuf, PathBuf, PathBuf, MobileHost) {
+    #[test]
+    fn zero_exit_ui_dump_without_a_fresh_marker_never_reads_previous_or_shared_xml() {
+        let dir = TempDir::new().unwrap();
+        let adb = dir.path().join("adb");
+        let cat_marker = dir.path().join("cat-was-called");
+        executable(
+            &adb,
+            &format!(
+                r#"#!/bin/sh
+case "$*" in
+ *"uiautomator dump"*) echo 'ERROR: could not get idle state.' >&2; exit 0 ;;
+ *"shell cat"*) touch '{}'; echo '<hierarchy/>'; exit 0 ;;
+ *"shell rm"*) exit 0 ;;
+esac
+exit 1
+"#,
+                cat_marker.display()
+            ),
+        );
+        assert!(matches!(
+            read_owned_ui_tree(&adb, "emulator-fixture"),
+            Err(MobileHostError::InvalidUiTree(_))
+        ));
+        assert!(
+            !cat_marker.exists(),
+            "stale XML must not be read after a zero-exit failed dump"
+        );
+    }
+
+    pub(super) fn mobile_action_fixture() -> (TempDir, PathBuf, PathBuf, PathBuf, MobileHost) {
         let fixture = TempDir::new().unwrap();
         let sdk = fixture.path().join("sdk");
         let focus = fixture.path().join("focus.txt");
@@ -1812,8 +1885,8 @@ case "$*" in
   *ro.build.version.release*) echo 16 ;;
   *"wm size"*) echo 'Physical size: 1080x2400' ;;
   *"dumpsys window"*) /bin/cat '{}' ;;
-  *"uiautomator dump"*) if [ -f '{}' ] && [ -f '{}' ]; then exit 1; fi; echo dumped ;;
-  *"cat /sdcard/ordinconn-ui.xml"*) if [ -f '{}' ]; then printf '%s' '{}'; else printf '%s' '{}'; fi ;;
+  *"uiautomator dump"*) if [ -f '{}' ] && [ -f '{}' ]; then exit 1; fi; for dump_file in "$@"; do :; done; printf 'UI hierchary dumped to: %s\n' "$dump_file" ;;
+  *"cat /sdcard/ordinconn-ui-"*) if [ -f '{}' ]; then printf '%s' '{}'; else printf '%s' '{}'; fi ;;
   *"screencap -p"*) printf PNG ;;
   *"android.intent.category.HOME"*) echo 'com.example.launcher/.HomeActivity' ;;
   *"cmd package resolve-activity"*) echo 'com.example.news/.MainActivity' ;;
@@ -1983,6 +2056,9 @@ esac
             request.target = target;
             let result = host.execute_action(request, sdk.to_str(), &allowed);
             assert_eq!(result.receipt.status, MobileActionStatus::Executed);
+            if matches!(result.receipt.target, MobileActionTarget::Type { .. }) {
+                assert_eq!(result.receipt.input_value_verified, Some(true));
+            }
             assert!(
                 !serde_json::to_string(&result.receipt)
                     .unwrap()
@@ -2227,6 +2303,8 @@ esac
         if std::env::var("ORDINCONN_MOBILE_M2_SMOKE").as_deref() != Ok("1") {
             return;
         }
+        let _avd_lock =
+            crate::mobile_executor::real_avd_gate_lock().expect("exclusive real AVD gate");
         let host = MobileHost::discover();
         let diagnostics = host.environment_diagnostics(None);
         assert_eq!(diagnostics.online_devices.len(), 1);
@@ -2530,6 +2608,8 @@ esac
         if std::env::var("ORDINCONN_MOBILE_SMOKE").as_deref() != Ok("1") {
             return;
         }
+        let _avd_lock =
+            crate::mobile_executor::real_avd_gate_lock().expect("exclusive real AVD gate");
         let host = MobileHost::discover();
         let mut diagnostics = host.environment_diagnostics(None);
         if diagnostics.online_devices.is_empty()
@@ -2687,6 +2767,8 @@ esac
         if std::env::var("ORDINCONN_MOBILE_SENSITIVE_SMOKE").as_deref() != Ok("1") {
             return;
         }
+        let _avd_lock =
+            crate::mobile_executor::real_avd_gate_lock().expect("exclusive real AVD gate");
         let secret = std::env::var("ORDINCONN_MOBILE_TEST_SECRET")
             .expect("the temporary sensitive-smoke value must be provided by the caller");
         let host = MobileHost::discover();
@@ -2856,8 +2938,8 @@ case "$*" in
   *ro.build.version.release*) echo 15 ;;
   *"wm size"*) echo 'Physical size: 1080x2400' ;;
   *"dumpsys window"*) echo '{}' ;;
-  *"uiautomator dump"*) echo dumped ;;
-  *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
+  *"uiautomator dump"*) for dump_file in "$@"; do :; done; printf 'UI hierchary dumped to: %s\n' "$dump_file" ;;
+  *"cat /sdcard/ordinconn-ui-"*) printf '%s' '{}' ;;
   *"screencap -p"*) printf PNG ;;
   *) exit 1 ;;
 esac
@@ -2890,8 +2972,8 @@ case "$*" in
   *"wm size"*) echo 'Physical size: 1080x2400' ;;
   *"dumpsys window windows"*) exit 1 ;;
   *"dumpsys window"*) echo '{}' ;;
-  *"uiautomator dump"*) echo dumped ;;
-  *"cat /sdcard/ordinconn-ui.xml"*) printf '%s' '{}' ;;
+  *"uiautomator dump"*) for dump_file in "$@"; do :; done; printf 'UI hierchary dumped to: %s\n' "$dump_file" ;;
+  *"cat /sdcard/ordinconn-ui-"*) printf '%s' '{}' ;;
   *"screencap -p"*) printf PNG ;;
   *) exit 1 ;;
 esac
@@ -3032,8 +3114,9 @@ esac
 
     #[test]
     fn concurrent_avd_lifecycle_fixtures_remain_independent_during_slow_tool_startup() {
-        // Model cold parallel process startup without changing production deadlines.
-        // Each worker owns its SDK, ADB script, Emulator script, and AVD home.
+        // Cold tool startup happens once per isolated SDK, not on every poll.
+        // The previous fixture slept on seven queries, spending most of the
+        // boot deadline on artificial repeated latency under parallel load.
         let barrier = std::sync::Arc::new(std::sync::Barrier::new(4));
         let handles = (0..4)
             .map(|index| {
@@ -3042,14 +3125,25 @@ esac
                     let fixture = TempDir::new().unwrap();
                     let sdk = fixture.path().join("sdk");
                     let name = format!("Fixture_AVD_{index}");
+                    let serial = format!("emulator-{}", 6000 + index * 2);
+                    let trace = sdk.join("platform-tools/trace");
                     executable(
                         &sdk.join("platform-tools/adb"),
                         &format!(
                             r##"#!/bin/sh
-if [ "$1" = "version" ]; then sleep 0.2; echo adb-test; exit 0; fi
-if [ "$1" = "devices" ]; then sleep 0.2; printf 'List of devices attached\nemulator-5554 device\n'; exit 0; fi
-if [ "$3" = "emu" ] && [ "$4" = "avd" ]; then sleep 0.2; echo {name}; echo OK; exit 0; fi
-if [ "$3" = "shell" ] && [ "$4" = "getprop" ]; then sleep 0.2; echo 1; exit 0; fi
+own_dir=$(dirname "$0")
+printf '%s\n' "$*" >> "$own_dir/trace"
+if [ "$1" = "version" ]; then
+  if [ ! -e "$own_dir/started" ]; then
+    sleep 0.2
+    printf 'cold-start\n' > "$own_dir/started"
+  fi
+  echo adb-test; exit 0
+fi
+if [ "$1" = "devices" ]; then printf 'List of devices attached\n{serial} device\n'; exit 0; fi
+if [ "$2" != "{serial}" ]; then exit 1; fi
+if [ "$3" = "emu" ] && [ "$4" = "avd" ]; then echo {name}; echo OK; exit 0; fi
+if [ "$3" = "shell" ] && [ "$4" = "getprop" ]; then echo 1; exit 0; fi
 exit 1
 "##
                         ),
@@ -3061,24 +3155,33 @@ exit 1
                         ),
                     );
                     let detector = AndroidEnvironmentDetector::new(
-                        vec![sdk],
+                        vec![sdk.clone()],
                         Vec::new(),
                         Some(fixture.path().join(".android/avd")),
                     );
                     let host = MobileHost::with_detector(detector);
                     barrier.wait();
                     let device = host
-                        .start_avd_with_timeout(&name, Duration::from_secs(3))
+                        .start_avd_with_timeout(&name, Duration::from_secs(5))
                         .expect("independent fixture should complete within its test budget");
                     assert_eq!(device.avd_name.as_deref(), Some(name.as_str()));
+                    assert_eq!(device.id, serial);
+                    let calls = fs::read_to_string(&trace).unwrap();
+                    assert!(calls.lines().filter(|line| *line == "version").count() >= 2);
+                    assert!(calls.lines().filter(|line| line.starts_with("-s "))
+                        .all(|line| line.starts_with(&format!("-s {serial} "))));
+                    assert_eq!(fs::read_to_string(sdk.join("platform-tools/started")).unwrap(), "cold-start\n");
                     assert!(host.stop_session());
                     assert!(!host.stop_session());
+                    fixture.path().to_path_buf()
                 })
             })
             .collect::<Vec<_>>();
-        for handle in handles {
-            handle.join().unwrap();
-        }
+        let namespaces = handles
+            .into_iter()
+            .map(|handle| handle.join().unwrap())
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(namespaces.len(), 4);
     }
 
     #[test]
@@ -3285,5 +3388,68 @@ exit 1
             events.try_recv().unwrap().event_type,
             "mobile.session_ended"
         );
+    }
+}
+
+#[cfg(test)]
+mod phase4_input_tests {
+    use super::*;
+    #[test]
+    fn changed_page_with_wrong_input_value_never_verifies_type() {
+        let (_fixture, sdk, _focus, _log, host) = super::tests::mobile_action_fixture();
+        let allowed = vec!["com.example.news".into()];
+        let before = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        let request = MobileActionRequest {
+            action_id: format!("phase4-input_{}", Uuid::now_v7()),
+            session_id: before.session.session_id.clone(),
+            snapshot_id: before.snapshot.snapshot_id.clone(),
+            expected_package: before.snapshot.package_name.clone(),
+            requested_at: Utc::now(),
+            target: MobileActionTarget::Type {
+                element_ref: "@e2".into(),
+            },
+            text: Some(mobile_runtime::SensitiveText::new(
+                "OrdinConn M3 Test".into(),
+            )),
+        };
+        let result = host.execute_action(request, sdk.to_str(), &allowed);
+        assert!(result.receipt.command_sent);
+        assert_eq!(
+            result.receipt.verification,
+            Some(VerificationResult::UnexpectedState)
+        );
+        assert_eq!(result.receipt.input_value_verified, Some(false));
+    }
+    #[test]
+    fn post_observation_waits_for_transient_missing_focus_without_replaying_action() {
+        let (fixture, sdk, focus, log, host) = super::tests::mobile_action_fixture();
+        let adb = sdk.join("platform-tools/adb");
+        let script = std::fs::read_to_string(&adb).unwrap();
+        let marker = fixture.path().join("focus-transition");
+        let original = format!("*\"dumpsys window\"*) /bin/cat '{}' ;;", focus.display());
+        let replacement = format!(
+            "*\"dumpsys window\"*) if [ -f '{}' ] && [ ! -f '{}' ]; then touch '{}'; echo mCurrentFocus=null; else /bin/cat '{}'; fi ;;",
+            log.display(),
+            marker.display(),
+            marker.display(),
+            focus.display()
+        );
+        assert!(script.contains(&original));
+        std::fs::write(&adb, script.replace(&original, &replacement)).unwrap();
+        let allowed = vec!["com.example.news".into()];
+        let before = host.observe_with_sdk(sdk.to_str(), &allowed).unwrap();
+        let request = MobileActionRequest {
+            action_id: "transition-action".into(),
+            session_id: before.session.session_id.clone(),
+            snapshot_id: before.snapshot.snapshot_id.clone(),
+            expected_package: before.snapshot.package_name.clone(),
+            requested_at: Utc::now(),
+            target: MobileActionTarget::Back,
+            text: None,
+        };
+        let result = host.execute_action(request, sdk.to_str(), &allowed);
+        assert_eq!(result.receipt.status, MobileActionStatus::Executed);
+        assert!(result.capture.is_some());
+        assert_eq!(std::fs::read_to_string(log).unwrap().lines().count(), 1);
     }
 }

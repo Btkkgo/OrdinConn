@@ -17,16 +17,17 @@ const workspace: MobileWorkspaceDto = {
 const signals = [{ id: "signal-1", title: "BTC linked signal", asset: "BTC" }] as SignalDto[];
 
 describe("mobile home workspace", () => {
-  it("renders feed, live mobile state, and related signals as linked columns", () => {
+  it("renders realtime data, real mobile state, and the empty plan queue", () => {
     const html = renderToStaticMarkup(
       <MobileHomePage workspace={workspace} signals={signals} selectedItemId="mobile-1" onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onAction={async () => undefined} onOpenDetail={() => undefined} t={createTranslator("en")} />,
     );
-    expect(html).toContain("aria-label=\"Intelligence feed\"");
-    expect(html).toContain("aria-label=\"Mobile live view\"");
-    expect(html).toContain("aria-label=\"Related signals\"");
+    expect(html).toContain("aria-label=\"Realtime data\"");
+    expect(html).toContain("aria-label=\"Mobile operation\"");
+    expect(html).toContain("aria-label=\"Agent plans &amp; suggestions\"");
     expect(html).toContain("ADB unavailable");
-    expect(html).toContain("BTC linked signal");
-    expect(html).toContain("Stop session");
+    expect(html).toContain("All current suggestions have been handled");
+    expect(html).not.toContain("1,284");
+    expect(html).toContain("Stop operation");
   });
 
   it("renders only manual M2 controls and a sanitized receipt summary", () => {

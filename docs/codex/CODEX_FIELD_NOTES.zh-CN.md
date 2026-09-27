@@ -56,3 +56,7 @@ Codex 保留短时限失败路径断言和全部生产 Command Deadline，增加
 假 ADB 测试证明了命令形式，但专用 Android 16 AVD 暴露出两道不同边界：Settings Search 属于独立系统包；Android Task 复用也使“任意画面变化”不足以验证 OpenApp。最初真实尝试如实记为失败；加入目标包验证和固定 clear-top 启动后，完整门控流程才通过。单独的打包 App UI 检查先捕获到一次预期的过期快照拒绝；刷新后选择 Inspector 元素，才得到 `executed · VERIFIED`。
 
 这轮有效的 Codex 做法是保留每次失败的确切证据，添加小型失败回归，再用真实设备复测。容易跑偏之处是把夹具通过、Bundle 成功或任意屏幕变化等同于 M2 验收。另一个小型隐私测试在公开文档定稿前发现被拒绝请求的标识可能进入 Receipt。用双语计划、聚焦测试命令和简短进度账本管理上下文，避免反复加载完整任务说明。M3 与 X 始终不在授权范围。
+
+## Issue #12 — M3 Phase 5 证据边界
+
+只读发现确认生产 Provider 为零。Codex 完成有界集成并保留真实模型阻塞，没有用 localhost 夹具代替验收。新增批准动作期间 Stop 回归修复前失败、修复后通过。真实输入准备暴露键盘教程和观察失败；精确目标值验证保留这些失败证据。native dump 独立文件归属现阻止旧 XML 复用。默认 workspace 287 项通过；最终构建和真实设备结果记录于 [Phase 5](../mobile/M3_PHASE5.zh-CN.md)。不推断 Owner UX acceptance 或 Full Autonomous M3 完成。既有工作和五张 JPEG 保留，私有 trace 放在公开仓库之外。

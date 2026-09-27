@@ -33,6 +33,8 @@ use crate::{
 
 #[derive(Debug, Error)]
 pub enum AppError {
+    #[error("{0}")]
+    MobileGoal(#[from] mobile_runtime::execution::MobileGoalError),
     #[error("database error")]
     Database(#[from] sqlx::Error),
     #[error("database migration error")]
@@ -274,9 +276,14 @@ pub struct AgentItemView {
 }
 
 pub struct AppRuntime {
+    pub(crate) mobile_run_guard: Mutex<()>,
+    pub(crate) mobile_cancellation: std::sync::Mutex<tokio_util::sync::CancellationToken>,
+    pub(crate) device_execution_leases: crate::mobile_executor::DeviceExecutionLeases,
+    pub(crate) planner_guard: Mutex<()>,
+    pub(crate) planner_cancellation: tokio_util::sync::CancellationToken,
     pool: SqlitePool,
     agent_runtime: AgentRuntime,
-    approval_engine: ApprovalEngine,
+    pub(crate) approval_engine: ApprovalEngine,
     execution_guard: Mutex<()>,
     pub(crate) event_bus: RuntimeEventBus,
     accepting_tasks: AtomicBool,
@@ -291,6 +298,11 @@ impl AppRuntime {
         let pool = open_database(path).await?;
         let stored = load_approval_requests(&pool).await?;
         let runtime = Arc::new(Self {
+            mobile_run_guard: Mutex::new(()),
+            mobile_cancellation: std::sync::Mutex::new(tokio_util::sync::CancellationToken::new()),
+            device_execution_leases: Default::default(),
+            planner_guard: Mutex::new(()),
+            planner_cancellation: tokio_util::sync::CancellationToken::new(),
             pool,
             agent_runtime: AgentRuntime::default(),
             approval_engine: ApprovalEngine::from_requests(stored),
@@ -306,6 +318,10 @@ impl AppRuntime {
             continuous_tasks: Mutex::new(vec![]),
         });
         runtime.recover_interrupted_tasks().await?;
+        runtime
+            .mobile_goal_repository()
+            .recover_interrupted()
+            .await?;
         runtime.initialize_core_intelligence_catalogs().await?;
         let buckets = runtime.load_metric_buckets(20_000).await?;
         runtime.history.lock().await.restore_buckets(&buckets);
@@ -322,6 +338,8 @@ impl AppRuntime {
 
     pub async fn shutdown(&self) -> Result<(), AppError> {
         self.accepting_tasks.store(false, Ordering::Release);
+        self.planner_cancellation.cancel();
+        self.mobile_cancellation_token().cancel();
         if let Some(scheduler) = self.scheduler.lock().await.take() {
             scheduler.shutdown().await;
             self.persist_scheduler_state(&scheduler.snapshot().await)

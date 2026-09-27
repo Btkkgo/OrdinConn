@@ -2,6 +2,9 @@
 
 [English](OVERVIEW.md) | [简体中文](OVERVIEW.zh-CN.md)
 
+> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](../mobile/M3_PHASE5.zh-CN.md)。
+
+
 ## 产品边界
 
 OrdinConn 是一个开源、模型无关的 Agent Runtime 方向。V0.1 将该 Runtime 用于 AI Financial Intelligence and Execution Agent；当前产品尚不是通用电脑控制平台。
@@ -43,7 +46,7 @@ Mobile 路径按阶段推进：
 
 `Agent decision -> Action -> Post-action observation -> Verification -> Evidence -> Strategy -> SignalCandidate`
 
-当前 M1 代码仅观察。Android-specific Process Execution 保持在 Tauri Adapter；平台无关的 Mobile Contract 保持在 `mobile-runtime`；Persistence 与 Workspace Projection 保持在 `ordinconn-app`。
+当前手机能力包含已验证的 M1.5 观察与 M2 人工导航。本地 [M3 Phase 4 基础](../mobile/M3_EXECUTOR.zh-CN.md) 增加显式单步执行、设备独占、新前后观察、类型化验证与来源可追溯提取。TEST_ONLY Planner 在 Settings AVD 验证生产 Executor；Provider 0 与尚未通过的真实模型 Gate 使完整自主 M3 保持 NOT_COMPLETE。Android 进程执行仍位于 Tauri Host，Transport 无关契约和验证位于 `mobile-runtime`，持久化、编排与投影位于 `ordinconn-app`。
 
 ## Perception 方向
 

@@ -2823,6 +2823,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.20",
  "tokio",
+ "tokio-util",
  "uuid",
 ]
 
@@ -2831,6 +2832,7 @@ name = "ordinconn-desktop"
 version = "0.1.0"
 dependencies = [
  "agent-runtime",
+ "async-trait",
  "chrono",
  "execution-core",
  "keyring",

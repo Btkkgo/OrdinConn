@@ -136,6 +136,9 @@ pub struct MobileActionReceipt {
     pub text_length: Option<usize>,
     pub text_sha256: Option<String>,
     pub command_sent: bool,
+    /// Exact input-value comparison performed in the Runtime before text redaction.
+    #[serde(default)]
+    pub input_value_verified: Option<bool>,
 }
 
 /// Independent policy evaluator. The host must recheck the live foreground before input.
@@ -252,7 +255,7 @@ pub fn evaluate_action(
                 if !request
                     .text
                     .as_ref()
-                    .is_some_and(|text| safe_text(text.as_str()))
+                    .is_some_and(|text| is_safe_mobile_input(text.as_str()))
                 {
                     return deny(D::UnsafeText);
                 }
@@ -285,7 +288,7 @@ pub fn evaluate_action(
     MobileActionDecision::Allowed
 }
 
-fn safe_text(value: &str) -> bool {
+pub fn is_safe_mobile_input(value: &str) -> bool {
     let length = value.chars().count();
     length > 0
         && length <= 256

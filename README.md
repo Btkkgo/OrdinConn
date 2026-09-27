@@ -2,6 +2,9 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](docs/mobile/M3_PHASE5.md) for current validation.
+
+
 [GitHub Repository](https://github.com/Btkkgo/OrdinConn) · [Current Mobile Gate](https://github.com/Btkkgo/OrdinConn/issues/1)
 
 **Open-source model-agnostic AI Agent runtime.**
@@ -57,7 +60,7 @@ The real Android gate passed against an Android 16 ARM64 Emulator: environment r
 
 Implemented M0/M1 foundations include device-session contracts, bounded screen frames, semantic UI snapshots, scoped element references, sensitive-node redaction policy, typed IPC projection, persistence, and `MobileObservation`.
 
-Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 has also passed its 30-item gate: bounded real Settings navigation, negative safety checks, sanitized receipts/audit, packaged GUI manual Tap, and M1.5 regression. Production M2 actions are limited to Settings/Settings Intelligence even if another app is user-allowlisted. M3 remains not started; no X draft or post was created for M2.
+Real frame capture, UI-tree capture, redaction verification, observation generation, typed IPC, and shutdown are verified against the dedicated `OrdinConn_M1_5` AVD. M2 has also passed its 30-item gate: bounded real Settings navigation, negative safety checks, sanitized receipts/audit, packaged GUI manual Tap, and M1.5 regression. Production M2 actions are limited to Settings/Settings Intelligence even if another app is user-allowlisted. M3 Phase 2/3 foundations and the Phase 4 single-step executor are locally implemented; full autonomous acceptance is NOT_COMPLETE (Provider 0, Phase 5 implementation ready for validation); see [M3 Executor](docs/mobile/M3_EXECUTOR.md); no X draft or post was created for M2.
 
 ## Computer Runtime
 
@@ -125,10 +128,10 @@ Development is issue-first. Open or join a scoped issue before significant work,
 
 ## Known Limitations
 
-- Mobile navigation actions are not implemented.
+- Mobile navigation is bounded to Settings/Settings Intelligence. Live M3 Planner + Executor acceptance is BLOCKED_MODEL_NOT_CONFIGURED.
 - Computer Runtime support is partial and permission-bounded.
 - The current financial execution adapter is paper-only.
-- Process-fixture concurrency remains intermittently flaky: an initial desktop run failed 3 of 24 tests, and the first corrective workspace run reproduced two AVD lifecycle failures. The later default workspace rerun passed 125/125 and the desktop suite passed 28/28 serially, but that green rerun does not prove the flakiness is gone. Follow [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
+- Historical process-fixture concurrency failures remain in the DevLog. Phase 5 isolates lifecycle resources and passes 20/20 repeated invocations; see the [current verification record](docs/mobile/M3_PHASE5.md).
 
 ## License
 

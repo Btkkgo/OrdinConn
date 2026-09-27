@@ -259,3 +259,11 @@ Verification 必须证明动作特定的目标状态，而不只是“有变化�
 ## 问题 010 — 被拒绝请求的标识可能泄入动作回执
 
 调用方可以在过期 Session ID、Snapshot ID、Element Ref 或未授权 Package 字符串里放入任意文本。最初的 Receipt 构造函数即使拒绝动作也复制这些字符串。RED→GREEN 测试暴露了该持久化入口。现在 Receipt 的 Session/Snapshot ID 来自可信 Capture；未知 Ref 与未批准 Package Target 被脱敏，只有策略允许后才恢复已批准目标。回归测试确认调用方提供的哨兵字符串不出现在序列化 Receipt 中。
+
+## 问题 011 — dump 正常退出不能证明新观察
+
+Android native dump 在 idle/root 失败时可能正常返回但不生成 XML。共享路径会读到旧文件或其他 Host 的 dump。现在每次读取独占新路径，要求对应的成功标记，仅清理自己的文件。零退出失败回归证明不会读取旧 XML；生产 timeout 和 freshness 保持不变。当前真实设备验证及历史失败见 [M3 Phase 5](mobile/M3_PHASE5.zh-CN.md)。
+
+## 问题 012 — Stop 可能被批准后的完成覆盖
+
+新增回归复现 Owner 按 Stop 后，批准的最后动作仍将 Goal 标为完成。Executor 现在等待已发出动作的 Receipt 和验证收敛，再以 STOPPED 优先，禁止完成或继续。回归在修复前失败、修复后通过，纳入最终默认 287 项测试。真实模型验收仍 BLOCKED_MODEL_NOT_CONFIGURED，Issue #12 保持 open。

@@ -2,11 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](../mobile/M3_PHASE5.md) for current validation.
+
+
 Roadmap entries are directions, not completion claims.
 
 ## Current gate
 
-M1.5 and M2 passed against the dedicated `OrdinConn_M1_5` Android 16 ARM64 AVD. M2's 30-item acceptance includes real bounded navigation, safety negatives, sanitized receipts, and a packaged-desktop Rust → Tauri → React manual Tap. See [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) and the [M2 acceptance record](../mobile/M2_ACCEPTANCE.md). M3 has not started.
+M1.5 and M2 passed against the dedicated `OrdinConn_M1_5` Android 16 ARM64 AVD. M2's 30-item acceptance includes real bounded navigation, safety negatives, sanitized receipts, and a packaged-desktop Rust → Tauri → React manual Tap. See [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) and the [M2 acceptance record](../mobile/M2_ACCEPTANCE.md). M3 Phase 2/3 foundations and Phase 4 bounded single-step execution are locally implemented; see [M3 Executor](../mobile/M3_EXECUTOR.md). Full autonomous M3 is NOT_COMPLETE: Provider 0 blocks live model acceptance; Phase 5 Stop/Approval integration is implemented.
 
 The completed gate is recorded in [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1). Intermittent process-fixture concurrency timeouts remain tracked separately in [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4).
 

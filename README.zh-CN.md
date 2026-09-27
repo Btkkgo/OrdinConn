@@ -2,6 +2,9 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](docs/mobile/M3_PHASE5.zh-CN.md)。
+
+
 [GitHub 仓库](https://github.com/Btkkgo/OrdinConn) · [当前 Mobile Gate](https://github.com/Btkkgo/OrdinConn/issues/1)
 
 **开源、模型无关的 AI Agent Runtime。**
@@ -57,7 +60,7 @@ Data → Evidence → Signal → Agent Report → Trade Proposal → Approval �
 
 M0/M1 已实现设备会话契约、受限 Screen Frame、语义 UI Snapshot、作用域化 Element Ref、敏感节点脱敏策略、类型化 IPC 投影、持久化和 `MobileObservation`。
 
-真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 的 30 项 Gate 也已通过：真实 Settings 受限导航、负向安全检查、脱敏 Receipt/Audit、打包 GUI 人工 Tap 和 M1.5 回归。即使用户将其他 App 加入白名单，生产 M2 动作仍只限 Settings/Settings Intelligence。M3 尚未开始，本轮未创建或发布 X 内容。
+真实 Frame Capture、UI Tree、敏感节点脱敏、Observation、类型化 IPC 和关闭链路已经在专用 `OrdinConn_M1_5` AVD 上验证。M2 的 30 项 Gate 也已通过：真实 Settings 受限导航、负向安全检查、脱敏 Receipt/Audit、打包 GUI 人工 Tap 和 M1.5 回归。即使用户将其他 App 加入白名单，生产 M2 动作仍只限 Settings/Settings Intelligence。M3 Phase 2/3 基础与 Phase 4 单步 Executor 已在本地实现；完整自主验收为 NOT_COMPLETE（Provider 0、Phase 5 集成已实现待验收），见 [M3 Executor](docs/mobile/M3_EXECUTOR.zh-CN.md)；本轮未创建或发布 X 内容。
 
 ## Computer Runtime
 
@@ -120,10 +123,10 @@ GitHub 是 OrdinConn 唯一的公开工程事实来源。Issue 定义正式工�
 
 ## 已知限制
 
-- Mobile Navigation Actions 尚未实现。
+- 手机导航受限于 Settings/Settings Intelligence；真实 M3 Planner + Executor 验收为 BLOCKED_MODEL_NOT_CONFIGURED。
 - Computer Runtime 仍是受权限约束的部分实现。
 - 当前金融执行适配器仅支持 Paper Execution。
-- Process Fixture 并发仍存在间歇性 Flaky：最初 Desktop Run 有 3/24 失败，第一次修正 Workspace Run 又复现 2 个 AVD Lifecycle Failure。之后 Default Workspace 重跑 125/125 通过，Desktop Suite 串行 28/28 通过，但一次绿色重跑不能证明 Flakiness 已消失。见 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
+- 历史 Process Fixture 并发失败保留在 DevLog。Phase 5 隔离 lifecycle 资源，重复调用 20/20 通过；见[当前验证记录](docs/mobile/M3_PHASE5.zh-CN.md)。
 
 ## License
 

@@ -59,6 +59,26 @@ impl std::fmt::Debug for ApprovalRequest {
     }
 }
 
+/// Typed caller-owned approval subject; no model-issued approval authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ApprovalSubject {
+    pub object_id: String,
+    pub revision: u32,
+    pub canonical_hash: String,
+    pub action: String,
+}
+impl ApprovalSubject {
+    fn trade(proposal: &TradeProposal) -> Result<Self, ApprovalError> {
+        Ok(Self {
+            object_id: proposal.id.clone(),
+            revision: proposal.version,
+            canonical_hash: proposal_hash(proposal, 1)
+                .map_err(|_| ApprovalError::Canonicalization)?,
+            action: proposal.action.as_str().into(),
+        })
+    }
+}
+
 pub struct ApprovalCapability {
     request_id: String,
     proposal_id: String,
@@ -132,15 +152,30 @@ impl ApprovalEngine {
         proposal: &TradeProposal,
         ttl: Duration,
     ) -> Result<ApprovalRequest, ApprovalError> {
-        let canonical = proposal_hash(proposal, 1).map_err(|_| ApprovalError::Canonicalization)?;
+        self.request_subject(&ApprovalSubject::trade(proposal)?, ttl)
+            .await
+    }
+    pub async fn request_subject(
+        &self,
+        subject: &ApprovalSubject,
+        ttl: Duration,
+    ) -> Result<ApprovalRequest, ApprovalError> {
+        if subject.object_id.is_empty()
+            || subject.revision == 0
+            || subject.action.is_empty()
+            || subject.canonical_hash.len() != 64
+            || ttl <= Duration::zero()
+        {
+            return Err(ApprovalError::Canonicalization);
+        }
         let now = Utc::now();
         let request = ApprovalRequest {
             id: format!("approval_{}", Uuid::now_v7()),
-            proposal_id: proposal.id.clone(),
-            proposal_version: proposal.version,
-            proposal_hash: canonical,
+            proposal_id: subject.object_id.clone(),
+            proposal_version: subject.revision,
+            proposal_hash: subject.canonical_hash.clone(),
             proposal_hash_version: 1,
-            allowed_action: proposal.action.as_str().into(),
+            allowed_action: subject.action.clone(),
             status: ApprovalStatus::Requested,
             issued_at: now,
             expires_at: now + ttl,
@@ -161,6 +196,14 @@ impl ApprovalEngine {
         request_id: &str,
         proposal: &TradeProposal,
     ) -> Result<ApprovalCapability, ApprovalError> {
+        self.approve_subject(request_id, &ApprovalSubject::trade(proposal)?)
+            .await
+    }
+    pub async fn approve_subject(
+        &self,
+        request_id: &str,
+        subject: &ApprovalSubject,
+    ) -> Result<ApprovalCapability, ApprovalError> {
         let mut requests = self.requests.lock().await;
         let request = requests
             .get_mut(request_id)
@@ -170,14 +213,14 @@ impl ApprovalEngine {
         {
             return Err(ApprovalError::InvalidState);
         }
-        verify_proposal(request, proposal)?;
+        verify_subject(request, subject)?;
         let token = random_hex(32);
         request.token_digest = Some(digest(&token));
         request.token_state = TokenState::Issued;
         request.status = ApprovalStatus::Approved;
         Ok(ApprovalCapability {
             request_id: request.id.clone(),
-            proposal_id: proposal.id.clone(),
+            proposal_id: subject.object_id.clone(),
             token,
         })
     }
@@ -214,6 +257,15 @@ impl ApprovalEngine {
         proposal: &TradeProposal,
         now: DateTime<Utc>,
     ) -> Result<ExecutionPermit, ApprovalError> {
+        self.consume_subject(capability, &ApprovalSubject::trade(proposal)?, now)
+            .await
+    }
+    pub async fn consume_subject(
+        &self,
+        capability: &ApprovalCapability,
+        subject: &ApprovalSubject,
+        now: DateTime<Utc>,
+    ) -> Result<ExecutionPermit, ApprovalError> {
         let mut requests = self.requests.lock().await;
         let request = requests
             .get_mut(&capability.request_id)
@@ -229,8 +281,8 @@ impl ApprovalEngine {
             request.status = ApprovalStatus::Expired;
             return Err(ApprovalError::Expired);
         }
-        verify_proposal(request, proposal)?;
-        if capability.proposal_id != proposal.id
+        verify_subject(request, subject)?;
+        if capability.proposal_id != subject.object_id
             || request.token_digest.as_deref() != Some(digest(&capability.token).as_str())
         {
             return Err(ApprovalError::TokenMismatch);
@@ -243,7 +295,7 @@ impl ApprovalEngine {
         }
         request.token_state = TokenState::Consumed;
         Ok(ExecutionPermit::from_validated_approval(
-            proposal.id.clone(),
+            subject.object_id.clone(),
             request.id.clone(),
         ))
     }
@@ -253,19 +305,16 @@ impl ApprovalEngine {
     }
 }
 
-fn verify_proposal(
+fn verify_subject(
     request: &ApprovalRequest,
-    proposal: &TradeProposal,
+    subject: &ApprovalSubject,
 ) -> Result<(), ApprovalError> {
-    if request.proposal_id != proposal.id
-        || request.proposal_version != proposal.version
-        || request.allowed_action != proposal.action.as_str()
+    if request.proposal_id != subject.object_id
+        || request.proposal_version != subject.revision
+        || request.allowed_action != subject.action
+        || request.proposal_hash_version != 1
+        || request.proposal_hash != subject.canonical_hash
     {
-        return Err(ApprovalError::ProposalMismatch);
-    }
-    let hash = proposal_hash(proposal, request.proposal_hash_version)
-        .map_err(|_| ApprovalError::Canonicalization)?;
-    if hash != request.proposal_hash {
         return Err(ApprovalError::ProposalMismatch);
     }
     Ok(())

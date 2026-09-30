@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE.md) | [简体中文](ARCHITECTURE.zh-CN.md)
 
-> Current M3: saved Google Gemini / `gemini-3.6-flash`, Provider Count **1**. The last real Planner-only batch passed **1/5** (9 attempts; HTTP 503/429). Provider resilience is being validated; Full Autonomous M3 remains **NOT_COMPLETE**. Earlier Phase 2–5 counts below are historical. Deployment is **PERSONAL / LOCAL-ONLY APPLICATION**; Apple signing/distribution is **OUT_OF_SCOPE_LOCAL_ONLY**.
+> Current M3: saved Google Gemini / `gemini-3.6-flash`, Provider Count **1**. The new paced Planner-only batch passed **1/5** (3 calls executed, 2 not run; 10 attempts, 6 HTTP 429, 2 HTTP 503, 1 HTTP 200 and 1 deadline-interrupted attempt). Bounded retry regression PASS; real acceptance stopped as **FREE_TIER_RATE_LIMIT_BLOCKED**; Full Autonomous M3 remains **NOT_COMPLETE**. Earlier Phase 2–5 counts below are historical. Deployment is **PERSONAL / LOCAL-ONLY APPLICATION**; Apple signing/distribution is **OUT_OF_SCOPE_LOCAL_ONLY**.
 
 
 OrdinConn V0.1 uses a single-process embedded Tauri runtime with strict layers:

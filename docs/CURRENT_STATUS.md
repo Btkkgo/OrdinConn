@@ -2,7 +2,7 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-> Current M3: saved Google Gemini / `gemini-3.6-flash`, Provider Count **1**. The last real Planner-only batch passed **1/5** (9 attempts; HTTP 503/429). Provider resilience is being validated; Full Autonomous M3 remains **NOT_COMPLETE**. Earlier Phase 2–5 counts below are historical. Deployment is **PERSONAL / LOCAL-ONLY APPLICATION**; Apple signing/distribution is **OUT_OF_SCOPE_LOCAL_ONLY**.
+> Current M3: saved Google Gemini / `gemini-3.6-flash`, Provider Count **1**. The new paced Planner-only batch passed **1/5** (3 calls executed, 2 not run; 10 attempts, 6 HTTP 429, 2 HTTP 503, 1 HTTP 200 and 1 deadline-interrupted attempt). Bounded retry regression PASS; real acceptance stopped as **FREE_TIER_RATE_LIMIT_BLOCKED**; Full Autonomous M3 remains **NOT_COMPLETE**. Earlier Phase 2–5 counts below are historical. Deployment is **PERSONAL / LOCAL-ONLY APPLICATION**; Apple signing/distribution is **OUT_OF_SCOPE_LOCAL_ONLY**.
 
 
 - Date: 2026-10-01
@@ -109,7 +109,7 @@ M1.5 can pass only after Android SDK, ADB, Emulator, AVD, online device, real sm
 
 ## Next
 
-Preserve the single saved provider. Validate bounded retries with paced Planner-only calls in the packaged AppRuntime, then stop for owner confirmation before any Android Final Gate. Review the Issue #11 workbench and complete owner-led feedback in #10 separately. Full Autonomous M3 remains NOT_COMPLETE; #12 stays OPEN / status:needs-validation. No X draft or publication.
+Preserve the single saved provider and frozen binary. Stop at FREE_TIER_RATE_LIMIT_BLOCKED; the owner must choose cooldown/quota, another model/provider, or a paid tier before any further model run. No Android Final Gate is authorized. Review the Issue #11 workbench and complete owner-led feedback in #10 separately. Full Autonomous M3 remains NOT_COMPLETE; #12 stays OPEN / status:needs-validation. No X draft or publication.
 
 ## M3 Phase 2 — persistent execution contracts (historical)
 

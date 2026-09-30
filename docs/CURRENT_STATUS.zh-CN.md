@@ -2,7 +2,7 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-> 当前 M3：已保存 Google Gemini / `gemini-3.6-flash`，Provider Count **1**。上一次真实 Planner-only 批次为 **1/5**（9 attempts；HTTP 503/429）。Provider resilience 正在验证；Full Autonomous M3 仍为 **NOT_COMPLETE**。下文 Phase 2–5 计数属于历史记录。部署定位为 **PERSONAL / LOCAL-ONLY APPLICATION**；Apple 签名及分发为 **OUT_OF_SCOPE_LOCAL_ONLY**。
+> 当前 M3：已保存 Google Gemini / `gemini-3.6-flash`，Provider Count **1**。新一轮带间隔的真实 Planner-only 批次为 **1/5**（执行 3 次、未运行 2 次；10 attempts，6 个 HTTP 429、2 个 HTTP 503、1 个 HTTP 200、1 次 deadline 中断）。有界重试回归 PASS；真实验收按 **FREE_TIER_RATE_LIMIT_BLOCKED** 停止；Full Autonomous M3 仍为 **NOT_COMPLETE**。下文 Phase 2–5 计数属于历史记录。部署定位为 **PERSONAL / LOCAL-ONLY APPLICATION**；Apple 签名及分发为 **OUT_OF_SCOPE_LOCAL_ONLY**。
 
 
 - 日期：2026-10-01
@@ -103,7 +103,7 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 
 ## 下一步
 
-保留现有唯一已保存 Provider，在打包 AppRuntime 内以带间隔的 Planner-only 调用验证有界重试，然后停止；Android Final Gate 等待 Owner 下一步确认。Issue #11 工作台审查与 #10 所有者操作体验反馈单独处理。Full Autonomous M3 仍为 NOT_COMPLETE，#12 保持 OPEN / status:needs-validation。无 X 草稿或发布。
+保留现有唯一 Provider 与冻结 binary，停止于 FREE_TIER_RATE_LIMIT_BLOCKED。后续模型运行前由 Owner 选择等待配额/冷却、其他模型/Provider 或付费层；本轮未授权 Android Final Gate。Issue #11 工作台审查与 #10 所有者操作体验反馈单独处理。Full Autonomous M3 仍为 NOT_COMPLETE，#12 保持 OPEN / status:needs-validation。无 X 草稿或发布。
 
 ## M3 Phase 2 — 持久化执行契约（历史）
 

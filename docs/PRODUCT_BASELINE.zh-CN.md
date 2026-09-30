@@ -40,7 +40,7 @@ Rust Agent Runtime 使用 Thread、Turn、Item、Tool、Approval、Event 协议�
 
 所有模型通过 Model Gateway。V0.1 实现可配置 OpenAI-compatible `/v1/chat/completions`，支持非流式、流式与明确声明的工具调用。Agent Runtime 不接触厂商响应格式；Provider 能力明确声明。Mock Model 在无凭据时维持演示可用。
 
-默认语言为 English，完整支持 English 与简体中文 `zh-CN`，可在设置中即时切换。正式文案使用 Locale Key，无效或缺失偏好回退 English。领域、API、文件、代码、Agent 协议、Signal、Evidence 与 Report 字段采用 English。
+桌面默认语言为简体中文，完整支持 English 与简体中文 `zh-CN`，可在设置中即时切换。正式文案使用 Locale Key，无效或缺失偏好回退简体中文。领域、API、文件、代码、Agent 协议、Signal、Evidence 与 Report 字段采用 English。
 
 ## Runtime 与持久化
 
@@ -64,7 +64,7 @@ Paper Execution 是唯一 V0.1 执行适配器，必须通过真实 Approval；�
 
 主导航为 Home、Warehouse、Settings。Home 集成情报、手机画面、关联 Signal 和上下文数据讨论。市场、Signal、Agent、Automation、Model、Source 与 Approval 能力通过已有整合工作区保留，不增加主导航入口。
 
-主页以用户提供的实时工作台 Reference A（视觉）和 Reference B（结构）为批准方向，替代之前的主页视觉基线。采用克制黑灰、细圆角边框、主/次级文字、蓝色选中态和绿色设备连接点。三栏为实时数据、手机操作与 Agent 指令、Agent 计划。不新增分类图标、彩色 KPI 海洋、渐变、Logo 或装饰图表。仓库、设置和既有导航保留；正式文案使用双语 Locale Key，其他工作区保留原品牌体系。明确选择的开发视觉 Fixture 不得填充生产状态。
+Desktop 批准方向为 Dark Intelligence Workspace：首页、资料库、设置共享无 Logo 的 AppShell/Sidebar、中性黑灰表面 Tokens、克制蓝色强调色、系统字体，以及统一 Panel、Card、控件、Badge、Alert 和空状态。首页保留实时数据、手机操作与 Agent 指令、Agent 计划三栏，比例约 27/43/30。数据数字使用稳定语义色（总量蓝紫、新闻蓝、股票绿、聊天紫、反馈琥珀、其他灰青），禁止虚构数据。设置采用同一中性主题，并平衡模型配置与已保存服务区域。正式文案使用英中 Locale Key；系统应用图标和窗口标题不变。开发视觉 Fixture 不得填充生产状态。
 
 ## 验收
 

@@ -50,7 +50,7 @@ The Rust Agent Runtime uses OrdinConn's Thread, Turn, Item, Tool, Approval, and 
 
 All models pass through Model Gateway. V0.1 implements configurable OpenAI-compatible `/v1/chat/completions`, including non-streaming, streaming, and tool calls when explicitly supported. The Agent Runtime never sees vendor response shapes. Provider capabilities are explicit. Mock Model keeps the demo usable without credentials.
 
-English remains the default locale. English and Simplified Chinese (`zh-CN`) are fully enabled interface languages, selectable in Settings without restarting the runtime. Formal UI copy always uses locale keys, and locale preferences fall back to English when absent or invalid. Domain models, APIs, files, code, Agent protocol, Signal, Evidence, and Report fields use English.
+Simplified Chinese is the default desktop locale. English and Simplified Chinese (`zh-CN`) are fully enabled interface languages, selectable in Settings without restarting the runtime. Formal UI copy always uses locale keys, and locale preferences fall back to Simplified Chinese when absent or invalid. Domain models, APIs, files, code, Agent protocol, Signal, Evidence, and Report fields use English.
 
 ## Runtime and persistence
 
@@ -74,7 +74,7 @@ Paper Execution is the only V0.1 execution adapter and it must pass through the 
 
 The primary desktop shell provides Home, Warehouse, and Settings. Home integrates the Intelligence Feed, Mobile Live View, related Signals, and contextual data discussion. Existing market, signal, agent, automation, model, source, and approval capabilities remain available through those consolidated workspaces rather than separate primary navigation entries.
 
-The approved Home direction is the user-provided realtime workbench Reference A (visual target) and Reference B (structure), replacing the previous Home visual baseline. Home uses restrained black/gray surfaces, thin rounded borders, white/secondary text, blue selection, and green device connectivity. Its three columns are Realtime Data, Mobile Operation with Agent Commands, and Agent Plans. No category icons, colored KPI dashboards, gradients, logos, or decorative charts are added. Warehouse/Settings and existing navigation remain available. All formal copy still uses English and Simplified Chinese locale keys. Other workspaces retain their existing brand system. A separately opted-in development visual fixture must never populate production state.
+The approved Desktop direction is Dark Intelligence Workspace: Home, Repository and Settings share one logo-free AppShell/Sidebar, neutral black/gray surface tokens, a restrained blue accent, system typography and consistent panels, cards, controls, badges, alerts and empty states. Home retains Realtime Data, Mobile Operation with Agent Commands, and Agent Plans in approximately 27/43/30 columns. Metric numbers use stable semantic colors (total blue-violet, news blue, stocks green, chat violet, feedback amber, other gray-cyan), with no fabricated data. Settings uses the same neutral theme and a balanced model configuration/saved-services layout. Formal copy uses English and Simplified Chinese locale keys. System app icons and the window title are unchanged. Development visual fixtures must never populate production state.
 
 ## M3 bounded goal extension
 

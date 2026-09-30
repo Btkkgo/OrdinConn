@@ -30,6 +30,12 @@ workspace 的 `tauri:build` 使用同一个包装脚本。macOS 要求 Python 3.
 
 保留的项目应用包就是实际使用入口，工作流不创建第二个安装副本。安装副本来源不明时，保留并停止等待审查。构建不会自动启动应用、操作 Keychain，或初始化/迁移 SQLite。获得授权并启动后，另行验证 Settings → Models、现有 Provider 元数据和业务记录保留。
 
+## 冻结 M3 验收 Binary
+
+最终验收构建通过应用包和登记验证后，在 `target/final-m3-gate/FINAL_M3_BINARY_FROZEN.json` 记录冻结身份。记录 schema version `1`、state `FROZEN`、相对应用路径、可执行文件 SHA256、完整应用包指纹、source HEAD、源码指纹、dirty-worktree 指纹、UTC 构建/冻结时间以及签名身份。这份本地记录不包含凭据或业务数据，也不替代构建回执。
+
+Planner 5/5 和 Android Final Gate 必须使用同一个应用可执行文件；两个 Gate 均结束前禁止重新构建。macOS 构建开始前，包装脚本检查冻结记录：有效冻结记录以 `FINAL_M3_BINARY_FROZEN` 停止；未知、不完整、损坏或符号链接记录同样阻止重新构建。记录不存在时保留原工作流，只读审计仍可使用。包装脚本不提供冻结 bypass、解冻或删除 marker 选项。Keychain 授权和 Gate 执行仍是独立、需 owner 授权的动作。
+
 ## 只读审计与测试
 
 ```sh

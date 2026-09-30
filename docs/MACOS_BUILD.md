@@ -30,6 +30,12 @@ The wrapper performs:
 
 The retained project bundle is the actual user-facing launch target; the workflow does not create a second installed copy. If an installed copy has unknown provenance, preserve it and stop for review. The build does not automatically launch the app, touch Keychain, or initialize/migrate SQLite. After an authorized launch, separately verify Settings → Models and preservation of existing provider metadata and business records.
 
+## Frozen M3 acceptance binary
+
+After the final acceptance build has passed bundle and registration verification, record its frozen identity in `target/final-m3-gate/FINAL_M3_BINARY_FROZEN.json`. Record schema version `1`, state `FROZEN`, relative app path, executable SHA256, complete bundle fingerprint, source HEAD, source fingerprint, dirty-worktree fingerprint, UTC build/freeze times, and signing identity. This local record contains no credential or business data and does not replace the build receipt.
+
+Keep that same app executable for Planner 5/5 and the Android Final Gate. Rebuilding is forbidden until both gates finish. Before a macOS build starts, the wrapper checks the freeze record and stops with `FINAL_M3_BINARY_FROZEN` for a valid frozen record. An unknown, incomplete, malformed, or symlink record also blocks rebuilding. A missing record retains the existing build workflow; read-only audit remains available. The wrapper has no freeze bypass, unfreeze, or marker-deletion option. Keychain authorization and gate execution remain separate owner-authorized actions.
+
 ## Read-only audit and tests
 
 ```sh

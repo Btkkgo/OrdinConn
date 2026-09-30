@@ -25,7 +25,7 @@ describe("mobile home workspace", () => {
     expect(html).toContain("aria-label=\"Mobile operation\"");
     expect(html).toContain("aria-label=\"Agent plans &amp; suggestions\"");
     expect(html).toContain("ADB unavailable");
-    expect(html).toContain("All current suggestions have been handled");
+    expect(html).toContain("No pending plans");
     expect(html).not.toContain("1,284");
     expect(html).toContain("Stop operation");
   });

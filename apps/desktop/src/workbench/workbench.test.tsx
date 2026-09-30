@@ -40,8 +40,8 @@ describe("reference workbench", () => {
     expect(frameSurfaceStyle({ width: 1920, height: 1080 } as MobileFrameDto)).toEqual({ width: "100%", height: "31.640625%" });
     expect(frameSurfaceStyle(undefined)).toEqual({ width: "100%", height: "100%" });
   });
-  it("renders all regions with no icons or static production demonstration", () => {
-    const html = render(empty); expect(html).toContain("Realtime Intelligence Workbench"); expect(html).toContain("Agent commands"); expect(html).toContain("Approval: user confirms key actions"); expect(html).not.toContain("<svg"); expect(html).not.toContain("1,284"); expect(html).not.toContain("18 repeated");
+  it("renders all regions with small empty-state icons and no static production demonstration", () => {
+    const html = render(empty); expect(html).toContain("Realtime Intelligence Workbench"); expect(html).toContain("Agent commands"); expect(html).toContain("Approval: user confirms key actions"); expect((html.match(/<svg/g) ?? []).length).toBe(2); expect(html).not.toContain("<img"); expect(html).not.toContain("1,284"); expect(html).not.toContain("18 repeated");
   });
   it("selects a metric and rejects unknown selections", () => {
     const model = buildWorkbenchModel(empty); expect(selectMetric(model, "news").selectedMetric).toBe("news"); expect(selectMetric(model, "missing")).toBe(model);
@@ -78,7 +78,7 @@ describe("reference workbench", () => {
   it("does not invent a percentage when yesterday's baseline is missing", () => {
     expect(buildWorkbenchModel({ ...empty, feed: [item("1", "news")] }, "news", [], now).total.deltaPercent).toBeUndefined();
   });
-  it("renders the empty plan state", () => { expect(render(empty)).toContain("All current suggestions have been handled"); });
+  it("renders the empty plan state", () => { expect(render(empty)).toContain("No pending plans"); });
   it.each(["discovered", "proposed", "waiting_approval", "executing", "completed", "failed", "dismissed"] as PlanStatus[])("renders or hides plan state %s without claiming a different outcome", status => {
     const plan: AgentPlan = { id: "p", title: "Evidence-linked plan", summary: "Real result", priority: "high", sourceObjectIds: ["1"], status, createdAt: now.toISOString() };
     const html = renderToStaticMarkup(<AgentPlanPanel plans={[plan]} t={t}/>);

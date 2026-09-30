@@ -11,7 +11,7 @@ interface AppShellProps {
 
 export function AppShell({ page, onNavigate, workspace, t }: AppShellProps) {
   return (
-    <div className={page === "home" ? "app-shell mobile-shell workbench-shell" : "app-shell mobile-shell"}>
+    <div className="app-shell mobile-shell">
       <Navigation page={page} onNavigate={onNavigate} t={t} />
       <main className="workspace">{workspace}</main>
     </div>

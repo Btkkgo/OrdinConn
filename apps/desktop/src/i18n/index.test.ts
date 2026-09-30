@@ -23,9 +23,10 @@ describe("i18n", () => {
     expect(t("signal.minutesAgo", { count: 8 })).toBe("8 分钟前");
   });
 
-  it("keeps English as the default for empty or unsupported preferences", () => {
-    expect(resolveLocale(null)).toBe("en");
-    expect(resolveLocale("fr")).toBe("en");
+  it("defaults desktop preferences to Chinese while preserving explicit English", () => {
+    expect(resolveLocale(null)).toBe("zh-CN");
+    expect(resolveLocale("en")).toBe("en");
+    expect(resolveLocale("fr")).toBe("zh-CN");
     expect(resolveLocale("zh-CN")).toBe("zh-CN");
   });
 

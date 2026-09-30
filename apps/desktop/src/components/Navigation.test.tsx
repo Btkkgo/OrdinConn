@@ -4,7 +4,7 @@ import { createTranslator } from "../i18n";
 import { Navigation } from "./Navigation";
 
 describe("primary navigation", () => {
-  it("exposes exactly Home, Warehouse, and Settings with an icon-only brand", () => {
+  it("exposes exactly Home, Warehouse, and Settings without an in-content logo", () => {
     const html = renderToStaticMarkup(
       <Navigation page="home" onNavigate={() => undefined} t={createTranslator("en")} />,
     );
@@ -14,5 +14,8 @@ describe("primary navigation", () => {
     expect(html).toContain("Settings");
     expect(html).not.toContain("OrdinConn");
     expect(html).not.toContain("V0.1");
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("brand-block");
+    expect(html).toContain('aria-current="page"');
   });
 });

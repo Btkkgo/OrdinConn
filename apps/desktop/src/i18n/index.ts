@@ -6,7 +6,7 @@ export const availableLocales: Locale[] = ["en", "zh-CN"];
 export const localeStorageKey = "ordinconn.locale.v1";
 
 export function resolveLocale(value: string | null | undefined): Locale {
-  return value === "zh-CN" ? "zh-CN" : "en";
+  return value === "en" ? "en" : "zh-CN";
 }
 
 const dictionaries: Record<Locale, Record<string, string>> = { en, "zh-CN": zhCN };

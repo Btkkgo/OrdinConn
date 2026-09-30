@@ -1,6 +1,5 @@
 import { House, Library, Settings } from "lucide-react";
 import type { Translator } from "../i18n";
-import iconUrl from "../assets/ordinconn-icon-source.png";
 
 export type PageId = "home" | "warehouse" | "settings";
 
@@ -19,14 +18,13 @@ interface NavigationProps {
 export function Navigation({ page, onNavigate, t }: NavigationProps) {
   return (
     <aside className="navigation">
-      <div className="brand-block">
-        <div className="brand-mark" aria-hidden="true"><img src={iconUrl} alt="" /></div>
-      </div>
-      <nav aria-label="Primary">
+      <nav aria-label={t("nav.primary")}>
         {navigation.map(([id, label, Icon]) => (
           <button
             className={page === id ? "nav-item active" : "nav-item"}
             key={id}
+            title={t(label)}
+            aria-current={page === id ? "page" : undefined}
             onClick={() => onNavigate(id)}
             type="button"
           >

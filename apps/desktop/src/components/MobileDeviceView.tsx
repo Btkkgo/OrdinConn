@@ -46,7 +46,7 @@ export function MobileDeviceView({ compact = false, children, fixtureScreen, fra
       <div className="phone-frame" style={{ "--phone-aspect": compact ? "9 / 16" : frame ? `${frame.width} / ${frame.height}` : "9 / 20" } as React.CSSProperties}>
         <div className="device-frame-surface" style={compact ? frameSurfaceStyle(frame) : { width: "100%", height: "100%" }}>
         {fixtureScreen ?? (frame ? <img src={frame.dataUrl} alt={t("mobile.currentScreen")} /> : (
-          <div className="device-empty">{!compact ? <Smartphone size={36} /> : null}<strong>{adbStatus === "missing" ? t("mobile.adbUnavailable") : t("mobile.noLiveFrame")}</strong><span>{adbStatus === "missing" ? t("mobile.installAdb") : t("mobile.connectEmulator")}</span></div>
+          <div className="device-empty"><Smartphone size={28} aria-hidden="true" /><strong>{adbStatus === "missing" ? t("mobile.adbUnavailable") : t("mobile.noLiveFrame")}</strong><span>{adbStatus === "missing" ? t("mobile.installAdb") : t("mobile.connectEmulator")}</span><button className="secondary-button" type="button" onClick={onObserve}>{t("mobile.checkDevice")}</button></div>
         ))}
         {inspect && aligned ? <div className="element-overlay" aria-label="UI element inspector">{snapshot.elements.map((element) => (
           <button

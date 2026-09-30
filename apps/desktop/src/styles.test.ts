@@ -9,8 +9,8 @@ describe("readable typography contract", () => {
     expect(styles).toContain("\"PingFang SC\"");
     expect(styles).toContain("\"Microsoft YaHei\"");
     expect(styles).toContain("--font-mono:");
-    expect(styles).toContain("--text-xs: 12px");
-    expect(styles).toContain("--text-3xl: 32px");
+    expect(styles).toContain("--text-xs: calc(12px * var(--ui-scale))");
+    expect(styles).toContain("--text-3xl: calc(32px * var(--ui-scale))");
   });
 
   it("keeps rendered interface text at or above the 12px readability floor", () => {

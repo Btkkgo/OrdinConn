@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "node ../../scripts/desktop/build.mjs"
   },
   "dependencies": {
     "@ordinconn/contracts": "*",

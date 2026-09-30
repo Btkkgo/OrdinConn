@@ -548,7 +548,7 @@ export type MobileStepRiskDto = (typeof MOBILE_STEP_RISKS)[number];
 export type MobileGoalErrorCodeDto = (typeof MOBILE_GOAL_ERROR_CODES)[number];
 export interface MobileGoalErrorDto { code: MobileGoalErrorCodeDto; message: string }
 export interface MobileGoalBudgetDto { maxSteps: number; maxModelCalls?: number; maxExecutionActions?: number; maxRuntimeMs: number; maxConsecutiveFailures: number; maxIdenticalObservations: number }
-export type MobileCompletionTargetDto = { kind: "ACTIVITY_EQUALS"; package: string; activity: string } | { kind: "INPUT_TEXT_EQUALS"; package: string; activity: string; resourceId: string; value: string };
+export type MobileCompletionTargetDto = { kind: "PAGE_EQUALS"; package: string; activity: string; visibleText: string[] } | { kind: "ACTIVITY_EQUALS"; package: string; activity: string } | { kind: "INPUT_TEXT_EQUALS"; package: string; activity: string; resourceId: string; value: string };
 export interface CreateMobileGoalInputDto { objective: string; budget?: MobileGoalBudgetDto; completionTarget?: MobileCompletionTargetDto }
 export interface MobileGoalDto {
   id: string; objective: string; normalizedObjective?: string | null; status: MobileGoalStatusDto;

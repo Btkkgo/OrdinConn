@@ -1110,9 +1110,10 @@ async fn production_runner_completes_two_gateway_decisions_with_owner_bound_trut
     app.mobile_goal_repository()
         .set_completion_target(
             &g.id,
-            &MobileCompletionTarget::ActivityEquals {
+            &MobileCompletionTarget::PageEquals {
                 package: "com.android.settings".into(),
                 activity: "FinalPage".into(),
+                visible_text: vec!["Final page".into()],
             },
         )
         .await
@@ -1395,4 +1396,84 @@ async fn stop_during_an_approved_final_action_settles_receipt_without_completing
             .await
             .is_err()
     );
+}
+
+#[tokio::test]
+async fn semantic_completion_rejects_shared_activity_with_wrong_page_and_accepts_exact_page() {
+    for required in ["System", "After page"] {
+        let (_d, app, goal, step, host) =
+            prepared(MobileStepType::ScrollDown, ExpectedStepResult::UiChanged).await;
+        let target: MobileCompletionTarget = serde_json::from_value(serde_json::json!({
+            "kind":"PAGE_EQUALS","package":"com.android.settings","activity":"Settings",
+            "visibleText":[required]
+        }))
+        .expect("semantic owner target");
+        sqlx::query("INSERT INTO mobile_goal_completion_targets(goal_id,target_json) VALUES (?,?)")
+            .bind(goal.id.as_str())
+            .bind(serde_json::to_string(&target).unwrap())
+            .execute(app.pool())
+            .await
+            .unwrap();
+        let executed = app.execute_mobile_goal_step(&goal.id, host).await.unwrap();
+        assert!(executed.verified);
+        let repo = app.mobile_goal_repository();
+        repo.bind_planned_completion_target(&goal.id, &step.id)
+            .await
+            .unwrap();
+        let bound: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM mobile_completion_criteria WHERE goal_id=?")
+                .bind(goal.id.as_str())
+                .fetch_one(app.pool())
+                .await
+                .unwrap();
+        assert_eq!(bound, if required == "After page" { 1 } else { 0 });
+        if required == "System" {
+            assert_eq!(
+                repo.get_goal(&goal.id).await.unwrap().status,
+                MobileGoalStatus::Running
+            );
+            // Even a forged/bad criterion cannot bypass the independent completion check.
+            sqlx::query("INSERT INTO mobile_completion_criteria(goal_id,step_id,objective,expected_json) VALUES (?,?,?,?)")
+                .bind(goal.id.as_str()).bind(step.id.as_str()).bind(&goal.objective)
+                .bind(serde_json::to_string(&step.expected_result).unwrap()).execute(app.pool()).await.unwrap();
+        }
+        let support = [
+            executed.observation_before_id,
+            executed.observation_after_id,
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        let completed = app
+            .verify_mobile_goal_completion(
+                &goal.id,
+                &mobile_runtime::planner::MobileCompletionProposal {
+                    reason: "Completion proposal requires independent truth".into(),
+                    supporting_observation_ids: support,
+                },
+            )
+            .await;
+        assert_eq!(completed.is_ok(), required == "After page");
+    }
+}
+
+#[test]
+fn semantic_completion_requires_visible_enabled_exact_labels() {
+    let target = MobileCompletionTarget::PageEquals {
+        package: "com.android.settings".into(),
+        activity: "Settings".into(),
+        visible_text: vec!["System".into()],
+    };
+    let mut page = capture("System").snapshot;
+    assert!(target.matches_semantic_page(&page));
+    page.elements[0].text = Some("Network & internet".into());
+    assert!(!target.matches_semantic_page(&page));
+    page.elements[0].text = None;
+    page.elements[0].content_description = Some("System".into());
+    assert!(target.matches_semantic_page(&page));
+    page.elements[0].bounds.y = page.screen_height;
+    assert!(!target.matches_semantic_page(&page));
+    page.elements[0].bounds.y = 10;
+    page.elements[0].enabled = false;
+    assert!(!target.matches_semantic_page(&page));
 }

@@ -1,6 +1,8 @@
 mod commands;
 mod credential_store;
 mod events;
+#[cfg(target_os = "macos")]
+mod internal_acceptance;
 mod mobile;
 mod mobile_executor;
 mod mobile_goal_commands;
@@ -20,11 +22,14 @@ pub fn run() {
             tauri::async_runtime::block_on(runtime.seed_demo_data())?;
             events::forward_runtime_events(Arc::clone(&runtime), app.handle().clone());
             tauri::async_runtime::block_on(runtime.start_continuous_intelligence())?;
-            app.manage(state::AppState::new(
+            let state = state::AppState::new(
                 runtime,
                 Arc::new(credential_store::SystemCredentialStore),
                 Arc::new(mobile::MobileHost::discover()),
-            ));
+            );
+            #[cfg(target_os = "macos")]
+            internal_acceptance::start_if_enabled(app.handle(), &state)?;
+            app.manage(state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -104,3 +109,6 @@ mod tests {
 
 #[cfg(test)]
 mod mobile_executor_real_gate;
+
+#[cfg(test)]
+mod mobile_final_real_gate;

@@ -28,5 +28,9 @@ thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
 
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
 [dev-dependencies]
 tempfile = "3"
+sqlx.workspace = true

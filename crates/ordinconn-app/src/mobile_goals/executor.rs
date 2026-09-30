@@ -933,6 +933,7 @@ impl MobileGoalRepository {
             let row: String=sqlx::query_scalar("SELECT snap.domain_json FROM mobile_observations o JOIN mobile_ui_snapshots snap ON snap.id=o.snapshot_id WHERE o.id=?").bind(&s.observation_after_id).fetch_one(&mut *tx).await?;
             let after: MobileUiSnapshot = serde_json::from_str(&row)?;
             let target_passes = match target {
+                MobileCompletionTarget::PageEquals { .. } => target.matches_semantic_page(&after),
                 MobileCompletionTarget::ActivityEquals { package, activity } => {
                     after.package_name == package && after.activity == activity
                 }

@@ -234,6 +234,24 @@ impl MobileGoalRepository {
         let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
         let g = goal(&mut tx, id).await?;
         let (package, activity) = match target {
+            MobileCompletionTarget::PageEquals {
+                package,
+                activity,
+                visible_text,
+            } => {
+                if visible_text.is_empty()
+                    || visible_text.len() > 8
+                    || visible_text.iter().any(|text| {
+                        text.trim().is_empty()
+                            || text.len() > 128
+                            || mobile_runtime::planner::prompt_text(text).as_deref()
+                                != Some(text.as_str())
+                    })
+                {
+                    return Err(invalid(MobileGoalErrorCode::PolicyBlocked));
+                }
+                (package, activity)
+            }
             MobileCompletionTarget::ActivityEquals { package, activity } => (package, activity),
             MobileCompletionTarget::InputTextEquals {
                 package,
@@ -292,6 +310,15 @@ impl MobileGoalRepository {
         };
         let target: MobileCompletionTarget = serde_json::from_str(&target)?;
         let matches = match (&target, &s.expected_result) {
+            (MobileCompletionTarget::PageEquals { .. }, Some(_))
+                if s.status == MobileStepStatus::Verified =>
+            {
+                let row: Option<String> = sqlx::query_scalar("SELECT snap.domain_json FROM mobile_observations o JOIN mobile_ui_snapshots snap ON snap.id=o.snapshot_id WHERE o.id=?")
+                    .bind(&s.observation_after_id).fetch_optional(&mut *tx).await?;
+                row.map(|row| serde_json::from_str::<mobile_runtime::MobileUiSnapshot>(&row))
+                    .transpose()?
+                    .is_some_and(|snapshot| target.matches_semantic_page(&snapshot))
+            }
             (
                 MobileCompletionTarget::ActivityEquals { package, activity },
                 Some(ExpectedStepResult::ActivityEquals {
@@ -1146,7 +1173,7 @@ impl MobileGoalRepository {
     pub(crate) fn from_pool(pool: SqlitePool, events: RuntimeEventBus) -> Self {
         Self { pool, events }
     }
-    pub(crate) async fn planner_context(
+    pub async fn planner_context(
         &self,
         id: &MobileGoalId,
         observation_id: Option<&str>,

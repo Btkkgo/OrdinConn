@@ -1,8 +1,8 @@
 mod openai_compatible;
 
 pub use openai_compatible::{
-    ChatStreamNormalizer, OpenAiCompatibleChatAdapter, build_chat_request,
-    normalize_chat_completion,
+    ChatCompletionDiagnostics, ChatStreamNormalizer, OpenAiCompatibleChatAdapter,
+    build_chat_request, normalize_chat_completion,
 };
 
 use async_trait::async_trait;
@@ -160,6 +160,38 @@ pub enum ModelError {
     Network(String),
     #[error("provider error: {0}")]
     Provider(String),
+    #[error("provider error: HTTP {status}; code={code}; message={message}")]
+    HttpRejected {
+        status: u16,
+        code: String,
+        message: String,
+        retry_after_ms: Option<u64>,
+    },
+}
+
+impl ModelError {
+    /// Fixed diagnostic vocabulary; never returns provider-controlled text.
+    pub fn diagnostic_class(&self) -> &'static str {
+        match self {
+            Self::RateLimited | Self::HttpRejected { status: 429, .. } => "RATE_LIMITED",
+            Self::Timeout
+            | Self::HttpRejected {
+                status: 408 | 504, ..
+            } => "TIMEOUT",
+            Self::HttpRejected {
+                status: 500 | 502 | 503,
+                ..
+            } => "UNAVAILABLE",
+            Self::MalformedResponse(_) => "INVALID_RESPONSE",
+            Self::Authentication
+            | Self::HttpRejected {
+                status: 401 | 403, ..
+            } => "AUTHENTICATION",
+            Self::HttpRejected { .. } => "REQUEST_REJECTED",
+            Self::Network(_) => "NETWORK_ERROR",
+            _ => "PROVIDER_ERROR",
+        }
+    }
 }
 
 #[async_trait]

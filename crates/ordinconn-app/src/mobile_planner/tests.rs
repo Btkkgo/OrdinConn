@@ -1,3 +1,4 @@
+mod resilience;
 use super::*;
 use async_trait::async_trait;
 use model_gateway::ModelError;
@@ -85,6 +86,107 @@ fn model(raw: &str) -> TestModel {
     }
 }
 const OBSERVE: &str = r#"{"decision":"next_action","action":{"type":"observe","reason":"Read public UI","expected_result":{"kind":"UI_CHANGED"}},"completion":null,"failure":null}"#;
+
+struct UnavailableModel {
+    inner: TestModel,
+    failures: usize,
+    status: u16,
+}
+#[async_trait]
+impl ModelProviderAdapter for UnavailableModel {
+    fn capabilities(&self) -> &ProviderCapabilities {
+        &self.inner.capabilities
+    }
+    async fn complete(
+        &self,
+        _: &UnifiedModelRequest,
+        _: Option<&str>,
+    ) -> Result<Vec<ModelEvent>, ModelError> {
+        let call = self.inner.calls.fetch_add(1, Ordering::SeqCst);
+        if call < self.failures {
+            return Err(ModelError::HttpRejected {
+                status: self.status,
+                code: self.status.to_string(),
+                message: "[REDACTED]".into(),
+                retry_after_ms: None,
+            });
+        }
+        Ok(vec![
+            ModelEvent::MessageDelta {
+                text: OBSERVE.into(),
+            },
+            ModelEvent::Completed,
+        ])
+    }
+    async fn stream(
+        &self,
+        _: &UnifiedModelRequest,
+        _: Option<&str>,
+        _: tokio::sync::mpsc::Sender<ModelEvent>,
+    ) -> Result<(), ModelError> {
+        panic!("no streaming")
+    }
+}
+
+#[tokio::test]
+async fn unavailable_retry_is_bounded_budgeted_and_never_executes_an_action() {
+    for (failures, budget, status, expected_calls, expected_ok) in [
+        (1, 18, 503, 2, true),
+        (10, 18, 503, 4, false),
+        (1, 1, 503, 1, false),
+        (1, 18, 400, 1, false),
+    ] {
+        let (_dir, r, g, p) = setup().await;
+        let mut saved = r.mobile_goal_repository().get_goal(&g.id).await.unwrap();
+        saved.step_budget.max_model_calls = budget;
+        sqlx::query("UPDATE mobile_goals SET domain_json=? WHERE id=?")
+            .bind(serde_json::to_string(&saved).unwrap())
+            .bind(g.id.as_str())
+            .execute(r.pool())
+            .await
+            .unwrap();
+        let context = r
+            .mobile_goal_repository()
+            .planner_context(&g.id, None)
+            .await
+            .unwrap();
+        let m = UnavailableModel {
+            inner: model(OBSERVE),
+            failures,
+            status,
+        };
+        let result = p
+            .run_with_backoff(
+                &context,
+                &provider(),
+                &m,
+                None,
+                Duration::from_secs(2),
+                &resilience::RecordingBackoff::default(),
+                None,
+            )
+            .await;
+        assert_eq!(result.is_ok(), expected_ok);
+        assert_eq!(m.inner.calls.load(Ordering::SeqCst), expected_calls);
+        let calls: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM mobile_model_calls WHERE goal_id=?")
+                .bind(g.id.as_str())
+                .fetch_one(r.pool())
+                .await
+                .unwrap();
+        assert_eq!(calls, expected_calls as i64);
+        let actions: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_action_receipts")
+            .fetch_one(r.pool())
+            .await
+            .unwrap();
+        assert_eq!(actions, 0);
+        let steps: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_plan_steps")
+            .fetch_one(r.pool())
+            .await
+            .unwrap();
+        assert_eq!(steps, if expected_ok { 1 } else { 0 });
+    }
+}
 #[tokio::test]
 async fn newer_observation_invalidates_inflight_planner_decision() {
     let (_dir, r, g, p) = setup().await;
@@ -138,7 +240,7 @@ async fn invalid_model_attempts_spend_the_persisted_goal_call_budget() {
         .run(&context, &provider(), &m, None, Duration::from_secs(1))
         .await;
     assert!(
-        matches!(result,Err(AppError::MobileGoal(e)) if e.code==MobileGoalErrorCode::StepLimitReached)
+        matches!(result,Err(AppError::MobileGoal(e)) if e.code==MobileGoalErrorCode::InvalidModelOutput)
     );
     assert_eq!(m.calls.load(Ordering::SeqCst), 1);
     let calls: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_model_calls WHERE goal_id=?")
@@ -244,7 +346,7 @@ async fn valid_decision_persists_one_pending_step_and_metadata_without_execution
     );
 }
 #[tokio::test]
-async fn invalid_output_retries_twice_timeout_is_bounded_and_failures_do_not_stick_planning() {
+async fn invalid_output_never_retries_timeout_is_bounded_and_failures_do_not_stick_planning() {
     let (_dir, r, g, p) = setup().await;
     let c = r
         .mobile_goal_repository()
@@ -257,7 +359,7 @@ async fn invalid_output_retries_twice_timeout_is_bounded_and_failures_do_not_sti
             .await
             .is_err()
     );
-    assert_eq!(m.calls.load(Ordering::SeqCst), 2);
+    assert_eq!(m.calls.load(Ordering::SeqCst), 1);
     let mut m = model(OBSERVE);
     m.delay = Duration::from_secs(1);
     let e = p
@@ -420,6 +522,208 @@ async fn native_and_json_only_real_gateway_production_service_pass_local_validat
         assert_eq!(context["remainingSteps"], 8);
     }
 }
+
+async fn planner_http_fixture(
+    responses: Vec<(u16, String)>,
+) -> (String, tokio::task::JoinHandle<Vec<Instant>>) {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/v1", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        let mut attempts = vec![];
+        for (status, body) in responses {
+            let (mut socket, _) = tokio::time::timeout(Duration::from_secs(15), listener.accept())
+                .await
+                .expect("expected HTTP attempt")
+                .unwrap();
+            attempts.push(Instant::now());
+            let mut bytes = vec![];
+            let mut buffer = [0; 4096];
+            loop {
+                let n = socket.read(&mut buffer).await.unwrap();
+                assert!(n > 0, "request must include its complete body");
+                bytes.extend_from_slice(&buffer[..n]);
+                if let Some(pos) = bytes.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let head = String::from_utf8_lossy(&bytes[..pos]);
+                    let len = head
+                        .lines()
+                        .find_map(|line| {
+                            line.to_lowercase()
+                                .strip_prefix("content-length:")
+                                .and_then(|v| v.trim().parse::<usize>().ok())
+                        })
+                        .expect("bounded JSON request must have Content-Length");
+                    if bytes.len() >= pos + 4 + len {
+                        let request: serde_json::Value =
+                            serde_json::from_slice(&bytes[pos + 4..pos + 4 + len]).unwrap();
+                        assert_eq!(request["model"], "fixture-model");
+                        assert_eq!(request["messages"].as_array().unwrap().len(), 2);
+                        assert!(request.get("response_format").is_none());
+                        assert!(request.get("tools").is_none());
+                        break;
+                    }
+                }
+            }
+            socket
+                .write_all(
+                    format!(
+                        "HTTP/1.1 {status} Fixture\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                        body.len()
+                    )
+                    .as_bytes(),
+                )
+                .await
+                .unwrap();
+        }
+        attempts
+    });
+    (url, server)
+}
+
+fn planner_http_success(content: &str) -> (u16, String) {
+    (
+        200,
+        json!({"choices":[{"message":{"content":content},"finish_reason":"stop"}]}).to_string(),
+    )
+}
+
+fn planner_http_rejection(status: u16) -> (u16, String) {
+    (
+        status,
+        json!({"error":{"code":status,"message":"Fixture rejection"}}).to_string(),
+    )
+}
+
+async fn assert_http_planner_state(
+    runtime: &AppRuntime,
+    goal: &MobileGoal,
+    expected_attempts: i64,
+    expected_decisions: i64,
+) {
+    let calls: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_model_calls WHERE goal_id=?")
+        .bind(goal.id.as_str())
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    assert_eq!(calls, expected_attempts, "every attempt spends call budget");
+    for table in [
+        "mobile_plans",
+        "mobile_plan_steps",
+        "mobile_planner_decisions",
+    ] {
+        let rows: i64 = sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}"))
+            .fetch_one(runtime.pool())
+            .await
+            .unwrap();
+        assert_eq!(rows, expected_decisions, "unexpected persisted {table}");
+    }
+    let actions: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mobile_action_receipts")
+        .fetch_one(runtime.pool())
+        .await
+        .unwrap();
+    assert_eq!(actions, 0, "Planner-only validation never executes actions");
+}
+
+#[tokio::test]
+async fn http_503_retry_success_waits_exponential_delay_and_budgets_both_attempts() {
+    let (_dir, runtime, goal, _) = setup().await;
+    let (url, server) = planner_http_fixture(vec![
+        planner_http_rejection(503),
+        planner_http_success(OBSERVE),
+    ])
+    .await;
+    configured(&runtime, "p1", true, &url, provider().capabilities).await;
+    let result = runtime
+        .plan_mobile_goal(&goal.id, None, |_| {
+            panic!("anonymous HTTP fixture has no credential")
+        })
+        .await
+        .unwrap();
+    assert!(result.waiting_executor);
+    let attempts = server.await.unwrap();
+    assert_eq!(attempts.len(), 2);
+    assert!(attempts[1].duration_since(attempts[0]) >= Duration::from_secs(1));
+    assert_http_planner_state(&runtime, &goal, 2, 1).await;
+}
+
+#[tokio::test]
+async fn http_503_exhaustion_fails_closed_after_four_budgeted_attempts() {
+    let (_dir, runtime, goal, _) = setup().await;
+    let (url, server) = planner_http_fixture(vec![
+        planner_http_rejection(503),
+        planner_http_rejection(503),
+        planner_http_rejection(503),
+        planner_http_rejection(503),
+    ])
+    .await;
+    configured(&runtime, "p1", true, &url, provider().capabilities).await;
+    let result = runtime
+        .plan_mobile_goal(&goal.id, None, |_| {
+            panic!("anonymous HTTP fixture has no credential")
+        })
+        .await;
+    assert!(
+        matches!(result, Err(AppError::MobileGoal(e)) if e.code == MobileGoalErrorCode::ModelError)
+    );
+    let attempts = server.await.unwrap();
+    assert_eq!(attempts.len(), 4);
+    assert!(attempts[1].duration_since(attempts[0]) >= Duration::from_secs(1));
+    assert_http_planner_state(&runtime, &goal, 4, 0).await;
+}
+
+#[tokio::test]
+async fn http_400_401_403_never_retry_or_persist_a_decision() {
+    for status in [400, 401, 402, 403, 404] {
+        let (_dir, runtime, goal, _) = setup().await;
+        let (url, server) = planner_http_fixture(vec![planner_http_rejection(status)]).await;
+        configured(&runtime, "p1", true, &url, provider().capabilities).await;
+        let result = runtime
+            .plan_mobile_goal(&goal.id, None, |_| {
+                panic!("anonymous HTTP fixture has no credential")
+            })
+            .await;
+        assert!(
+            matches!(result, Err(AppError::MobileGoal(e)) if e.code == MobileGoalErrorCode::ModelError)
+        );
+        assert_eq!(server.await.unwrap().len(), 1);
+        assert_http_planner_state(&runtime, &goal, 1, 0).await;
+    }
+}
+
+#[tokio::test]
+async fn malformed_http_200_and_invalid_planner_schema_both_fail_closed() {
+    let (_dir, runtime, goal, _) = setup().await;
+    let (url, server) = planner_http_fixture(vec![(200, "{".into())]).await;
+    configured(&runtime, "p1", true, &url, provider().capabilities).await;
+    let result = runtime
+        .plan_mobile_goal(&goal.id, None, |_| {
+            panic!("anonymous HTTP fixture has no credential")
+        })
+        .await;
+    assert!(
+        matches!(result, Err(AppError::MobileGoal(e)) if e.code == MobileGoalErrorCode::ModelError)
+    );
+    assert_eq!(server.await.unwrap().len(), 1);
+    assert_http_planner_state(&runtime, &goal, 1, 0).await;
+
+    let (_dir, runtime, goal, _) = setup().await;
+    let mut unknown_field: serde_json::Value = serde_json::from_str(OBSERVE).unwrap();
+    unknown_field["unexpected_field"] = json!(true);
+    let invalid_schema = unknown_field.to_string();
+    let (url, server) = planner_http_fixture(vec![planner_http_success(&invalid_schema)]).await;
+    configured(&runtime, "p1", true, &url, provider().capabilities).await;
+    let result = runtime
+        .plan_mobile_goal(&goal.id, None, |_| {
+            panic!("anonymous HTTP fixture has no credential")
+        })
+        .await;
+    assert!(
+        matches!(result, Err(AppError::MobileGoal(e)) if e.code == MobileGoalErrorCode::InvalidModelOutput)
+    );
+    assert_eq!(server.await.unwrap().len(), 1);
+    assert_http_planner_state(&runtime, &goal, 1, 0).await;
+}
+
 async fn verified_fixture(r: &AppRuntime, g: &MobileGoal, p: &MobilePlanner) -> MobilePlanStep {
     let repo = r.mobile_goal_repository();
     let context = repo.planner_context(&g.id, None).await.unwrap();

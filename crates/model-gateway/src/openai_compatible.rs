@@ -242,27 +242,172 @@ impl OpenAiCompatibleChatAdapter {
         if status.is_success() {
             return Ok(response);
         }
-        if status.as_u16() == 401 || status.as_u16() == 403 {
-            Err(ModelError::Authentication)
-        } else if status.as_u16() == 429 {
-            Err(ModelError::RateLimited)
-        } else {
-            // Provider error bodies are untrusted and may echo credentials/prompts.
-            Err(ModelError::Provider("provider rejected the request".into()))
+        let retry_after_ms = response
+            .headers()
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| parse_retry_after(value, chrono::Utc::now()));
+        // Never surface raw bodies: even error.code/message can echo secrets or prompts.
+        // Read a bounded envelope and project only recognized public diagnostics.
+        let mut bytes = Vec::new();
+        let mut chunks = response.bytes_stream();
+        while let Some(chunk) = chunks.next().await {
+            let Ok(chunk) = chunk else { break };
+            if bytes.len() + chunk.len() > 16_384 {
+                bytes.clear();
+                break;
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        let value: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+        // Gemini can return a single-element error array instead of an object.
+        let envelope = match value.as_array() {
+            Some(errors) if errors.len() == 1 => &errors[0],
+            Some(_) => &Value::Null,
+            None => &value,
+        };
+        let error = &envelope["error"];
+        let code = match &error["code"] {
+            Value::Number(n) if n.as_u64().is_some_and(|n| (100..=599).contains(&n)) => {
+                n.to_string()
+            }
+            Value::String(s)
+                if matches!(
+                    s.as_str(),
+                    "invalid_api_key"
+                        | "invalid_request_error"
+                        | "rate_limit_exceeded"
+                        | "model_not_found"
+                        | "insufficient_quota"
+                        | "unsupported_parameter"
+                        | "INVALID_ARGUMENT"
+                        | "API_KEY_INVALID"
+                        | "UNAUTHENTICATED"
+                        | "PERMISSION_DENIED"
+                        | "RESOURCE_EXHAUSTED"
+                        | "NOT_FOUND"
+                        | "FAILED_PRECONDITION"
+                        | "INTERNAL"
+                        | "UNAVAILABLE"
+                        | "DEADLINE_EXCEEDED"
+                ) =>
+            {
+                s.clone()
+            }
+            Value::Null => "none".into(),
+            _ => "[REDACTED]".into(),
+        };
+        let message = match error["message"].as_str() {
+            Some("Missing or invalid Authorization header.") => {
+                "Missing or invalid Authorization header."
+            }
+            Some("User location is not supported for the API use.") => {
+                "User location is not supported for the API use."
+            }
+            Some("API key not valid. Please pass a valid API key.") => {
+                "API key not valid. Please pass a valid API key."
+            }
+            Some(
+                "Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential.",
+            ) => "Request had invalid authentication credentials.",
+            Some("The caller does not have permission") => "The caller does not have permission",
+            Some("Request contains an invalid argument.") => {
+                "Request contains an invalid argument."
+            }
+            Some("Resource has been exhausted (e.g. check quota).") => {
+                "Resource has been exhausted (e.g. check quota)."
+            }
+            Some("Internal error encountered.") => "Internal error encountered.",
+            Some("The model is overloaded. Please try again later.") => {
+                "The model is overloaded. Please try again later."
+            }
+            _ => "[REDACTED] unrecognized provider message",
+        };
+        Err(ModelError::HttpRejected {
+            status: status.as_u16(),
+            code,
+            message: message.into(),
+            retry_after_ms,
+        })
+    }
+}
+
+/// Only an interval is retained, never raw header text. Bound before arithmetic/sleep.
+fn parse_retry_after(value: &str, now: chrono::DateTime<chrono::Utc>) -> Option<u64> {
+    let value = value.trim();
+    if value.is_empty() || value.len() > 128 {
+        return None;
+    }
+    if value.bytes().all(|c| c.is_ascii_digit()) {
+        let seconds = value.bytes().fold(0u64, |n, c| {
+            n.saturating_mul(10).saturating_add((c - b'0') as u64)
+        });
+        return Some(seconds.saturating_mul(1000).min(10_000));
+    }
+    let date = chrono::DateTime::parse_from_rfc2822(value).ok()?;
+    Some(
+        date.signed_duration_since(now)
+            .num_milliseconds()
+            .clamp(0, 10_000) as u64,
+    )
+}
+
+#[cfg(test)]
+mod retry_after_tests {
+    use super::*;
+    #[test]
+    fn delta_seconds_dates_and_excessive_values_are_bounded_without_retaining_headers() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-10-01T00:00:00Z")
+            .unwrap()
+            .to_utc();
+        assert_eq!(parse_retry_after("3", now), Some(3000));
+        assert_eq!(
+            parse_retry_after("Thu, 01 Oct 2026 00:00:04 GMT", now),
+            Some(4000)
+        );
+        assert_eq!(
+            parse_retry_after("Wed, 30 Sep 2026 00:00:00 GMT", now),
+            Some(0)
+        );
+        assert_eq!(
+            parse_retry_after("999999999999999999999999999999", now),
+            Some(10_000)
+        );
+        for invalid in ["", "-1", "1.5", "not-a-date", "3\r\nInvalid: value"] {
+            assert_eq!(parse_retry_after(invalid, now), None);
         }
     }
 }
 
-#[async_trait]
-impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
-    fn capabilities(&self) -> &ProviderCapabilities {
-        &self.capabilities
-    }
-
-    async fn complete(
+/// Safe transport facts only. No headers, body, model text or vendor metadata are retained.
+#[derive(Clone, Debug, Default, serde::Serialize)]
+pub struct ChatCompletionDiagnostics {
+    pub http_status: Option<u16>,
+    pub retry_after_ms: Option<u64>,
+    pub finish_reason: Option<String>,
+    pub assistant_content_present: bool,
+    pub assistant_content_bytes: usize,
+}
+impl OpenAiCompatibleChatAdapter {
+    pub async fn complete_with_diagnostics(
         &self,
         request: &UnifiedModelRequest,
         api_key: Option<&str>,
+    ) -> (
+        Result<Vec<ModelEvent>, ModelError>,
+        ChatCompletionDiagnostics,
+    ) {
+        let mut diagnostics = ChatCompletionDiagnostics::default();
+        let outcome = self
+            .complete_observed(request, api_key, &mut diagnostics)
+            .await;
+        (outcome, diagnostics)
+    }
+    async fn complete_observed(
+        &self,
+        request: &UnifiedModelRequest,
+        api_key: Option<&str>,
+        diagnostics: &mut ChatCompletionDiagnostics,
     ) -> Result<Vec<ModelEvent>, ModelError> {
         let body = build_chat_request(request, &self.capabilities)?;
         let response = self
@@ -274,6 +419,12 @@ impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
             .send()
             .await
             .map_err(normalize_reqwest_error)?;
+        diagnostics.http_status = Some(response.status().as_u16());
+        diagnostics.retry_after_ms = response
+            .headers()
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| parse_retry_after(value, chrono::Utc::now()));
         let response = Self::validate_response(response).await?;
         let limit = request
             .max_response_bytes
@@ -300,6 +451,16 @@ impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
         }
         let value: Value = serde_json::from_slice(&bytes)
             .map_err(|_| ModelError::MalformedResponse("invalid response JSON".into()))?;
+        let choice = &value["choices"][0];
+        diagnostics.finish_reason = choice["finish_reason"].as_str().map(|reason| match reason {
+            "stop" | "length" | "tool_calls" | "function_call" | "content_filter" => {
+                reason.to_owned()
+            }
+            _ => "[REDACTED]".to_owned(),
+        });
+        let content = choice["message"]["content"].as_str();
+        diagnostics.assistant_content_present = content.is_some();
+        diagnostics.assistant_content_bytes = content.map(str::len).unwrap_or(0);
         if request.structured_output.is_some() {
             let choices = value["choices"]
                 .as_array()
@@ -319,6 +480,22 @@ impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
             }
         }
         normalize_chat_completion(&value)
+    }
+}
+
+#[async_trait]
+impl ModelProviderAdapter for OpenAiCompatibleChatAdapter {
+    fn capabilities(&self) -> &ProviderCapabilities {
+        &self.capabilities
+    }
+
+    async fn complete(
+        &self,
+        request: &UnifiedModelRequest,
+        api_key: Option<&str>,
+    ) -> Result<Vec<ModelEvent>, ModelError> {
+        self.complete_observed(request, api_key, &mut ChatCompletionDiagnostics::default())
+            .await
     }
 
     async fn stream(

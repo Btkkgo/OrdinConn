@@ -286,6 +286,11 @@ fn default_execution_actions() -> u32 {
     deny_unknown_fields
 )]
 pub enum MobileCompletionTarget {
+    PageEquals {
+        package: String,
+        activity: String,
+        visible_text: Vec<String>,
+    },
     ActivityEquals {
         package: String,
         activity: String,
@@ -296,6 +301,34 @@ pub enum MobileCompletionTarget {
         resource_id: String,
         value: String,
     },
+}
+impl MobileCompletionTarget {
+    /// Exact semantic truth from a real visible, sanitized UI snapshot, never model prose.
+    pub fn matches_semantic_page(&self, snapshot: &crate::MobileUiSnapshot) -> bool {
+        let Self::PageEquals {
+            package,
+            activity,
+            visible_text,
+        } = self
+        else {
+            return false;
+        };
+        snapshot.package_name == *package
+            && snapshot.activity == *activity
+            && snapshot.sensitive_state.is_none()
+            && !visible_text.is_empty()
+            && visible_text.iter().all(|text| {
+                snapshot.elements.iter().any(|element| {
+                    element.enabled
+                        && element.bounds.width > 0
+                        && element.bounds.height > 0
+                        && element.bounds.x < snapshot.screen_width
+                        && element.bounds.y < snapshot.screen_height
+                        && (element.text.as_ref() == Some(text)
+                            || element.content_description.as_ref() == Some(text))
+                })
+            })
+    }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

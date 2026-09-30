@@ -57,6 +57,18 @@ impl CredentialStore for MemoryCredentialStore {
 #[derive(Default)]
 pub struct SystemCredentialStore;
 
+#[cfg(all(test, target_os = "macos"))]
+#[test]
+fn system_credentials_use_native_storage_instead_of_discarding_saved_keys() {
+    // Constructing an entry does not read or write any credential.
+    let entry =
+        keyring::Entry::new("ai.ordinconn.desktop.model-provider", "backend-check").unwrap();
+    assert!(
+        !entry.get_credential().is::<keyring::mock::MockCredential>(),
+        "SystemCredentialStore must not silently select volatile mock storage"
+    );
+}
+
 impl CredentialStore for SystemCredentialStore {
     fn set(&self, provider_id: &str, secret: &str) -> Result<(), CredentialError> {
         if provider_id.trim().is_empty() {

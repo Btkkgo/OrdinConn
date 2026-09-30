@@ -529,7 +529,11 @@ pub async fn test_model_provider(
         }),
         Err(error) => Ok(ConnectionTestResult {
             ok: false,
-            message: redact_error(&error.to_string()),
+            message: match &error {
+                // Gateway HTTP diagnostics contain only bounded, allowlisted fields.
+                model_gateway::ModelError::HttpRejected { .. } => error.to_string(),
+                _ => redact_error(&error.to_string()),
+            },
         }),
     }
 }

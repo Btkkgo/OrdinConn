@@ -9,7 +9,7 @@ pub const MAX_RECENT_STEPS: usize = 5;
 pub const MAX_ELEMENTS: usize = 80;
 pub const MAX_CONTEXT_BYTES: usize = 32_768;
 pub const MAX_WAIT_MS: u32 = 5_000;
-pub const MAX_PLANNER_ATTEMPTS: u32 = 2;
+pub const MAX_PLANNER_ATTEMPTS: u32 = 4;
 pub const PLANNER_TIMEOUT_MS: u64 = 30_000;
 pub const SYSTEM_PROMPT: &str = include_str!("mobile_planner_v1.txt");
 

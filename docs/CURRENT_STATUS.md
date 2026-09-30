@@ -2,10 +2,10 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](mobile/M3_PHASE5.md) for current validation.
+> Current M3: saved Google Gemini / `gemini-3.6-flash`, Provider Count **1**. The last real Planner-only batch passed **1/5** (9 attempts; HTTP 503/429). Provider resilience is being validated; Full Autonomous M3 remains **NOT_COMPLETE**. Earlier Phase 2–5 counts below are historical. Deployment is **PERSONAL / LOCAL-ONLY APPLICATION**; Apple signing/distribution is **OUT_OF_SCOPE_LOCAL_ONLY**.
 
 
-- Date: 2026-09-27
+- Date: 2026-10-01
 - Version: 0.1.0
 - Official repository: https://github.com/Btkkgo/OrdinConn
 - Current Mobile gate: https://github.com/Btkkgo/OrdinConn/issues/1
@@ -18,7 +18,7 @@
 - Current phase: **M2 VERIFIED — 30 PASS / 0 FAIL / 0 BLOCKED / 0 NOT RUN** ([Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7); [acceptance](mobile/M2_ACCEPTANCE.md))
 - Local M3 foundation: **PHASE 5 IMPLEMENTED / NEEDS LIVE VALIDATION**; full autonomous acceptance **NOT_COMPLETE**; current validation is recorded in the Phase 5 closeout.
 
-- Workbench: **IMPLEMENTED / NEEDS VALIDATION**, [Issue #11](https://github.com/Btkkgo/OrdinConn/issues/11). Autonomous custom-goal wiring is implemented; live acceptance remains `BLOCKED_MODEL_NOT_CONFIGURED`.
+- Workbench: **IMPLEMENTED / NEEDS VALIDATION**, [Issue #11](https://github.com/Btkkgo/OrdinConn/issues/11). Autonomous custom-goal wiring is implemented; live acceptance remains `NOT_COMPLETE`.
 - Operator Experience: **PENDING USER ACCEPTANCE**, [Issue #10](https://github.com/Btkkgo/OrdinConn/issues/10).
 
 This document separates implementation, verification, partial work, blocked work, design, plans, and work that has not started. Written intent is never counted as runtime evidence.
@@ -78,7 +78,7 @@ The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.o
 ## Blocked
 
 - No M1.5 product gate remains blocked.
-- Issue #11 owner UX acceptance remains separate. Phase 5 now wires Home goals to the bounded Rust runner, but Provider 0 blocks live Planner + Executor acceptance. Model claims never replace typed completion evidence.
+- Issue #11 owner UX acceptance remains separate. Phase 5 wires Home goals to the bounded Rust runner. One saved production provider is present; transient provider failures and the pending Android Final Gate keep M3 unverified. Model claims never replace typed completion evidence.
 - Historical Issue #4 failures remain documented; its completed reliability verification is unchanged.
 
 ## Designed
@@ -87,7 +87,7 @@ The independent GitHub scheduler is verified on macOS: `launchctl` loaded `com.o
 - API access before GUI automation when an appropriate API exists.
 - Event-driven perception before continuous capture.
 - M3 production App Skills, M4 `MobileObservation → Evidence` promotion, and M5 physical Android devices.
-- Standalone or remote runtime hosts that reuse the same domain protocols.
+- Transport-agnostic protocols within the owner’s local embedded runtime; remote deployment is outside the personal Mac scope.
 
 Designed items are not current product capabilities.
 
@@ -109,7 +109,7 @@ M1.5 can pass only after Android SDK, ADB, Emulator, AVD, online device, real sm
 
 ## Next
 
-Configure exactly one production provider/default model in existing Settings, then run the safe two-decision live model/Planner/Executor gate. Review the Issue #11 workbench and complete owner-led feedback in #10 separately. Full Autonomous M3 remains NOT_COMPLETE; #12 stays OPEN / status:needs-validation. No X draft or publication.
+Preserve the single saved provider. Validate bounded retries with paced Planner-only calls in the packaged AppRuntime, then stop for owner confirmation before any Android Final Gate. Review the Issue #11 workbench and complete owner-led feedback in #10 separately. Full Autonomous M3 remains NOT_COMPLETE; #12 stays OPEN / status:needs-validation. No X draft or publication.
 
 ## M3 Phase 2 — persistent execution contracts (historical)
 

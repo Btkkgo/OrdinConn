@@ -2,6 +2,8 @@
 
 [English](MACOS_BUILD.md) | [简体中文](MACOS_BUILD.zh-CN.md)
 
+OrdinConn 定位为 **PERSONAL / LOCAL-ONLY APPLICATION**，仅供 Owner 自己的 Mac 使用。Apple Development Certificate、Developer ID Application、Apple Developer Program、Team ID 或稳定 Apple 签名要求、分发用途的 Hardened Runtime、notarization、stapling、App Store 与公开 macOS 分发，当前及后续路线统一为 **OUT_OF_SCOPE_LOCAL_ONLY**。继续支持 ad-hoc signing；不得以 Apple 签名阻塞开发、Build、M3 或 Acceptance。重建后的 Keychain 提示属于本地开发环境行为，由 Owner 人工处理，不得重新引入 Apple 签名作为解决方案。Local-only 指部署范围；Owner 配置的外部模型 API 仍通过 Model Gateway。
+
 ## 永久规则
 
 每次生成新的 OrdinConn macOS 可运行验收版本后，只保留最新有效应用版本。旧 app bundle 在确认来源和过期状态后清理，避免 Spotlight、Launch Services 和用户产生多个 OrdinConn 启动入口。清理仅针对可重新生成的应用构建产物，永远不得删除源码、Git 仓库、用户数据、数据库、Keychain、凭据、Settings、配置、Evidence、DevLog、测试记录、文档或截图/JPEG 验收证据。来源不明必须 fail closed，并交由 owner 确认。
@@ -45,3 +47,5 @@ git diff --check
 ```
 
 策略测试使用可丢弃 fixture，覆盖符号链接、未知资源、源码跟踪、包内容变化、来源缺失、较新时间戳和受保护数据库。它们不删除真实应用，也不验证真实 Launch Services。真实验收仍需 macOS 打包、登记、Spotlight、UI 和数据检查。不能将构建或索引失败记为 PASS，也不能为通过检查删除来源不明应用。
+
+Owner 明确授权实现变更时，可以使未完成验收的旧冻结状态失效：归档旧 manifest 和证据，不改写旧 bundle，再允许一次经过测试的替换构建并冻结新身份。这不是自动绕过。

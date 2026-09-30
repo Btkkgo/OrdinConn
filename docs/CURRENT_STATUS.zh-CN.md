@@ -2,10 +2,10 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](mobile/M3_PHASE5.zh-CN.md)。
+> 当前 M3：已保存 Google Gemini / `gemini-3.6-flash`，Provider Count **1**。上一次真实 Planner-only 批次为 **1/5**（9 attempts；HTTP 503/429）。Provider resilience 正在验证；Full Autonomous M3 仍为 **NOT_COMPLETE**。下文 Phase 2–5 计数属于历史记录。部署定位为 **PERSONAL / LOCAL-ONLY APPLICATION**；Apple 签名及分发为 **OUT_OF_SCOPE_LOCAL_ONLY**。
 
 
-- 日期：2026-09-27
+- 日期：2026-10-01
 - 版本：0.1.0
 - 正式仓库：https://github.com/Btkkgo/OrdinConn
 - 当前 Mobile Gate：https://github.com/Btkkgo/OrdinConn/issues/1
@@ -72,7 +72,7 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 ## 受阻
 
 - M1.5 产品 Gate 已无受阻项。
-- Issue #11 所有者 UX 验收仍独立进行。Phase 5 已将 Home Goal 接入有界 Rust Runner，但 Provider 0 阻塞真实 Planner + Executor 验收；模型宣称不能代替类型化完成证据。
+- Issue #11 所有者 UX 验收仍独立进行。Phase 5 已将 Home Goal 接入有界 Rust Runner；现有一个已保存生产 Provider，瞬态 Provider 故障与尚未执行的 Android Final Gate 使 M3 仍待验证；模型宣称不能代替类型化完成证据。
 - Issue #4 的历史失败仍保留；已完成的 Reliability 验证不变。
 
 ## 已设计
@@ -81,6 +81,7 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 - 有合适 API 时，API 优先于 GUI Automation。
 - Event-driven Perception 优先于 Continuous Capture。
 - M3 生产 App Skills、M4 `MobileObservation → Evidence`、M5 物理 Android 设备。
+- 在 Owner 本地内嵌 Runtime 中保持协议与传输无关；远程部署不在个人 Mac 范围内。
 
 以上设计不代表当前已经实现。
 
@@ -102,7 +103,7 @@ Issue #7 分支已在专用 AVD 的真实 Settings 流程覆盖 Tap、Swipe、Ba
 
 ## 下一步
 
-在现有 Settings 配置且仅启用一个生产 Provider/默认模型，再运行安全、至少两次决策的真实 Model/Planner/Executor Gate。Issue #11 工作台审查与 #10 所有者操作体验反馈单独处理。Full Autonomous M3 仍为 NOT_COMPLETE，#12 保持 OPEN / status:needs-validation。无 X 草稿或发布。
+保留现有唯一已保存 Provider，在打包 AppRuntime 内以带间隔的 Planner-only 调用验证有界重试，然后停止；Android Final Gate 等待 Owner 下一步确认。Issue #11 工作台审查与 #10 所有者操作体验反馈单独处理。Full Autonomous M3 仍为 NOT_COMPLETE，#12 保持 OPEN / status:needs-validation。无 X 草稿或发布。
 
 ## M3 Phase 2 — 持久化执行契约（历史）
 

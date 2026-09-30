@@ -14,6 +14,8 @@ The two markets are Traditional Finance and Crypto. The shared workflow is:
 
 `Data -> Evidence -> Agent Analysis -> Signal -> Report -> User Approval -> Action -> Result -> Memory`
 
+OrdinConn is a **PERSONAL / LOCAL-ONLY APPLICATION**, for the owner’s own Mac. Apple Development certificates, Developer ID Application, Apple Developer Program membership, Team ID or stable Apple signing requirements, distribution Hardened Runtime, notarization, stapling, App Store and public macOS distribution are **OUT_OF_SCOPE_LOCAL_ONLY**, now and in the project roadmap. Ad-hoc signing remains supported and Apple signing cannot block development, builds, M3 or acceptance. A Keychain prompt after a rebuild is local development environment behavior handled manually by the owner, never a reason to introduce Apple signing. Local-only describes deployment; owner-configured external model APIs still use Model Gateway.
+
 ## V0.1 scope
 
 V0.1 contains the desktop shell, Agent Runtime, Model Gateway, Tool Runtime, Approval Engine, Evidence and Signal domains, Traditional Finance and Crypto experiences, contextual Agent Dock, SQLite persistence, mock connectors, public-data Collector Runtime, Source Registry, deterministic Strategy Engine, at least 18 demo signals, Agent Reports, Trade Proposals, Approval Capability, and Paper Execution.
@@ -78,7 +80,7 @@ The approved Desktop direction is Dark Intelligence Workspace: Home, Repository 
 
 ## M3 bounded goal extension
 
-Owner-authorized M3 Phase 5 connects the real Model Gateway Planner to the existing real single-step Executor for Android Settings and its preinstalled search only. Typed next actions retain deny-all policy, latest Observation binding, explicit Approval, canonical step/model/action/time budgets, exact verification, Stop and fail-closed restart recovery. Owner-supplied immutable Activity/Text completion targets are required for verifiable general goals; model claims alone never complete a Goal. Existing Home submission uses the Rust runner without a UI redesign. No configured production provider means MODEL_NOT_CONFIGURED and no model/device action. Live acceptance remains BLOCKED_MODEL_NOT_CONFIGURED; Full Autonomous M3 remains NOT_COMPLETE. M4, accounts, external apps, real funds and commercial licensing are outside scope.
+Owner-authorized M3 Phase 5 connects the real Model Gateway Planner to the existing real single-step Executor for Android Settings and its preinstalled search only. Typed next actions retain deny-all policy, latest Observation binding, explicit Approval, canonical step/model/action/time budgets, exact verification, Stop and fail-closed restart recovery. Owner-supplied immutable Activity/Text completion targets are required for verifiable general goals; model claims alone never complete a Goal. Existing Home submission uses the Rust runner without a UI redesign. No configured production provider means MODEL_NOT_CONFIGURED and no model/device action. The saved production provider is configured; transient availability/rate limiting still requires live acceptance. Full Autonomous M3 remains NOT_COMPLETE. M4, accounts, external apps, real funds and commercial licensing are outside scope.
 
 ## Acceptance
 

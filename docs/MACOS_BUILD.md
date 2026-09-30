@@ -2,6 +2,8 @@
 
 [English](MACOS_BUILD.md) | [简体中文](MACOS_BUILD.zh-CN.md)
 
+OrdinConn is a **PERSONAL / LOCAL-ONLY APPLICATION**, for the owner’s own Mac. Apple Development certificates, Developer ID Application, Apple Developer Program membership, Team ID or stable Apple signing requirements, distribution Hardened Runtime, notarization, stapling, App Store and public macOS distribution are **OUT_OF_SCOPE_LOCAL_ONLY**, now and in the project roadmap. Ad-hoc signing remains supported and Apple signing cannot block development, builds, M3 or acceptance. A Keychain prompt after a rebuild is local development environment behavior handled manually by the owner, never a reason to introduce Apple signing. Local-only describes deployment; owner-configured external model APIs still use Model Gateway.
+
 ## Permanent rule
 
 After each new runnable OrdinConn macOS acceptance build, retain only the latest verified application. Remove an older app bundle only after proving its origin and staleness, so Spotlight, Launch Services, and the user have one OrdinConn launch target. Cleanup applies only to reproducible application bundles. Never delete source, Git repositories, user data, databases, Keychain, credentials, settings, configuration, Evidence, DevLogs, test records, documentation, or screenshot/JPEG acceptance evidence. Unknown provenance fails closed and requires owner review.
@@ -45,3 +47,5 @@ git diff --check
 ```
 
 Policy tests use disposable fixtures, including symlinks, unknown resources, source tracking, changed bundles, missing provenance, newer timestamps, and protected databases. They do not delete real applications or validate real Launch Services. Real macOS packaging, registration, Spotlight, and UI/data checks are required for live acceptance. Do not mark a failed build or indexing check as PASS, and do not delete an ambiguous app to make a check pass.
+
+An explicitly owner-authorized implementation change may supersede an unfinished freeze: archive its manifest and evidence without changing that old bundle, then allow exactly one tested replacement build and freeze its new identity. This is not an automatic bypass.

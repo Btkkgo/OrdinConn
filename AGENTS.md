@@ -13,6 +13,10 @@
 11. For product code changes, run Rust tests, TypeScript tests, typecheck, and Rust/frontend builds before declaring completion. Run desktop packaging when packaging, native integration, or release delivery is affected. For read-only or instruction/documentation-only tasks, validate the relevant instructions, links, and diff instead. Reuse successful checks for identical code, dependencies, commands, and relevant environment; rerun affected checks after changes and report failures or unverified criteria explicitly.
 12. Push only when the user explicitly asks or when the issue-first public development workflow below already authorizes the same scoped task. Never force-push.
 
+## Personal local-only scope
+
+OrdinConn is a **PERSONAL / LOCAL-ONLY APPLICATION**, for the owner’s own Mac. Apple Development certificates, Developer ID Application, Apple Developer Program membership, Team ID or stable Apple signing requirements, distribution Hardened Runtime, notarization, stapling, App Store and public macOS distribution are **OUT_OF_SCOPE_LOCAL_ONLY**, now and in the project roadmap. Ad-hoc signing remains supported and Apple signing cannot block development, builds, M3 or acceptance. A Keychain prompt after a rebuild is local development environment behavior handled manually by the owner, never a reason to introduce Apple signing. Local-only describes deployment; owner-configured external model APIs still use Model Gateway.
+
 ## Task scope and Skills
 
 - Use a Skill when explicitly requested or when its capability directly matches the task and actual technology. A keyword, file extension, dev-server start, or progress question alone is insufficient. Reading a Skill for audit does not activate its workflow.
@@ -21,6 +25,7 @@
 - Existing authorization applies to the same scope and action; it does not authorize funds operations, destructive data changes, sensitive access, new external communications, or publication. Obtain any missing explicit approval for those actions before execution. Never infer consent from silence. The funds, privacy, Approval, and no-push rules above remain binding.
 - Choose one workflow to coordinate planning, debugging, and verification. Share its evidence with supporting Skills; do not repeat intake, full test suites, or review of an unchanged diff. Diagnose routine dependency/test failures within scope; escalate when progress requires missing authority or a material user decision.
 - Use existing components, dependencies, Model Gateway, and Connector Registry. Create worktrees only when isolation is needed or requested. Verify file ownership and destination before writes; preserve unrelated changes. Generate persistent plans only when useful to the requested deliverable. Commit only when requested or established project policy authorizes it; do not present merge/push menus for ordinary task completion.
+- macOS acceptance builds must use `npm run desktop:build` (or the workspace `tauri:build` wrapper) and follow [the latest-app rule](docs/MACOS_BUILD.md). After a verified new runnable build, retain exactly one latest valid OrdinConn app entry. Remove only proven stale, reproducible app bundles; never remove source, databases, user data, Keychain, settings, configuration, DevLogs, tests, or acceptance evidence. Unknown provenance must block cleanup. Do not bypass the wrapper with a direct Tauri acceptance build.
 
 ## PUBLIC DEVELOPMENT LOG POLICY
 

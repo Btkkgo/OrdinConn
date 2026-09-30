@@ -2,14 +2,14 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](../mobile/M3_PHASE5.zh-CN.md)。
+> 当前 M3：已保存 Google Gemini / `gemini-3.6-flash`，Provider Count **1**。上一次真实 Planner-only 批次为 **1/5**（9 attempts；HTTP 503/429）。Provider resilience 正在验证；Full Autonomous M3 仍为 **NOT_COMPLETE**。下文 Phase 2–5 计数属于历史记录。部署定位为 **PERSONAL / LOCAL-ONLY APPLICATION**；Apple 签名及分发为 **OUT_OF_SCOPE_LOCAL_ONLY**。
 
 
 路线图条目代表方向，不等于完成声明。
 
 ## 当前 Gate
 
-M1.5 与 M2 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。M2 的 30 项验收包含真实受限导航、安全负例、脱敏 Receipt，以及打包桌面 Rust → Tauri → React 人工 Tap。详见 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 和 [M2 验收记录](../mobile/M2_ACCEPTANCE.zh-CN.md)。M3 Phase 2/3 基础与 Phase 4 有界单步执行已在本地实现，见 [M3 Executor](../mobile/M3_EXECUTOR.zh-CN.md)。完整自主 M3 为 NOT_COMPLETE：Provider 0 阻塞真实模型验收；Phase 5 Stop/Approval 已集成。
+M1.5 与 M2 已在专用 `OrdinConn_M1_5` Android 16 ARM64 AVD 上通过。M2 的 30 项验收包含真实受限导航、安全负例、脱敏 Receipt，以及打包桌面 Rust → Tauri → React 人工 Tap。详见 [Issue #7](https://github.com/Btkkgo/OrdinConn/issues/7) 和 [M2 验收记录](../mobile/M2_ACCEPTANCE.zh-CN.md)。M3 Phase 2/3 基础与 Phase 4 有界单步执行已在本地实现，见 [M3 Executor](../mobile/M3_EXECUTOR.zh-CN.md)。完整自主 M3 为 NOT_COMPLETE：唯一已保存 Provider 的瞬态故障恢复与真实验收仍待完成；Phase 5 Stop/Approval 已集成。
 
 完成的 Gate 记录在 [GitHub Issue #1](https://github.com/Btkkgo/OrdinConn/issues/1)。间歇性 Process-fixture 并发超时风险单独记录在 [Issue #4](https://github.com/Btkkgo/OrdinConn/issues/4)。
 
@@ -35,6 +35,6 @@ M1.5 通过后，最小安全 Action Set 已在 Emulator 上验证：有界 Tap�
 - 显式 Work Session 与 Application Allowlist
 - Model Gateway 后的更多 Model Adapter
 - Connector Registry 后的更多公开数据源
-- 复用相同 Protocol 的 Standalone 与 Remote Host
+- 个人自用边界内的本地嵌入式 Runtime 改进
 
 Computer Runtime 路线图研究记录在 [GitHub Issue #3](https://github.com/Btkkgo/OrdinConn/issues/3)。

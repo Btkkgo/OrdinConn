@@ -12,6 +12,8 @@ OrdinConn 是 AI 金融情报与执行 Agent：主动采集市场信息、形成
 
 `Data -> Evidence -> Agent Analysis -> Signal -> Report -> User Approval -> Action -> Result -> Memory`
 
+OrdinConn 定位为 **PERSONAL / LOCAL-ONLY APPLICATION**，仅供 Owner 自己的 Mac 使用。Apple Development Certificate、Developer ID Application、Apple Developer Program、Team ID 或稳定 Apple 签名要求、分发用途的 Hardened Runtime、notarization、stapling、App Store 与公开 macOS 分发，当前及后续路线统一为 **OUT_OF_SCOPE_LOCAL_ONLY**。继续支持 ad-hoc signing；不得以 Apple 签名阻塞开发、Build、M3 或 Acceptance。重建后的 Keychain 提示属于本地开发环境行为，由 Owner 人工处理，不得重新引入 Apple 签名作为解决方案。Local-only 指部署范围；Owner 配置的外部模型 API 仍通过 Model Gateway。
+
 ## V0.1 范围
 
 包含桌面 Shell、Agent Runtime、Model Gateway、Tool Runtime、Approval Engine、Evidence 与 Signal 领域、传统金融与加密体验、上下文 Agent Dock、SQLite 持久化、Mock Connector、公开数据 Collector Runtime、Source Registry、确定性 Strategy Engine、至少 18 个演示信号、Agent Report、Trade Proposal、Approval Capability 和 Paper Execution。

@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE.md) | [简体中文](ARCHITECTURE.zh-CN.md)
 
-> 当前 Phase 5：有界 Planner/Executor 集成已实现；真实模型验收 **BLOCKED_MODEL_NOT_CONFIGURED**（Production Provider Count **0**），Full Autonomous M3 **NOT_COMPLETE**。下文较早的 Phase 2–4 验证记录保留为历史证据；最新验证见 [Phase 5 收口记录](mobile/M3_PHASE5.zh-CN.md)。
+> 当前 M3：已保存 Google Gemini / `gemini-3.6-flash`，Provider Count **1**。上一次真实 Planner-only 批次为 **1/5**（9 attempts；HTTP 503/429）。Provider resilience 正在验证；Full Autonomous M3 仍为 **NOT_COMPLETE**。下文 Phase 2–5 计数属于历史记录。部署定位为 **PERSONAL / LOCAL-ONLY APPLICATION**；Apple 签名及分发为 **OUT_OF_SCOPE_LOCAL_ONLY**。
 
 
 OrdinConn V0.1 使用单进程嵌入式 Tauri Runtime，并保持严格分层：
@@ -21,7 +21,7 @@ OrdinConn V0.1 使用单进程嵌入式 Tauri Runtime，并保持严格分层：
 - Approval 是绑定到一个规范化 Proposal Version 的一次性 Capability。
 - V0.1 不包含 Localhost Server、Daemon、Sidecar、Distributed Bus、CQRS 或完整 Event Sourcing。
 
-未来的 `StandaloneRuntimeHost`、`DaemonRuntimeHost` 和 `RemoteRuntimeHost` 必须复用相同的 Domain、Model、Tool、Approval 与 Signal Protocol。
+部署保持 Owner 本机的嵌入式 Runtime。远程托管与公开分发不属于个人 local-only 范围；Apple 签名身份不是架构或验收前置条件。
 
 ## Crate 与传输边界
 

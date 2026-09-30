@@ -45,7 +45,7 @@ Rust 将 OBSERVE/WAIT/EXTRACT 重新计算为 READ_ONLY，将安全导航/输入
 
 Capability 来自用户已有 Settings 配置，不按厂商名称猜测。`structured_output=true` 使用 strict `response_format=json_schema`；否则 `json_mode=true` 使用 `json_object`；两者皆无时只发送相同 JSON-only Prompt 和完整 Schema，不发送不受支持的 response_format。所有模式经过同一严格 Decoder 和 Domain/Safety 校验。Provider 拒绝其声明的原生能力时返回 MODEL_ERROR，不自动降级掩盖失败。
 
-限制：本地 INVALID_MODEL_OUTPUT 最多 **2 次尝试**；跨全部尝试共 **30 秒**并使用 Gateway timeout；**2,048 output tokens**；**64 KiB HTTP response**；**16 KiB 候选 JSON**；**32 KiB Context**；**5** 个最近 Step；**80** 个元素；WAIT 最多 **5,000 ms**。Domain/Policy 错误不修复、不重试。在网络/凭据访问前检查预算、terminal/approval 状态、deadline，以及现有 pending/executing/waiting Step。应用 shutdown 取消请求 Future；完整 Stop 优先级仍属于 Phase 5。
+限制：仅对瞬态 HTTP **408/429/500/502/503/504** 最多 **4 次 HTTP attempts**，使用 **1/2/4 秒指数 backoff + 0–250 ms jitter**。安全解析 Retry-After（秒数或 HTTP-date），需要时提高等待，但单次最多 **10 秒**。网络请求、attempt 计数和等待共用 **30 秒总 deadline** 与取消。每次请求计入模型调用预算；重试不会创建 Plan/Step/Action。Malformed output、Schema/Domain/Policy 错误及永久客户端错误不重试。安全固定诊断区分 RATE_LIMITED、UNAVAILABLE、TIMEOUT 和 INVALID_RESPONSE。保留 **2,048 output tokens**、**64 KiB HTTP response**、**16 KiB 候选 JSON**、**32 KiB Context**、**5** 个最近 Step、**80** 个元素、WAIT 最多 **5,000 ms**。不切换 Provider/模型或修改配置。
 
 ## 持久化、状态与 Runtime Events
 

@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE.md) | [简体中文](ARCHITECTURE.zh-CN.md)
 
-> Current Phase 5: bounded Planner/Executor integration is implemented. Live model acceptance is **BLOCKED_MODEL_NOT_CONFIGURED** (Production Provider Count **0**); Full Autonomous M3 is **NOT_COMPLETE**. Earlier Phase 2–4 validation records below remain historical evidence. See the [Phase 5 closeout record](mobile/M3_PHASE5.md) for current validation.
+> Current M3: saved Google Gemini / `gemini-3.6-flash`, Provider Count **1**. The last real Planner-only batch passed **1/5** (9 attempts; HTTP 503/429). Provider resilience is being validated; Full Autonomous M3 remains **NOT_COMPLETE**. Earlier Phase 2–5 counts below are historical. Deployment is **PERSONAL / LOCAL-ONLY APPLICATION**; Apple signing/distribution is **OUT_OF_SCOPE_LOCAL_ONLY**.
 
 
 OrdinConn V0.1 uses a single-process embedded Tauri runtime with strict layers:
@@ -21,7 +21,7 @@ OrdinConn V0.1 uses a single-process embedded Tauri runtime with strict layers:
 - Approval is a one-time capability bound to one canonical proposal version.
 - No localhost server, daemon, sidecar, distributed bus, CQRS, or full Event Sourcing exists in V0.1.
 
-The future `StandaloneRuntimeHost`, `DaemonRuntimeHost`, and `RemoteRuntimeHost` must reuse the same domain, model, tool, approval, and signal protocols.
+Deployment remains the owner’s local embedded runtime. Remote hosting and public distribution are outside the personal local-only scope; no Apple signing identity is an architecture or acceptance prerequisite.
 
 ## Crate and transport boundaries
 

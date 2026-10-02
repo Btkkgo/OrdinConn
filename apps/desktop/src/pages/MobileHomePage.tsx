@@ -15,6 +15,7 @@ import { AgentPlanPanel } from "../workbench/AgentPlanPanel";
 import { AgentCommandPanel } from "../workbench/AgentCommandPanel";
 
 export interface MobileHomePageProps {
+  manualBusy?: boolean;
   workspace: MobileWorkspaceDto; signals: SignalDto[]; selectedItemId?: string;
   onSelectItem: (id: string) => void; onObserve: () => void; onStop: () => void;
   onAction: (input: MobileActionInputDto) => Promise<void>;
@@ -26,7 +27,7 @@ export interface MobileHomePageProps {
   runtime?: WorkbenchRuntimePort;
   visualModel?: WorkbenchViewModel; fixtureScreen?: ReactNode;
 }
-export function MobileHomePage({ workspace, onSelectItem, onObserve, onStop, onAction, onOpenDetail, t, visualModel, fixtureScreen, runtime, onExtract, onProvenance, goals = [], goalPlans = {} }: MobileHomePageProps) {
+export function MobileHomePage({ manualBusy = false, workspace, onSelectItem, onObserve, onStop, onAction, onOpenDetail, t, visualModel, fixtureScreen, runtime, onExtract, onProvenance, goals = [], goalPlans = {} }: MobileHomePageProps) {
   const controller = useWorkbenchCommands(runtime);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [browse, setBrowse] = useState(false);
@@ -47,8 +48,8 @@ export function MobileHomePage({ workspace, onSelectItem, onObserve, onStop, onA
     return <section className="realtime-workbench mobile-acquisition-workbench" data-data-mode="live"><WorkbenchHeader model={model} t={t}/><div className="workbench-columns">
       <MobileDataStream {...panels}/>
       <section className="workbench-panel mobile-operation-panel" aria-label={t("workbench.mobile")}><header className="workbench-panel-header"><div><h2>{t("workbench.mobile")}</h2><p>{workspace.session?.deviceId??t("workbench.noDevice")}</p></div></header>
-        <MobileDeviceView compact observeBeforeAction frame={workspace.frame} snapshot={workspace.uiSnapshot} session={workspace.session} allowedApps={workspace.settings.allowedApps} latestActionReceipt={workspace.latestActionReceipt} adbStatus={workspace.adbStatus} inspect={inspect} onInspectChange={setInspect} onObserve={onObserve} onStop={onStop} onAction={onAction} t={t}>
-          <div className="mobile-action-row"><button className="secondary-button" type="button" onClick={onObserve}>{t("mobile.observeNow")}</button><button className="secondary-button" type="button" onClick={onStop}>{t("collection.action.stop")}</button><button className="secondary-button" type="button" disabled={!connected || !workspace.collection.observations.length} onClick={()=>void panels.onExtract().catch(()=>undefined)}>{t("collection.extractPage")}</button></div>
+        <MobileDeviceView manualBusy={manualBusy} compact observeBeforeAction frame={workspace.frame} snapshot={workspace.uiSnapshot} session={workspace.session} allowedApps={workspace.settings.allowedApps} latestActionReceipt={workspace.latestActionReceipt} adbStatus={workspace.adbStatus} inspect={inspect} onInspectChange={setInspect} onObserve={onObserve} onStop={onStop} onAction={onAction} t={t}>
+          <div className="mobile-action-row"><button className="secondary-button" type="button" disabled={manualBusy} aria-busy={manualBusy} onClick={onObserve}>{t("mobile.observeNow")}</button><button className="secondary-button" type="button" onClick={onStop}>{t("collection.action.stop")}</button><button className="secondary-button" type="button" disabled={!connected || !workspace.collection.observations.length} onClick={()=>void panels.onExtract().catch(()=>undefined)}>{t("collection.extractPage")}</button></div>
         </MobileDeviceView>
       </section><MobileObservationContext {...panels}/>
     </div></section>;

@@ -11,6 +11,7 @@ import { useState } from "react";
 import type { Translator } from "../i18n";
 
 interface MobileActionControlsProps {
+  manualBusy?: boolean;
   observeBeforeAction?: boolean;
   session?: MobileDeviceSessionDto;
   snapshot?: MobileUiSnapshotDto;
@@ -52,10 +53,11 @@ function receiptTarget(target: MobileActionTargetDto): string {
   }
 }
 
-export function MobileActionControls({ observeBeforeAction = false, session, snapshot, selected, allowedApps, receipt, onAction, t }: MobileActionControlsProps) {
+export function MobileActionControls({ manualBusy = false, observeBeforeAction = false, session, snapshot, selected, allowedApps, receipt, onAction, t }: MobileActionControlsProps) {
   const [typeDraft, setTypeDraft] = useState("");
   const [openPackage, setOpenPackage] = useState(allowedApps[0] ?? "");
-  const [busy, setBusy] = useState(false);
+  const [localBusy, setBusy] = useState(false);
+  const busy = localBusy || manualBusy;
   const availability = mobileActionAvailability(session, snapshot, allowedApps, Date.now(), observeBeforeAction ? Number.POSITIVE_INFINITY : 10_000);
   const validSelection = safeElement(snapshot, selected);
   const canTap = availability.navigate && validSelection && !!selected?.clickable && !busy;

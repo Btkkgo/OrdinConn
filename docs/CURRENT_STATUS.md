@@ -2,6 +2,10 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
+## H1 MOBILE_BUSY diagnosis — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14): owner H1 is **FAIL / BLOCKED**, repair is **READY TO RETEST**. The real 70-element Settings Observation and its completed ActionResult are valid. A separate overlapping request was correctly rejected; missing frontend pending admission allowed overlap, and the latest-started attempt remained visible. Shared synchronous admission and pending controls now have fixture regression coverage. Rust **339 PASS** (seven real gates excluded), Desktop **77 PASS**, Contracts **9 PASS**, typecheck and frontend/native builds PASS. Diagnosis Android actions / real Provider requests / signing verification **0 / 0 / 0**. H2 not started; Issue remains open `status:needs-validation`. See [evidence and repair](mobile/H1_MOBILE_BUSY_DIAGNOSIS.md).
+
 ## Desktop startup diagnosis — 2026-10-02
 
 [Issue #15](https://github.com/Btkkgo/OrdinConn/issues/15): frozen pre-migration-12 bundle startup SIGABRT root cause PROVEN; current official development startup opens the same database and remains running. The old bundle is not repaired or replaced. Rust 338 / Desktop 73 / Contracts 9 PASS; real Android actions, Provider requests and signing verification remain 0. Native visual confirmation and Issue #14 H1–H7 remain owner-controlled and unverified. See [diagnosis and development launch instructions](mobile/DESKTOP_STARTUP_DIAGNOSIS.md).

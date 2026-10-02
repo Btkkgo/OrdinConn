@@ -17,6 +17,17 @@ const workspace: MobileWorkspaceDto = {
 const signals = [{ id: "signal-1", title: "BTC linked signal", asset: "BTC" }] as SignalDto[];
 
 describe("mobile home workspace", () => {
+  it("disables every Observe entry while a manual request is pending, leaving Stop available", () => {
+    const t = createTranslator("en");
+    const html = renderToStaticMarkup(<MobileHomePage workspace={{ ...workspace, collection: { observations: [], diffs: [], actions: [], dataObjects: [], lastExtractionCount: 0, lastNewObjectCount: 0 } }} signals={[]} manualBusy onSelectItem={() => {}} onObserve={() => {}} onStop={() => {}} onAction={async () => {}} onOpenDetail={() => {}} t={t}/>);
+    for (const label of [t("mobile.observeNow"), t("mobile.checkDevice")]) {
+      const button = html.match(new RegExp(`<button[^>]*>${label}</button>`))?.[0];
+      expect(button).toContain('disabled=""');
+    }
+    const stop = html.match(new RegExp(`<button[^>]*>${t("collection.action.stop")}</button>`))?.[0];
+    expect(stop).toBeDefined();
+    expect(stop).not.toContain("disabled");
+  });
   it("renders realtime data, real mobile state, and the empty plan queue", () => {
     const html = renderToStaticMarkup(
       <MobileHomePage workspace={workspace} signals={signals} selectedItemId="mobile-1" onSelectItem={() => undefined} onObserve={() => undefined} onStop={() => undefined} onAction={async () => undefined} onOpenDetail={() => undefined} t={createTranslator("en")} />,

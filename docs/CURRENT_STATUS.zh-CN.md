@@ -2,6 +2,10 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
+## H1 MOBILE_BUSY 诊断 — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14)：用户 H1 结果为 **FAIL / BLOCKED**，修复版 **READY TO RETEST**。真实 70 元素 Settings Observation 及对应 completed ActionResult 有效；另一条重叠请求被正确拒绝。前端缺少执行中保护而允许重入，界面继续显示开始更晚的拒绝记录。已补共享同步入口保护、按钮执行中状态及 fixture 回归。Rust **339 PASS**（排除七项真实 Gate）、Desktop **77 PASS**、Contracts **9 PASS**，typecheck、前端与 native 编译 PASS。本轮 Android 动作 / 真实 Provider 请求 / Signing 验证 **0 / 0 / 0**。未进入 H2，Issue 保持 open `status:needs-validation`。见[证据和修复](mobile/H1_MOBILE_BUSY_DIAGNOSIS.zh-CN.md)。
+
 ## Desktop 启动诊断 — 2026-10-02
 
 [Issue #15](https://github.com/Btkkgo/OrdinConn/issues/15)：冻结的迁移 12 之前 bundle 启动 SIGABRT 根因已证明；当前正式开发入口可以打开同一数据库并持续运行。旧 bundle 未修复或替换。Rust 338 / Desktop 73 / Contracts 9 PASS；真实 Android 动作、Provider 请求、Signing 验证保持 0。Native 视觉确认与 Issue #14 H1–H7 仍由用户控制，尚未验证。见[诊断与开发启动指引](mobile/DESKTOP_STARTUP_DIAGNOSIS.zh-CN.md)。

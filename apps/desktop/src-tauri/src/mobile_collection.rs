@@ -262,6 +262,13 @@ pub async fn interact_mobile_device(
     input: MobileInteractionInput,
     state: tauri::State<'_, AppState>,
 ) -> Result<MobileInteractionResponse, IpcError> {
+    interact_mobile_device_inner(input, &state).await
+}
+
+async fn interact_mobile_device_inner(
+    input: MobileInteractionInput,
+    state: &AppState,
+) -> Result<MobileInteractionResponse, IpcError> {
     let mut current = state
         .runtime
         .mobile_workspace_data()
@@ -506,6 +513,118 @@ pub async fn get_mobile_data_provenance(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn fixture_observe_overlap_preserves_success_and_releases_admission() {
+        let (dir, sdk, _, input_log, host) = crate::mobile::tests::mobile_action_fixture();
+        let entered = dir.path().join("observe-entered");
+        let release = dir.path().join("observe-release");
+        let adb = sdk.join("platform-tools/adb");
+        let script = std::fs::read_to_string(&adb).unwrap();
+        // A bounded fixture barrier proves overlap without touching an installed ADB.
+        let barrier = format!(
+            "case \"$*\" in *\"uiautomator dump\"*) touch '{}'; n=0; while [ ! -f '{}' ]; do n=$((n+1)); [ $n -lt 500 ] || exit 1; sleep 0.01; done;; esac\n",
+            entered.display(),
+            release.display()
+        );
+        std::fs::write(
+            &adb,
+            script.replacen("#!/bin/sh\n", &format!("#!/bin/sh\n{barrier}"), 1),
+        )
+        .unwrap();
+        let app = AppRuntime::initialize(&dir.path().join("observe.sqlite"))
+            .await
+            .unwrap();
+        app.save_mobile_settings(&ordinconn_app::MobileRuntimeSettings {
+            android_sdk: Some(sdk.to_string_lossy().into_owned()),
+            allowed_apps: vec!["com.example.news".into()],
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        let state = AppState::new(
+            Arc::clone(&app),
+            Arc::new(crate::credential_store::MemoryCredentialStore::default()),
+            Arc::new(host),
+        );
+        let observe = || MobileInteractionInput {
+            action_type: MobileActionType::Observe,
+            action: None,
+        };
+        let first = interact_mobile_device_inner(observe(), &state);
+        let overlap = async {
+            tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                while !entered.exists() {
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                }
+            })
+            .await
+            .unwrap();
+            assert!(state.manual_mobile.lock().unwrap().is_some());
+            let second = interact_mobile_device_inner(observe(), &state)
+                .await
+                .unwrap();
+            assert_eq!(second.result.status, "failed");
+            assert_eq!(second.result.error_code.as_deref(), Some("MOBILE_BUSY"));
+            assert!(second.result.before_observation_id.is_none());
+            assert!(second.result.after_observation_id.is_none());
+            assert!(state.manual_mobile.lock().unwrap().is_some());
+            std::fs::write(&release, "release fixture only").unwrap();
+            second.result.action_id
+        };
+        let (first, rejected_id) = tokio::join!(first, overlap);
+        let first = first.unwrap();
+        assert_eq!(
+            first.result.status, "completed",
+            "{:?}",
+            first.result.error_code
+        );
+        assert!(first.result.error_code.is_none());
+        let observation_id = first.result.after_observation_id.as_ref().unwrap();
+        assert_eq!(
+            first.result.before_observation_id.as_ref(),
+            Some(observation_id)
+        );
+        assert!(
+            first
+                .workspace
+                .collection
+                .observations
+                .iter()
+                .any(|o| &o.id == observation_id && o.element_count == 2)
+        );
+        assert!(state.manual_mobile.lock().unwrap().is_none());
+        let next = interact_mobile_device_inner(observe(), &state)
+            .await
+            .unwrap();
+        assert_eq!(next.result.status, "completed");
+        assert_ne!(
+            next.result.after_observation_id,
+            first.result.after_observation_id
+        );
+        assert!(state.manual_mobile.lock().unwrap().is_none());
+        let actions = &next.workspace.collection.actions;
+        assert_eq!(
+            actions
+                .iter()
+                .find(|a| a.action_id == first.result.action_id)
+                .unwrap()
+                .status,
+            "completed"
+        );
+        assert_eq!(
+            actions
+                .iter()
+                .find(|a| a.action_id == rejected_id)
+                .unwrap()
+                .error_code
+                .as_deref(),
+            Some("MOBILE_BUSY")
+        );
+        assert!(
+            !input_log.exists(),
+            "Observe must not emit input commands, even in fixtures"
+        );
+    }
     #[test]
     fn projection_redacts_pin_from_desktop_and_hides_sensitive_frame() {
         let (_dir, sdk, _, _, host) = crate::mobile::tests::mobile_action_fixture();

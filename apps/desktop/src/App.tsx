@@ -11,6 +11,7 @@ import { createPageContext, initialRuntimeState, reduceMobileWorkspaceEvent, red
 import { MobileHomePage } from "./pages/MobileHomePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { WarehousePage } from "./pages/WarehousePage";
+import { ManualMobileFlight } from "./runtime/manualMobileFlight";
 import { Alert } from "./components/WorkspaceUI";
 
 const emptySnapshot: AppSnapshotDto = { signals: [], connectors: [], providers: [], pendingApprovals: [], recentExecutions: [] };
@@ -24,6 +25,8 @@ export default function App() {
   const [page, setPage] = useState<PageId>("home");
   const [snapshot, setSnapshot] = useState(emptySnapshot);
   const [mobile, setMobile] = useState(emptyMobile);
+  const [manualBusy, setManualBusy] = useState(false);
+  const [manualFlight] = useState(() => new ManualMobileFlight(setManualBusy));
   const [goals, setGoals] = useState<MobileGoalDto[]>([]);
   const [goalPlans, setGoalPlans] = useState<Record<string, MobileGoalPlanDto | null>>({});
   const [selectedItemId, setSelectedItemId] = useState<string>();
@@ -50,14 +53,14 @@ export default function App() {
   }, []);
   const changeLocale = (next: Locale) => { setLocale(next); try { localStorage.setItem(localeStorageKey, next); } catch { /* in-memory preference remains active */ } };
   const changeTextScale = (next: TextScale) => { const normalized = normalizeTextScale(next); setTextScale(normalized); try { localStorage.setItem(textScaleStorageKey, String(normalized)); } catch { /* in-memory preference remains active */ } };
-  const observe = async () => { const response = await run(() => runtimeClient.interactMobileDevice("observe")); if (response) { setMobile(response.workspace); } };
+  const observe = () => manualFlight.run(async () => { const response = await run(() => runtimeClient.interactMobileDevice("observe")); if (response) { setMobile(response.workspace); } });
   const stopMobile = async () => { const response = await run(() => runtimeClient.interactMobileDevice("stop")); if (response) setMobile(response.workspace); };
-  const actMobile = async (input: MobileActionInputDto) => { const result = await run(() => runtimeClient.interactMobileDevice(mobileActionType(input),input)); if (result) { setMobile(result.workspace); setSelectedItemId(result.workspace.feed[0]?.id); } };
+  const actMobile = async (input: MobileActionInputDto) => { await manualFlight.run(async () => { const result = await run(() => runtimeClient.interactMobileDevice(mobileActionType(input),input)); if (result) { setMobile(result.workspace); setSelectedItemId(result.workspace.feed[0]?.id); } }); };
   const warehouseChange = async (favorite: boolean, saved: boolean, tags: string[]) => { if (!detail) return; if (await run(() => runtimeClient.setWarehouseEntry(detail.id, favorite, saved, tags))) { await refresh(); setDetail((current) => current ? { ...current, favorite, saved } : current); } };
   const discuss = async (question: string) => { if (!detail) return; const message: AgentMessageDto = { id: crypto.randomUUID(), role: "user", content: question, createdAt: new Date().toISOString() }; setLocalMessages((current) => [...current, message]); const started = await run(() => runtimeClient.startAgentTurn(threadId, question, createPageContext(page, undefined, detail))); if (started) setThreadId(started.threadId); };
   const research = async () => { if (!detail) return; await run(() => runtimeClient.createMobileResearchTask(`Research: ${detail.title}`, mobile.settings.allowedApps.length ? mobile.settings.allowedApps : [detail.sourceApp], mobile.settings.researchBudget)); };
   const saveProvider = async (input: ProviderInput) => { if (await run(() => runtimeClient.saveModelProvider(input))) await refresh(); };
-  const content = page === "home" ? <MobileHomePage workspace={mobile} goals={goals} goalPlans={goalPlans} signals={snapshot.signals} runtime={{
+  const content = page === "home" ? <MobileHomePage manualBusy={manualBusy} workspace={mobile} goals={goals} goalPlans={goalPlans} signals={snapshot.signals} runtime={{
     observe: async () => { const next = await runtimeClient.observeMobileDevice(); setMobile(next); setSelectedItemId(next.feed[0]?.id); return next; },
     action: async input => { const result = await runtimeClient.executeMobileAction(input); setMobile(result.workspace); setSelectedItemId(result.workspace.feed[0]?.id); return result; },
     stop: async () => { setMobile(await runtimeClient.stopMobileSession()); },

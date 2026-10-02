@@ -2,7 +2,9 @@
 
 [English](MOBILE_DATA_ACQUISITION.md) | [简体中文](MOBILE_DATA_ACQUISITION.zh-CN.md)
 
-Issue：[ #14](https://github.com/Btkkgo/OrdinConn/issues/14)。阶段：**IMPLEMENTED / AUTOMATED FIXTURE VALIDATION；人工验收待完成**。M3 状态、Provider 配置、历史结果、retry/backoff/deadline 实现、Keychain 与冻结 App 均保持不变。
+Issue：[ #14](https://github.com/Btkkgo/OrdinConn/issues/14)。阶段：**REAL MOBILE DATA ACQUISITION ACCEPTANCE = PASS（H1–H2 人工；H3–H7 明确授权 Codex）**。M3 状态、Provider 配置、历史结果、retry/backoff/deadline 实现、Keychain 与冻结 App 均保持不变。
+
+最新证据：[真实验收报告](REAL_MOBILE_ACCEPTANCE.zh-CN.md)。匿名人工目标仅在完整结构化树及上下文一致时精确绑定，M3 匹配不变。下文初始禁止 Codex 动作的交接边界，已由用户对 H3–H7 的明确授权更新。
 
 ## 数据链
 
@@ -46,7 +48,7 @@ Migration `0012_mobile_data_acquisition.sql` 扩展现有应用 SQLite，增加 
 
 Password/PIN/OTP/验证码/私钥/助记词/支付凭据标签及既有敏感节点标记，会在采集持久化前移除文本、描述与 Resource 元数据；仅记录无明文的 `REDACTED_SENSITIVE_ELEMENT`。可编辑字段值不进入业务提取。Repository 拒绝未脱敏的敏感 Observation。敏感桌面 capture 隐藏截图；其余截图只驻留内存，也不作为提取输入。标签判断偏保守，不能普遍识别完全无标签的秘密；人工验收必须使用公开、非账号页面。
 
-## 人工验收
+## 初始人工验收流程（历史）
 
 代码与自动 fixture 完成后停在真实 Android 操作之前。用户可先确保内部 M3 验收 opt-in 关闭，再通过 `npm run desktop:dev` 启动开发应用。本轮未启动应用、初始化生产数据库、配置 Provider 或改变现有冻结 Bundle。
 

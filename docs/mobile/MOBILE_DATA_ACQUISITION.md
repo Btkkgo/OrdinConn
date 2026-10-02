@@ -2,7 +2,9 @@
 
 [English](MOBILE_DATA_ACQUISITION.md) | [简体中文](MOBILE_DATA_ACQUISITION.zh-CN.md)
 
-Issue: [#14](https://github.com/Btkkgo/OrdinConn/issues/14). Stage: **IMPLEMENTED / AUTOMATED FIXTURE VALIDATION; HUMAN ACCEPTANCE PENDING**. M3 state, provider configuration, historical results, retry/backoff/deadline implementation, Keychain and frozen app remain unchanged.
+Issue: [#14](https://github.com/Btkkgo/OrdinConn/issues/14). Stage: **REAL MOBILE DATA ACQUISITION ACCEPTANCE = PASS (H1–H2 human; H3–H7 explicitly authorized Codex)**. M3 state, provider configuration, historical results, retry/backoff/deadline implementation, Keychain and frozen app remain unchanged.
+
+Latest evidence: [real acceptance report](REAL_MOBILE_ACCEPTANCE.md). Anonymous manual targets now bind only when the entire structured tree and context are unchanged; M3 matching is unchanged. The initial no-Codex-action handoff below was superseded by explicit owner authorization for H3–H7.
 
 ## Data chain
 
@@ -46,7 +48,7 @@ Source detail answers: what the data is, device and app/package/activity, captur
 
 Password/PIN/OTP/verification/private-key/seed/payment-credential labels and existing sensitive-node flags redact text, description and resource metadata before collection persistence. Redactions record `REDACTED_SENSITIVE_ELEMENT` without the value. Editable field values are excluded from business extraction. Repository validation rejects unsanitized sensitive observations. Sensitive desktop captures hide the screenshot; screenshots otherwise remain memory-only and are not extraction inputs. Label-based detection is conservative, not a universal detector for unlabeled secrets; human acceptance must use public, non-account surfaces.
 
-## Owner acceptance
+## Initial owner acceptance procedure (historical)
 
 Code and automated fixtures stop before real Android operation. The owner may start the development app with `npm run desktop:dev` after ensuring internal M3 acceptance opt-ins are disabled. This task did not launch the app, initialize the production database, configure a provider, or change the retained frozen bundle.
 

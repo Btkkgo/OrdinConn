@@ -106,6 +106,40 @@ struct DesktopManualDriver {
     action_id: String,
     receipt: Option<mobile_runtime::MobileActionReceipt>,
 }
+
+fn matching_manual_element<'a>(
+    source: &mobile_runtime::MobileElement,
+    selected: &mobile_runtime::MobileUiSnapshot,
+    before: &'a mobile_runtime::MobileUiSnapshot,
+) -> Option<&'a mobile_runtime::MobileElement> {
+    if let Some(element) = mobile_runtime::executor::matching_element(source, before) {
+        return Some(element);
+    }
+    // Settings rows often expose identity only on a child. Reuse the exact ref
+    // only when the entire structured tree (including bounds/state) is unchanged.
+    // Never weaken the semantic matcher used by the autonomous executor.
+    if source.resource_id.as_deref().is_some_and(|v| !v.is_empty())
+        || source
+            .content_description
+            .as_deref()
+            .is_some_and(|v| !v.is_empty())
+        || selected.session_id != before.session_id
+        || selected.package_name != before.package_name
+        || selected.activity != before.activity
+        || selected.screen_width != before.screen_width
+        || selected.screen_height != before.screen_height
+        || !selected.redactions.is_empty()
+        || !before.redactions.is_empty()
+        || serde_json::to_vec(&selected.elements).ok()?
+            != serde_json::to_vec(&before.elements).ok()?
+    {
+        return None;
+    }
+    before
+        .elements
+        .iter()
+        .find(|e| e.element_ref == source.element_ref)
+}
 impl ManualInteractionDriver for DesktopManualDriver {
     fn cancelled(&self) -> bool {
         self.token.load(Ordering::Acquire)
@@ -190,7 +224,7 @@ impl ManualInteractionDriver for DesktopManualDriver {
                     .iter()
                     .find(|e| &e.element_ref == element_ref)
                     .ok_or(InteractionError::TargetChanged)?;
-                let element = mobile_runtime::executor::matching_element(source, &before.snapshot)
+                let element = matching_manual_element(source, &selected.snapshot, &before.snapshot)
                     .ok_or(InteractionError::TargetChanged)?;
                 if prohibited_manual_target(&format!(
                     "{} {} {}",
@@ -513,6 +547,31 @@ pub async fn get_mobile_data_provenance(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn unlabelled_manual_target_rejects_changed_tree_bounds_and_context() {
+        let (_dir, sdk, _, _, host) = crate::mobile::tests::mobile_action_fixture();
+        let mut selected = host
+            .observe_with_sdk(sdk.to_str(), &["com.example.news".into()])
+            .unwrap()
+            .snapshot;
+        selected.elements[0].resource_id = None;
+        selected.elements[0].text = None;
+        let source = &selected.elements[0];
+        assert!(mobile_runtime::executor::matching_element(source, &selected).is_none());
+        assert!(matching_manual_element(source, &selected, &selected).is_some());
+        let mut changed = selected.clone();
+        changed.elements[1].text = Some("Different row".into());
+        assert!(matching_manual_element(source, &selected, &changed).is_none());
+        let mut changed = selected.clone();
+        changed.elements[0].bounds.y += 1;
+        assert!(matching_manual_element(source, &selected, &changed).is_none());
+        let mut changed = selected.clone();
+        changed.activity = "OtherActivity".into();
+        assert!(matching_manual_element(source, &selected, &changed).is_none());
+        let mut changed = selected.clone();
+        changed.redactions.push("sensitive".into());
+        assert!(matching_manual_element(source, &selected, &changed).is_none());
+    }
     #[tokio::test]
     async fn fixture_observe_overlap_preserves_success_and_releases_admission() {
         let (dir, sdk, _, input_log, host) = crate::mobile::tests::mobile_action_fixture();
@@ -641,7 +700,26 @@ mod tests {
     }
     #[test]
     fn fixture_manual_loop_reuses_adb_host_and_persists_traceable_data() {
+        fixture_manual_loop(false);
+    }
+    #[test]
+    fn fixture_manual_tap_accepts_unchanged_unlabelled_container() {
+        fixture_manual_loop(true);
+    }
+    fn fixture_manual_loop(unlabelled_container: bool) {
         let (_dir, sdk, _, log, host) = crate::mobile::tests::mobile_action_fixture();
+        if unlabelled_container {
+            let adb = sdk.join("platform-tools/adb");
+            let script = std::fs::read_to_string(&adb)
+                .unwrap()
+                .replace("text=\"Network\"", "text=\"\"")
+                .replace("android.widget.Button", "android.widget.LinearLayout")
+                .replace(
+                    "resource-id=\"com.example.news:id/network\"",
+                    "resource-id=\"\"",
+                );
+            std::fs::write(adb, script).unwrap();
+        }
         let runtime = tokio::runtime::Runtime::new().unwrap();
         let database = tempfile::tempdir().unwrap();
         let app = runtime
@@ -702,6 +780,12 @@ mod tests {
         let result = run_manual_interaction(&mut driver, result);
         assert_eq!(result.status, "completed", "{:?}", result.error_code);
         assert_eq!(std::fs::read_to_string(log).unwrap().lines().count(), 1);
+        assert!(result.before_observation_id.is_some());
+        assert!(result.after_observation_id.is_some());
+        if unlabelled_container {
+            // This fixture deliberately removes all extractable non-input text.
+            return;
+        }
         let workspace = runtime
             .block_on(
                 app.extract_mobile_observation(result.after_observation_id.as_deref().unwrap()),

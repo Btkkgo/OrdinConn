@@ -2,19 +2,23 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
-## H1 MOBILE_BUSY 诊断 — 2026-10-02
+## 真实移动数据采集验收 — 2026-10-02
+
+**PASS**；H1–H2 人工，H3–H7 用户明确授权 Codex 实测。修复匿名 Settings 容器的人工目标匹配；19 个真实本地对象、两次提取、去重/Provenance/Data Stream 通过。Rust 341 / Desktop 77 / Contracts 9 PASS。真实 Provider/Signing 0；Input、横向滚动和 Stop NOT RUN。此前两次失败 Tap 保留，其中一次后置采集错误原因仍未知。见[完整证据与实际动作计数](mobile/REAL_MOBILE_ACCEPTANCE.zh-CN.md)。Issue #14 验证状态更新，M3 历史不变。
+
+## 历史 H1 MOBILE_BUSY 诊断 — 2026-10-02
 
 [Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14)：用户 H1 结果为 **FAIL / BLOCKED**，修复版 **READY TO RETEST**。真实 70 元素 Settings Observation 及对应 completed ActionResult 有效；另一条重叠请求被正确拒绝。前端缺少执行中保护而允许重入，界面继续显示开始更晚的拒绝记录。已补共享同步入口保护、按钮执行中状态及 fixture 回归。Rust **339 PASS**（排除七项真实 Gate）、Desktop **77 PASS**、Contracts **9 PASS**，typecheck、前端与 native 编译 PASS。本轮 Android 动作 / 真实 Provider 请求 / Signing 验证 **0 / 0 / 0**。未进入 H2，Issue 保持 open `status:needs-validation`。见[证据和修复](mobile/H1_MOBILE_BUSY_DIAGNOSIS.zh-CN.md)。
 
-## Desktop 启动诊断 — 2026-10-02
+## 历史 Desktop 启动诊断 — 2026-10-02
 
 [Issue #15](https://github.com/Btkkgo/OrdinConn/issues/15)：冻结的迁移 12 之前 bundle 启动 SIGABRT 根因已证明；当前正式开发入口可以打开同一数据库并持续运行。旧 bundle 未修复或替换。Rust 338 / Desktop 73 / Contracts 9 PASS；真实 Android 动作、Provider 请求、Signing 验证保持 0。Native 视觉确认与 Issue #14 H1–H7 仍由用户控制，尚未验证。见[诊断与开发启动指引](mobile/DESKTOP_STARTUP_DIAGNOSIS.zh-CN.md)。
 
 ## Mobile Interaction 与数据采集 — 2026-10-02
 
-[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **REAL MOBILE DATA ACQUISITION ACCEPTANCE = PASS**（2026-10-02，H1–H2 人工；H3–H7 用户明确授权 Codex 执行） 分开；生产动作沿用既有模拟器/Settings 安全范围。
 
-M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。
+**初始实现阶段的历史记录：** M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。
 
 > 当前 M3：已保存 Google Gemini / `gemini-3.6-flash`，Provider Count **1**。新一轮带间隔的真实 Planner-only 批次为 **1/5**（执行 3 次、未运行 2 次；10 attempts，6 个 HTTP 429、2 个 HTTP 503、1 个 HTTP 200、1 次 deadline 中断）。有界重试回归 PASS；真实验收按 **FREE_TIER_RATE_LIMIT_BLOCKED** 停止；Full Autonomous M3 仍为 **NOT_COMPLETE**。下文 Phase 2–5 计数属于历史记录。部署定位为 **PERSONAL / LOCAL-ONLY APPLICATION**；Apple 签名及分发为 **OUT_OF_SCOPE_LOCAL_ONLY**。
 

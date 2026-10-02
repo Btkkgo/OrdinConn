@@ -60,3 +60,9 @@ Codex 保留短时限失败路径断言和全部生产 Command Deadline，增加
 ## Issue #12 — M3 Phase 5 证据边界
 
 只读发现确认生产 Provider 为零。Codex 完成有界集成并保留真实模型阻塞，没有用 localhost 夹具代替验收。新增批准动作期间 Stop 回归修复前失败、修复后通过。真实输入准备暴露键盘教程和观察失败；精确目标值验证保留这些失败证据。native dump 独立文件归属现阻止旧 XML 复用。默认 workspace 287 项通过；最终构建和真实设备结果记录于 [Phase 5](../mobile/M3_PHASE5.zh-CN.md)。不推断 Owner UX acceptance 或 Full Autonomous M3 完成。既有工作和五张 JPEG 保留，私有 trace 放在公开仓库之外。
+
+## Mobile Interaction 与数据采集 — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
+
+M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](../mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。

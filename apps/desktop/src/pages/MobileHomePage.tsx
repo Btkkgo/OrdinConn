@@ -1,3 +1,5 @@
+import { MobileDataStream, MobileObservationContext } from "../components/MobileCollectionPanels";
+import type { MobileDataProvenance } from "@ordinconn/contracts";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { IntelligenceItemDto, MobileGoalDto, MobileGoalPlanDto, MobileActionInputDto, MobileWorkspaceDto, SignalDto } from "@ordinconn/contracts";
@@ -17,16 +19,18 @@ export interface MobileHomePageProps {
   onSelectItem: (id: string) => void; onObserve: () => void; onStop: () => void;
   onAction: (input: MobileActionInputDto) => Promise<void>;
   onOpenDetail: (item: IntelligenceItemDto) => void; t: Translator;
+  onExtract?: () => Promise<void>;
+  onProvenance?: (id:string) => Promise<MobileDataProvenance>;
   goals?: MobileGoalDto[];
   goalPlans?: Record<string, MobileGoalPlanDto | null>;
   runtime?: WorkbenchRuntimePort;
   visualModel?: WorkbenchViewModel; fixtureScreen?: ReactNode;
 }
-export function MobileHomePage({ workspace, onSelectItem, onObserve, onStop, onAction, onOpenDetail, t, visualModel, fixtureScreen, runtime, goals = [], goalPlans = {} }: MobileHomePageProps) {
+export function MobileHomePage({ workspace, onSelectItem, onObserve, onStop, onAction, onOpenDetail, t, visualModel, fixtureScreen, runtime, onExtract, onProvenance, goals = [], goalPlans = {} }: MobileHomePageProps) {
   const controller = useWorkbenchCommands(runtime);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [browse, setBrowse] = useState(false);
-  const [inspect, setInspect] = useState(false);
+  const [inspect, setInspect] = useState(!!workspace.collection);
   const [selectedMetric, setSelectedMetric] = useState("other");
   const model = useMemo(() => {
     if (visualModel) return { ...visualModel, selectedMetric };
@@ -37,6 +41,18 @@ export function MobileHomePage({ workspace, onSelectItem, onObserve, onStop, onA
   }, [workspace, selectedMetric, visualModel, controller.plans, controller.phase, dismissed, t]);
   const categoryItems = workspace.feed.filter(item => model.objects.some(object => object.id === item.id && object.category === model.selectedMetric));
   const openData = () => setBrowse(true);
+  if(workspace.collection && !visualModel) {
+    const connected=workspace.runtimeStatus==="observing" && !!workspace.session;
+    const panels={collection:workspace.collection,t,connected,onExtract:onExtract??(async()=>{throw new Error("UNAVAILABLE");}),onProvenance:onProvenance??(async()=>{throw new Error("UNAVAILABLE");})};
+    return <section className="realtime-workbench mobile-acquisition-workbench" data-data-mode="live"><WorkbenchHeader model={model} t={t}/><div className="workbench-columns">
+      <MobileDataStream {...panels}/>
+      <section className="workbench-panel mobile-operation-panel" aria-label={t("workbench.mobile")}><header className="workbench-panel-header"><div><h2>{t("workbench.mobile")}</h2><p>{workspace.session?.deviceId??t("workbench.noDevice")}</p></div></header>
+        <MobileDeviceView compact observeBeforeAction frame={workspace.frame} snapshot={workspace.uiSnapshot} session={workspace.session} allowedApps={workspace.settings.allowedApps} latestActionReceipt={workspace.latestActionReceipt} adbStatus={workspace.adbStatus} inspect={inspect} onInspectChange={setInspect} onObserve={onObserve} onStop={onStop} onAction={onAction} t={t}>
+          <div className="mobile-action-row"><button className="secondary-button" type="button" onClick={onObserve}>{t("mobile.observeNow")}</button><button className="secondary-button" type="button" onClick={onStop}>{t("collection.action.stop")}</button><button className="secondary-button" type="button" disabled={!connected || !workspace.collection.observations.length} onClick={()=>void panels.onExtract().catch(()=>undefined)}>{t("collection.extractPage")}</button></div>
+        </MobileDeviceView>
+      </section><MobileObservationContext {...panels}/>
+    </div></section>;
+  }
   return <section className="realtime-workbench" data-data-mode={model.mode}>
     {model.mode === "visual_fixture" ? <span className="fixture-badge">{t("workbench.fixture")}</span> : null}
     <WorkbenchHeader model={model} t={t}/>

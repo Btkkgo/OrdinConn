@@ -1,3 +1,4 @@
+export * from "./mobile-collection";
 export const MARKETS = ["traditional", "crypto"] as const;
 export type Market = (typeof MARKETS)[number];
 
@@ -490,6 +491,7 @@ export interface MobileResearchTaskDto {
 }
 
 export interface MobileWorkspaceDto {
+  collection?: import("./mobile-collection").MobileCollectionWorkspace;
   researchTasks?: MobileResearchTaskDto[];
   runtimeStatus: MobileRuntimeStatus;
   adbStatus: "ready" | "missing" | "offline" | "error";

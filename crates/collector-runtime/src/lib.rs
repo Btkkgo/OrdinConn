@@ -352,6 +352,37 @@ pub struct SourceRegistry {
 }
 
 impl SourceRegistry {
+    /// Local manual acquisition is distinct from public network collection.
+    pub fn register_manual_mobile(
+        &mut self,
+        source: SourceDefinition,
+        allowed_packages: &[String],
+    ) -> Result<(), CollectorError> {
+        let url = Url::parse(&source.endpoint)
+            .map_err(|e| CollectorError::InvalidSource(e.to_string()))?;
+        let package = url.host_str().unwrap_or_default();
+        if source.collector_kind != CollectorKind::Computer
+            || source.auth != AuthRequirement::None
+            || source.enabled
+            || url.scheme() != "android"
+            || !allowed_packages.iter().any(|p| p == package)
+            || !url.username().is_empty()
+            || url.password().is_some()
+            || url.port().is_some()
+            || !matches!(url.path(), "" | "/")
+            || url.query().is_some()
+            || url.fragment().is_some()
+            || self.sources.contains_key(&source.id)
+        {
+            return Err(CollectorError::Policy(
+                "manual mobile source requires a disabled, exact owner-allowlisted local endpoint"
+                    .into(),
+            ));
+        }
+        self.sources.insert(source.id.clone(), source);
+        Ok(())
+    }
+
     pub fn register(&mut self, source: SourceDefinition) -> Result<(), CollectorError> {
         source.validate_public()?;
         if self.sources.contains_key(&source.id) {

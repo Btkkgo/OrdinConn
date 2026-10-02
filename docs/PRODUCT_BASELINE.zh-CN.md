@@ -77,3 +77,9 @@ Desktop 批准方向为 Dark Intelligence Workspace：首页、资料库、设�
 ## M3 有界目标扩展
 
 所有者授权的 M3 Phase 5 将真实 Model Gateway Planner 接入既有真实单步 Executor，仅用于 Android Settings 及其系统预装搜索。Typed Next Action 保留默认拒绝策略、最新 Observation 绑定、显式 Approval、统一 Step/Model/Action/Time Budget、精确验证、Stop 及重启失败即拒绝。一般目标完成必须具备所有者显式提供且不可变的 Activity/Text 完成条件；模型自行宣称完成无效。现有 Home 提交接入 Rust Runner，无 UI 重设计。生产 Provider 未配置时返回 MODEL_NOT_CONFIGURED，不调用模型或设备动作。Live 验收为 BLOCKED_MODEL_NOT_CONFIGURED；Full Autonomous M3 仍为 NOT_COMPLETE。M4、账户、外部 App、真钱与商业授权不在范围内。
+
+## Mobile Interaction 与数据采集 — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
+
+M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。

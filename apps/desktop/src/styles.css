@@ -660,3 +660,18 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   .page-header { flex-wrap: wrap; }
   .warehouse-toolbar { flex-wrap: wrap; }
 }
+
+/* Acquisition uses the existing shell tokens and panel layout. */
+.mobile-data-filters, .mobile-action-row { display:flex; flex-wrap:wrap; gap:6px; }
+.mobile-data-filters { padding:12px; }
+.mobile-data-filters [aria-pressed="true"] { border-color:var(--brand-purple); }
+.mobile-data-items, .mobile-ui-tree { display:grid; gap:8px; max-height:440px; overflow:auto; padding:12px; }
+.mobile-data-item, .mobile-ui-tree button { display:grid; gap:5px; text-align:left; width:100%; white-space:normal; overflow-wrap:anywhere; }
+.mobile-data-item span, .mobile-data-item time { font-size:var(--text-xs); color:var(--text-secondary); }
+.mobile-provenance, .mobile-observation-context > dl, .mobile-observation-context > div, .mobile-observation-context > p { padding:12px; }
+.mobile-provenance dl, .mobile-observation-context dl { display:grid; gap:10px; margin:0; }
+.mobile-provenance dt, .mobile-observation-context dt { color:var(--text-secondary); font-size:var(--text-xs); }
+.mobile-provenance dd, .mobile-observation-context dd { margin:3px 0 0; overflow-wrap:anywhere; font-size:12px; }
+.mobile-acquisition-workbench .workbench-device-details { max-height:520px; overflow:auto; }
+.mobile-acquisition-workbench .phone-frame { max-height:380px; }
+.mobile-acquisition-workbench .workbench-panel { min-width:0; }

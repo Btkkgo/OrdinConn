@@ -1821,7 +1821,7 @@ fn capture_from_outputs(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::{fs, os::unix::fs::PermissionsExt};
     use tempfile::TempDir;
@@ -1860,7 +1860,7 @@ exit 1
         );
     }
 
-    pub(super) fn mobile_action_fixture() -> (TempDir, PathBuf, PathBuf, PathBuf, MobileHost) {
+    pub(crate) fn mobile_action_fixture() -> (TempDir, PathBuf, PathBuf, PathBuf, MobileHost) {
         let fixture = TempDir::new().unwrap();
         let sdk = fixture.path().join("sdk");
         let focus = fixture.path().join("focus.txt");

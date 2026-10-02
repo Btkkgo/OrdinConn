@@ -106,11 +106,11 @@ pub async fn observe_mobile_device(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct MobileActionInput {
-    session_id: String,
-    snapshot_id: String,
-    expected_package: String,
-    target: MobileActionTarget,
-    text: Option<SensitiveText>,
+    pub(crate) session_id: String,
+    pub(crate) snapshot_id: String,
+    pub(crate) expected_package: String,
+    pub(crate) target: MobileActionTarget,
+    pub(crate) text: Option<SensitiveText>,
 }
 
 #[derive(Serialize)]

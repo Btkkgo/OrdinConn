@@ -318,6 +318,7 @@ impl AppRuntime {
             continuous_tasks: Mutex::new(vec![]),
         });
         runtime.recover_interrupted_tasks().await?;
+        runtime.recover_mobile_interactions().await?;
         runtime
             .mobile_goal_repository()
             .recover_interrupted()

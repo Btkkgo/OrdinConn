@@ -125,6 +125,7 @@ pub struct MobileResearchTaskView {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MobileWorkspaceData {
+    pub collection: crate::mobile_collection::MobileCollectionWorkspace,
     pub research_tasks: Vec<MobileResearchTaskView>,
     pub runtime_status: String,
     pub adb_status: String,
@@ -680,6 +681,7 @@ impl AppRuntime {
         }
         feed.sort_by(|left, right| right.observed_at.cmp(&left.observed_at));
         Ok(MobileWorkspaceData {
+            collection: self.mobile_collection_workspace().await?,
             research_tasks: self.mobile_research_tasks().await?,
             runtime_status: if observations.is_empty() {
                 "disconnected"

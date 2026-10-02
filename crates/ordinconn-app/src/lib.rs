@@ -3,6 +3,7 @@ pub mod core_intelligence;
 pub mod db;
 pub mod events;
 pub mod internal_planner_acceptance;
+pub mod mobile_collection;
 pub mod mobile_executor;
 pub mod mobile_goal_runner;
 pub mod mobile_goals;

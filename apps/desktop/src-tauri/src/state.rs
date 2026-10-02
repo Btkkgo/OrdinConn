@@ -8,6 +8,7 @@ pub struct AppState {
     pub runtime: Arc<AppRuntime>,
     pub credentials: Arc<dyn CredentialStore>,
     pub mobile_host: Arc<MobileHost>,
+    pub manual_mobile: std::sync::Mutex<Option<Arc<std::sync::atomic::AtomicBool>>>,
 }
 
 impl AppState {
@@ -20,6 +21,7 @@ impl AppState {
             runtime,
             credentials,
             mobile_host,
+            manual_mobile: Default::default(),
         }
     }
 }

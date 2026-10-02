@@ -54,3 +54,9 @@ React 的所有正式 UI Label 都使用 Locale Key。`en` 与 `zh-CN` Dictionar
 ## M3 手机执行基础
 
 [Phase 4](mobile/M3_EXECUTOR.zh-CN.md) 经现有 Rust/Tauri Mobile Host 与 typed IPC，每次显式调用只执行一个持久化 Step。Rust Device Lease、新前后观察、语义策略、验证和不可变 Evidence link 约束每次调用。生产 Executor 已用 TEST_ONLY Planner 在真实 Settings AVD 验证；Provider 0 阻止 Live Planner + Executor 验收，完整自主 M3 仍为 NOT_COMPLETE，Phase 5 Stop/Approval 已集成。本基础不启用真钱执行。
+
+## Mobile Interaction 与数据采集 — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
+
+M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。

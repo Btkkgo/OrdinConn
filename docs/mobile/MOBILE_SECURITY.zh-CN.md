@@ -30,3 +30,9 @@ M1.5 Validation 使用一个含 Password Input 与非个人临时 Test Value 的
 ## M2 动作边界
 
 M2 仍只允许 Emulator、人工触发、Allowlist、绑定快照，每 Session 最多 20 次已派发尝试。生产环境的非逃离导航进一步只支持 Android Settings 与 Settings Intelligence；用户新增任意 App 不会获得动作权限。同一 Activity 内实时 UI Tree 变化会阻断旧坐标输入。敏感/金融屏幕只允许 Back/Home 安全退出；常见中英文支付与凭据文案会脱敏，但语义匹配不能保证覆盖所有语言。脱敏 Pending Receipt 与审计 Intent 在 ADB 输入前持久写入；输入前写入失败则不输入，结果写入失败会留下 Pending Receipt 并停止逻辑会话。真实 M2 密码字段 Type 尝试在 ADB 输入前被阻断；随机测试文本未出现在序列化 Capture、Receipt、Workspace 或 SQLite 中。一次性测试 APK 由验收流程安装而非生产 Runtime 安装，随后卸载。见 [M2 验收记录](M2_ACCEPTANCE.zh-CN.md)。动作后采集失败不会让动作 Verified，也不会自动重试。
+
+## Mobile Interaction 与数据采集 — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
+
+M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](MOBILE_DATA_ACQUISITION.zh-CN.md)。

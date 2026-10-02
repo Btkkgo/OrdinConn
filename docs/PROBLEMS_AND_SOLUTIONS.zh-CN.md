@@ -267,3 +267,9 @@ Android native dump 在 idle/root 失败时可能正常返回但不生成 XML。
 ## 问题 012 — Stop 可能被批准后的完成覆盖
 
 新增回归复现 Owner 按 Stop 后，批准的最后动作仍将 Goal 标为完成。Executor 现在等待已发出动作的 Receipt 和验证收敛，再以 STOPPED 优先，禁止完成或继续。回归在修复前失败、修复后通过，纳入最终默认 287 项测试。真实模型验收仍 BLOCKED_MODEL_NOT_CONFIGURED，Issue #12 保持 open。
+
+## Mobile Interaction 与数据采集 — 2026-10-02
+
+[Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
+
+M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。

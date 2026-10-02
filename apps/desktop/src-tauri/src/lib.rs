@@ -4,6 +4,7 @@ mod events;
 #[cfg(target_os = "macos")]
 mod internal_acceptance;
 mod mobile;
+mod mobile_collection;
 mod mobile_executor;
 mod mobile_goal_commands;
 mod state;
@@ -53,6 +54,9 @@ pub fn run() {
             commands::save_model_provider,
             commands::test_model_provider,
             commands::get_mobile_workspace,
+            mobile_collection::interact_mobile_device,
+            mobile_collection::extract_mobile_page,
+            mobile_collection::get_mobile_data_provenance,
             commands::observe_mobile_device,
             commands::execute_mobile_action,
             commands::stop_mobile_session,

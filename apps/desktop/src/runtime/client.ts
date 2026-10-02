@@ -1,3 +1,4 @@
+import type { MobileInteractionResponse, MobileActionType, MobileDataProvenance } from "@ordinconn/contracts";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
@@ -76,6 +77,9 @@ export const runtimeClient = {
   testModelProvider: (input: ProviderInput) =>
     invoke<ConnectionTestResult>("test_model_provider", { input }),
   getMobileWorkspace: () => invoke<MobileWorkspaceDto>("get_mobile_workspace"),
+  interactMobileDevice: (actionType:MobileActionType, action?:MobileActionInputDto) => invoke<MobileInteractionResponse>("interact_mobile_device", {input:{actionType,action}}),
+  extractMobilePage: (observationId:string) => invoke<MobileWorkspaceDto>("extract_mobile_page", {observationId}),
+  getMobileDataProvenance: (id:string) => invoke<MobileDataProvenance>("get_mobile_data_provenance", {id}),
   observeMobileDevice: () => invoke<MobileWorkspaceDto>("observe_mobile_device"),
   executeMobileAction: (input: MobileActionInputDto) => invoke<MobileActionResultDto>("execute_mobile_action", { input }),
   stopMobileSession: () => invoke<MobileWorkspaceDto>("stop_mobile_session"),

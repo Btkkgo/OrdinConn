@@ -1,3 +1,4 @@
+pub mod collection;
 pub mod executor;
 pub mod planner;
 use base64::{Engine, engine::general_purpose::STANDARD};

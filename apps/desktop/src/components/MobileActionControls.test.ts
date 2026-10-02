@@ -29,6 +29,10 @@ describe("manual mobile action availability", () => {
     expect(mobileActionAvailability(activeSession, currentSnapshot, [], now).navigate).toBe(false);
   });
 
+  it("permits a stale selection only when the manual path will observe and rebind before input", () => {
+    expect(mobileActionAvailability(activeSession, {...currentSnapshot,capturedAt:new Date(now-60_000).toISOString()},["com.android.settings"],now,Number.POSITIVE_INFINITY).navigate).toBe(true);
+  });
+
   it("leaves only Back and Home available on a sensitive screen", () => {
     expect(mobileActionAvailability(activeSession, { ...currentSnapshot, sensitiveState: "FINANCIAL_ACTION_BLOCKED" }, ["com.android.settings"], now))
       .toEqual({ escape: true, navigate: false });

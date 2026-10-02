@@ -11,6 +11,7 @@ import { useState } from "react";
 import type { Translator } from "../i18n";
 
 interface MobileActionControlsProps {
+  observeBeforeAction?: boolean;
   session?: MobileDeviceSessionDto;
   snapshot?: MobileUiSnapshotDto;
   selected?: MobileElementDto;
@@ -25,12 +26,13 @@ export function mobileActionAvailability(
   snapshot: MobileUiSnapshotDto | undefined,
   allowedApps: string[],
   now = Date.now(),
+  maxAgeMs = 10_000,
 ) {
   const age = snapshot ? now - Date.parse(snapshot.capturedAt) : Number.POSITIVE_INFINITY;
   const active = !!currentSession && !!snapshot && currentSession.status === "connected" &&
     currentSession.deviceType === "emulator" && currentSession.deviceId.startsWith("emulator-") &&
     currentSession.sessionId === snapshot.sessionId && currentSession.currentApp === snapshot.packageName &&
-    allowedApps.includes(snapshot.packageName) && Number.isFinite(age) && age >= 0 && age <= 10_000;
+    allowedApps.includes(snapshot.packageName) && Number.isFinite(age) && age >= 0 && age <= maxAgeMs;
   return { escape: active, navigate: active && !snapshot?.sensitiveState };
 }
 
@@ -50,11 +52,11 @@ function receiptTarget(target: MobileActionTargetDto): string {
   }
 }
 
-export function MobileActionControls({ session, snapshot, selected, allowedApps, receipt, onAction, t }: MobileActionControlsProps) {
+export function MobileActionControls({ observeBeforeAction = false, session, snapshot, selected, allowedApps, receipt, onAction, t }: MobileActionControlsProps) {
   const [typeDraft, setTypeDraft] = useState("");
   const [openPackage, setOpenPackage] = useState(allowedApps[0] ?? "");
   const [busy, setBusy] = useState(false);
-  const availability = mobileActionAvailability(session, snapshot, allowedApps);
+  const availability = mobileActionAvailability(session, snapshot, allowedApps, Date.now(), observeBeforeAction ? Number.POSITIVE_INFINITY : 10_000);
   const validSelection = safeElement(snapshot, selected);
   const canTap = availability.navigate && validSelection && !!selected?.clickable && !busy;
   const canType = availability.navigate && validSelection && !!selected?.focused && selected.className.endsWith("EditText") &&

@@ -2,6 +2,10 @@
 
 [English](CURRENT_STATUS.md) | [简体中文](CURRENT_STATUS.zh-CN.md)
 
+## Desktop 启动诊断 — 2026-10-02
+
+[Issue #15](https://github.com/Btkkgo/OrdinConn/issues/15)：冻结的迁移 12 之前 bundle 启动 SIGABRT 根因已证明；当前正式开发入口可以打开同一数据库并持续运行。旧 bundle 未修复或替换。Rust 338 / Desktop 73 / Contracts 9 PASS；真实 Android 动作、Provider 请求、Signing 验证保持 0。Native 视觉确认与 Issue #14 H1–H7 仍由用户控制，尚未验证。见[诊断与开发启动指引](mobile/DESKTOP_STARTUP_DIAGNOSIS.zh-CN.md)。
+
 ## Mobile Interaction 与数据采集 — 2026-10-02
 
 [Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。

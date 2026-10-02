@@ -273,3 +273,7 @@ Android native dump 在 idle/root 失败时可能正常返回但不生成 XML。
 [Issue #14](https://github.com/Btkkgo/OrdinConn/issues/14) 在既有 Android Runtime 和 SQLite 上增加人工控制、本地保存的 `Observe → Interact → Observe → Diff → Extract → Data Object → Data Stream → Provenance` 闭环。数据链为 `Source → Observation → Extraction → Data Object → Insight → Plan → Action → Result`；本阶段实现到 **Data Object**，Insight/Plan 保留接口。Home 提供实际采集对象、元素检查与人工操作、确定性 Observation Context。敏感值在持久化前脱敏，确定性去重保留重复观察及原始证据。自动 fixture 验证与 **PENDING HUMAN ACCEPTANCE** 分开；生产动作沿用既有模拟器/Settings 安全范围。
 
 M3 状态与历史、Provider、retry/backoff/deadline、Keychain 和保留的 App 均不变。自动真实 Android 动作 **0**；Codex 人工 Android 动作 **0**；真实 Provider 请求 **0**；签名验证 **0**；X Draft **NONE**。允许 Rust/frontend 编译；支持的包装器会执行 `codesign`，因此 macOS 验收打包 **NOT RUN / BLOCKED BY THE NO-SIGNING BOUNDARY**。参见[实现与人工验收](mobile/MOBILE_DATA_ACQUISITION.zh-CN.md)。
+
+## 开发数据库迁移后旧冻结 bundle 启动 abort
+
+保留的 M3 可执行文件内嵌迁移 1–11，当前数据库已包含 12。SQLx 对旧文件返回 `VersionMissing(12)`，错误经 Tauri setup 传播为 SIGABRT。当前 `npm run desktop:dev` 可使用现有数据库正常启动。保留数据库与冻结 App，不跳过迁移校验。已补充临时数据库兼容性测试。替换 packaged app 与人工 H1 不属于本次恢复。[诊断](mobile/DESKTOP_STARTUP_DIAGNOSIS.zh-CN.md)。

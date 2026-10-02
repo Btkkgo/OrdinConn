@@ -49,3 +49,7 @@ git diff --check
 Policy tests use disposable fixtures, including symlinks, unknown resources, source tracking, changed bundles, missing provenance, newer timestamps, and protected databases. They do not delete real applications or validate real Launch Services. Real macOS packaging, registration, Spotlight, and UI/data checks are required for live acceptance. Do not mark a failed build or indexing check as PASS, and do not delete an ambiguous app to make a check pass.
 
 An explicitly owner-authorized implementation change may supersede an unfinished freeze: archive its manifest and evidence without changing that old bundle, then allow exactly one tested replacement build and freeze its new identity. This is not an automatic bypass.
+
+## Current development startup after schema 12
+
+The retained frozen M3 bundle predates Mobile Data Acquisition migration 12. Once the current development app has upgraded the shared SQLite database, that older bundle fails migration validation and aborts in Tauri setup. Use `ORDINCONN_INTERNAL_M3_ACCEPTANCE=0 npm run desktop:dev` for Issue #14 with real acceptance opt-ins disabled. Do not use Finder/Spotlight to open the old bundle, roll back the database, or ignore missing migrations. No bundle replacement is authorized by this recovery; existing build/freeze rules remain in force. See the [proven startup diagnosis](mobile/DESKTOP_STARTUP_DIAGNOSIS.md).

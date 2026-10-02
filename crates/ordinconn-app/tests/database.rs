@@ -2,6 +2,57 @@ use ordinconn_app::AppRuntime;
 use sqlx::Row;
 
 #[tokio::test]
+async fn obsolete_migrator_rejects_newer_schema_without_downgrading_data() {
+    use sqlx::migrate::{MigrateError, Migrator};
+    use std::borrow::Cow;
+
+    let directory = tempfile::tempdir().unwrap();
+    let database = directory.path().join("startup-version-boundary.sqlite3");
+    let pool = ordinconn_app::db::open_database(&database).await.unwrap();
+    sqlx::query("INSERT INTO settings (key, value_json, updated_at) VALUES ('startup-sentinel', '\"preserve\"', '2026-10-02T12:00:00Z')")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    // The retained pre-acquisition bundle embeds migrations 1–11. A current
+    // database must fail closed for it, not silently skip migration 12.
+    let current = sqlx::migrate!();
+    let obsolete = Migrator {
+        migrations: Cow::Owned(
+            current
+                .iter()
+                .filter(|m| m.version <= 11)
+                .cloned()
+                .collect(),
+        ),
+        ..Migrator::DEFAULT
+    };
+    let error = obsolete.run(&pool).await.unwrap_err();
+    assert!(matches!(error, MigrateError::VersionMissing(12)));
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT value_json FROM settings WHERE key = 'startup-sentinel'"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+        "\"preserve\""
+    );
+    pool.close().await;
+
+    // The supported current startup can reopen the very same database.
+    let runtime = AppRuntime::initialize(&database).await.unwrap();
+    let applied: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM _sqlx_migrations WHERE version = 12 AND success = 1",
+    )
+    .fetch_one(runtime.pool())
+    .await
+    .unwrap();
+    assert_eq!(applied, 1);
+    runtime.shutdown().await.unwrap();
+}
+
+#[tokio::test]
 async fn migrations_create_required_tables_and_sqlite_safety_pragmas() {
     let directory = tempfile::tempdir().unwrap();
     let database = directory.path().join("ordinconn.sqlite3");

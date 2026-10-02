@@ -49,3 +49,7 @@ git diff --check
 策略测试使用可丢弃 fixture，覆盖符号链接、未知资源、源码跟踪、包内容变化、来源缺失、较新时间戳和受保护数据库。它们不删除真实应用，也不验证真实 Launch Services。真实验收仍需 macOS 打包、登记、Spotlight、UI 和数据检查。不能将构建或索引失败记为 PASS，也不能为通过检查删除来源不明应用。
 
 Owner 明确授权实现变更时，可以使未完成验收的旧冻结状态失效：归档旧 manifest 和证据，不改写旧 bundle，再允许一次经过测试的替换构建并冻结新身份。这不是自动绕过。
+
+## Schema 12 之后的当前开发启动
+
+保留的冻结 M3 bundle 早于 Mobile Data Acquisition 迁移 12。当前开发应用升级共用 SQLite 后，旧 bundle 会在迁移校验时失败，并在 Tauri setup 中 abort。Issue #14 使用 `ORDINCONN_INTERNAL_M3_ACCEPTANCE=0 npm run desktop:dev`，同时关闭真实验收 opt-in。不要通过 Finder/Spotlight 打开旧 bundle、回滚数据库或忽略缺失迁移。本次恢复不授权替换 bundle，原有构建与冻结规则继续有效。见[已证明的启动诊断](mobile/DESKTOP_STARTUP_DIAGNOSIS.zh-CN.md)。
